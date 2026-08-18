@@ -1,7 +1,7 @@
 
 import { NextResponse } from "next/server";
 import { createGreeting } from "@/lib/greetingStore";
-import { isMissingSupabaseConfigError } from "@/lib/supabaseAdmin";
+import { getSupabaseRuntimeDiagnostics, isMissingSupabaseConfigError } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 
@@ -22,6 +22,7 @@ export async function GET() {
         ? "local-development"
         : "supabase-production",
     message: "Cherivo greeting API is ready.",
+    diagnostics: getSupabaseRuntimeDiagnostics(),
   });
 }
 
@@ -54,23 +55,57 @@ export async function POST(request: Request) {
 
     const { token } = await createGreeting(title.slice(0, 120), project as Record<string, unknown>);
     const url = `${getBaseUrl(request)}/g/${token}`;
-    return NextResponse.json({ ok: true, token, url });
+
+    return NextResponse.json({
+      ok: true,
+      token,
+      url,
+      diagnostics: getSupabaseRuntimeDiagnostics(),
+    });
   } catch (error: unknown) {
-    console.error("Cherivo publish error:", error);
+    const diagnostics = getSupabaseRuntimeDiagnostics();
+    console.error("Cherivo publish error:", {
+      diagnostics,
+      error,
+    });
 
     const message =
       error instanceof Error ? error.message : "Could not create greeting.";
+    const code = (error as { code?: string } | null)?.code ?? "unknown";
 
     if (isMissingSupabaseConfigError(error)) {
       return NextResponse.json(
         {
+          ok: false,
+          code: "missing_supabase_config",
           error:
             "Cherivo is missing its production database configuration. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables, then redeploy.",
+          diagnostics,
         },
         { status: 503 }
       );
     }
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    if (code === "supabase_client_init_failed") {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "supabase_client_init_failed",
+          error: "Supabase client initialization failed. Check the server environment and Supabase project configuration.",
+          diagnostics,
+        },
+        { status: 503 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "supabase_insert_failed",
+        error: message,
+        diagnostics,
+      },
+      { status: 500 }
+    );
   }
 }
