@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 720">
+<defs>
+  <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+    <stop offset="0" stop-color="#f3d8c9"/><stop offset=".55" stop-color="#d9a995"/><stop offset="1" stop-color="#b87d70"/>
+  </linearGradient>
+  <linearGradient id="silk" x1="0" x2="1"><stop stop-color="#fff0e7"/><stop offset=".5" stop-color="#c99186"/><stop offset="1" stop-color="#f5d7c8"/></linearGradient>
+  <filter id="shadow"><feGaussianBlur stdDeviation="16"/></filter>
+  <filter id="soft"><feGaussianBlur stdDeviation="4"/></filter>
+</defs>
+<rect width="900" height="720" rx="34" fill="url(#bg)"/>
+<path d="M0 500 C180 410 260 650 440 510 S710 400 900 540 V720 H0Z" fill="url(#silk)" opacity=".82"/>
+<ellipse cx="460" cy="650" rx="300" ry="45" fill="#6f3f3b" opacity=".22" filter="url(#shadow)"/>
+<!-- phone -->
+<g transform="translate(520 135) rotate(8)">
+  <rect width="190" height="390" rx="28" fill="#332726"/>
+  <rect x="9" y="9" width="172" height="372" rx="22" fill="#f7e1d4"/>
+  <circle cx="95" cy="23" r="6" fill="#191516"/>
+  <rect x="27" y="58" width="136" height="230" rx="12" fill="#d9a69b"/>
+  <circle cx="95" cy="150" r="48" fill="#f4d2c6"/>
+  <path d="M62 155 C72 105 126 105 136 155 C123 135 76 135 62 155Z" fill="#cf796d"/>
+  <path d="M45 300 Q95 260 145 300" stroke="#a35c57" stroke-width="6" fill="none" opacity=".5"/>
+</g>
+<!-- rose -->
+<g transform="translate(115 100)">
+  <circle cx="80" cy="100" r="75" fill="#d87970"/>
+  <path d="M20 115 C45 55 100 40 135 80 C110 65 90 85 95 115 C65 80 40 95 20 115Z" fill="#efb1a5"/>
+  <path d="M35 125 C70 92 95 110 115 135 C80 155 55 150 35 125Z" fill="#bb5f59"/>
+  <path d="M75 75 C100 55 120 70 128 92 C108 84 97 98 98 112 C86 95 72 92 75 75Z" fill="#f4c2b7"/>
+</g>
+<!-- scattered petals -->
+<g fill="#f6d4c8" opacity=".9">
+ <ellipse cx="220" cy="520" rx="38" ry="18" transform="rotate(-18 220 520)"/>
+ <ellipse cx="350" cy="590" rx="30" ry="14" transform="rotate(30 350 590)"/>
+ <ellipse cx="760" cy="600" rx="34" ry="16" transform="rotate(-20 760 600)"/>
+ <ellipse cx="790" cy="120" rx="27" ry="13" transform="rotate(35 790 120)"/>
+</g>
+<!-- card -->
+<g transform="translate(180 285) rotate(-5)">
+ <rect width="245" height="165" rx="8" fill="#fff8f1"/>
+ <rect x="18" y="18" width="209" height="5" rx="2" fill="#d69c91"/>
+ <text x="20" y="65" font-family="Georgia,serif" font-size="18" fill="#4c2b2c">someone made</text>
+ <text x="20" y="88" font-family="Georgia,serif" font-size="18" fill="#4c2b2c">something for</text>
+ <text x="20" y="111" font-family="Georgia,serif" font-size="18" fill="#4c2b2c">you.</text>
+ <path d="M170 120 C184 104 204 122 214 140 C194 132 177 138 170 120Z" fill="#c96a69"/>
+</g>
+</svg>
