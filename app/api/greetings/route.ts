@@ -1,7 +1,11 @@
 
 import { NextResponse } from "next/server";
 import { createGreeting } from "@/lib/greetingStore";
-import { getSupabaseRuntimeDiagnostics, isMissingSupabaseConfigError } from "@/lib/supabaseAdmin";
+import {
+  getSupabaseRuntimeDiagnostics,
+  isMissingSupabaseConfigError,
+  logSupabaseRuntimeDiagnostics,
+} from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 
@@ -15,6 +19,9 @@ function getBaseUrl(request: Request) {
 }
 
 export async function GET() {
+  const diagnostics = getSupabaseRuntimeDiagnostics();
+  logSupabaseRuntimeDiagnostics("Cherivo GET /api/greetings diagnostics");
+
   return NextResponse.json({
     ok: true,
     mode:
@@ -22,11 +29,14 @@ export async function GET() {
         ? "local-development"
         : "supabase-production",
     message: "Cherivo greeting API is ready.",
-    diagnostics: getSupabaseRuntimeDiagnostics(),
+    diagnostics,
   });
 }
 
 export async function POST(request: Request) {
+  const diagnostics = getSupabaseRuntimeDiagnostics();
+  logSupabaseRuntimeDiagnostics("Cherivo POST /api/greetings diagnostics");
+
   try {
     const body = (await request.json().catch(() => null)) ?? {};
 
@@ -64,6 +74,7 @@ export async function POST(request: Request) {
     });
   } catch (error: unknown) {
     const diagnostics = getSupabaseRuntimeDiagnostics();
+    logSupabaseRuntimeDiagnostics("Cherivo publish error diagnostics");
     console.error("Cherivo publish error:", {
       diagnostics,
       error,

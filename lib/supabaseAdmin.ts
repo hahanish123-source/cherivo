@@ -3,9 +3,15 @@ import { createClient } from "@supabase/supabase-js";
 
 export function getSupabaseRuntimeDiagnostics() {
   return {
-    hasSupabaseUrl: Boolean(process.env.SUPABASE_URL),
-    hasServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    "SUPABASE_URL present": Boolean(process.env.SUPABASE_URL),
+    "SUPABASE_SERVICE_ROLE_KEY present": Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    NODE_ENV: process.env.NODE_ENV ?? "undefined",
+    VERCEL_ENV: process.env.VERCEL_ENV ?? "undefined",
   };
+}
+
+export function logSupabaseRuntimeDiagnostics(label: string) {
+  console.info(label, getSupabaseRuntimeDiagnostics());
 }
 
 export function getSupabaseAdminConfig() {
