@@ -7,7 +7,7 @@ import { supabaseAdmin } from "./supabaseAdmin";
 export type StoredGreeting = {
   token: string;
   title: string;
-  data: any;
+  data: Record<string, unknown>;
   created_at?: string;
 };
 
@@ -32,8 +32,40 @@ function useLocalStore() {
   return process.env.NODE_ENV !== "production" && process.env.CHERIVO_LOCAL_STORE !== "false";
 }
 
-export async function createGreeting(title: string, data: any) {
-  const token = randomBytes(32).toString("base64url");
+async function generateUniqueToken() {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const token = randomBytes(32).toString("hex");
+
+    if (useLocalStore()) {
+      const rows = await localRead();
+      if (!rows.some((row) => row.token === token)) {
+        return token;
+      }
+      continue;
+    }
+
+    const supabase = supabaseAdmin();
+    const { data, error } = await supabase
+      .from("greetings")
+      .select("token")
+      .eq("token", token)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Database token check failed: ${error.message}`);
+    }
+
+    if (!data) {
+      return token;
+    }
+  }
+
+  throw new Error("Unable to generate a unique private greeting token.");
+}
+
+export async function createGreeting(title: string, data: Record<string, unknown>) {
+  const token = await generateUniqueToken();
+
   if (useLocalStore()) {
     const rows = await localRead();
     rows.push({ token, title, data, created_at: new Date().toISOString() });
@@ -43,14 +75,16 @@ export async function createGreeting(title: string, data: any) {
 
   const supabase = supabaseAdmin();
   const { error } = await supabase.from("greetings").insert({ token, title, data });
-  if (error) throw new Error(`Database publish failed: ${error.message}`);
+  if (error) {
+    throw new Error(`Database publish failed: ${error.message}`);
+  }
   return { token };
 }
 
 export async function getGreeting(token: string) {
   if (useLocalStore()) {
     const rows = await localRead();
-    return rows.find((r) => r.token === token) ?? null;
+    return rows.find((row) => row.token === token) ?? null;
   }
 
   const supabase = supabaseAdmin();
@@ -60,6 +94,9 @@ export async function getGreeting(token: string) {
     .eq("token", token)
     .maybeSingle();
 
-  if (error) throw new Error(`Database read failed: ${error.message}`);
+  if (error) {
+    throw new Error(`Database read failed: ${error.message}`);
+  }
+
   return data ?? null;
 }
