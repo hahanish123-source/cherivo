@@ -18,23 +18,20 @@ function getBaseUrl(request: Request) {
   return new URL(request.url).origin;
 }
 
-function validateMediaUrl(value: unknown) {
-  if (typeof value !== "string" || !value) return;
-  if (value.startsWith("data:")) return;
-  const url = new URL(value);
-  if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("Media URLs must use http or https.");
-  if (/youtube\.com|youtu\.be|spotify\.com/i.test(url.hostname)) throw new Error("YouTube and Spotify URLs are not supported.");
-}
-
 function validateProjectMedia(project: Record<string, unknown>) {
-  validateMediaUrl(project.audioUrl);
-  if (project.backgroundVideo && typeof project.backgroundVideo === "string") validateMediaUrl(project.backgroundVideo);
+  if (project.audioUrl && typeof project.audioUrl === "string" && !project.audioUrl.startsWith("data:")) {
+    throw new Error("Audio must be uploaded as an MP3 file.");
+  }
   if (Array.isArray(project.blocks)) {
     for (const raw of project.blocks) {
       if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
       const block = raw as Record<string, unknown>;
-      validateMediaUrl(block.audioUrl);
-      if (block.backgroundVideo && typeof block.backgroundVideo === "string") validateMediaUrl(block.backgroundVideo);
+      if (block.audioUrl && typeof block.audioUrl === "string" && !block.audioUrl.startsWith("data:")) {
+        throw new Error("Audio must be uploaded as an MP3 file.");
+      }
+      if (block.memoryVideo && typeof block.memoryVideo === "string" && !block.memoryVideo.startsWith("data:")) {
+        throw new Error("Memory video must be uploaded through Hanora.");
+      }
     }
   }
 }

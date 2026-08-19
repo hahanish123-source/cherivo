@@ -41,11 +41,11 @@ type Block = {
   radius?: number;
   image?: string;
   images?: string[];
+  imageAdjustments?: Record<string, { scale: number; x: number; y: number }>;
   imageOpacity?: number;
   audioName?: string;
   audioUrl?: string;
-  backgroundVideo?: string;
-  backgroundVideoOpacity?: number;
+  memoryVideo?: string;
   galleryLayout?: string;
   visible?: boolean;
   items?: {
@@ -68,8 +68,6 @@ export type Project = {
   globalMotion?: string;
   audioName?: string;
   audioUrl?: string;
-  backgroundVideo?: string;
-  backgroundVideoOpacity?: number;
   backgroundOverlay?: number;
   customBg?: string;
   customBgOpacity?: number;
@@ -155,8 +153,6 @@ export default function GreetingClient({
 
   const audio = p?.audioUrl || project.audioUrl;
   const audioName = p?.audioName || project.audioName;
-  const backgroundVideo = p?.backgroundVideo || project.backgroundVideo;
-  const backgroundVideoOpacity = p?.backgroundVideoOpacity ?? project.backgroundVideoOpacity ?? 50;
 
   function attemptAudioPlayback() {
     const audioElement = audioRef.current;
@@ -452,20 +448,7 @@ export default function GreetingClient({
         />
       )}
 
-      {backgroundVideo && (
-        <video
-          className="publicBackgroundVideo"
-          src={backgroundVideo}
-          autoPlay
-          muted
-          loop
-          playsInline
-          aria-hidden="true"
-          style={{ opacity: backgroundVideoOpacity / 100 }}
-        />
-      )}
-
-      {(backgroundVideo || project.customBg) && (
+      {project.customBg && (
         <div className="publicMediaOverlay" style={{ opacity: (project.backgroundOverlay ?? 18) / 100 }} />
       )}
 
@@ -633,6 +616,9 @@ export default function GreetingClient({
                                   opacity:
                                     (p.imageOpacity ??
                                       100) / 100,
+                                  objectFit: "contain",
+                                  objectPosition: `${p.imageAdjustments?.[String(index)]?.x ?? 50}% ${p.imageAdjustments?.[String(index)]?.y ?? 50}%`,
+                                  transform: `scale(${(p.imageAdjustments?.[String(index)]?.scale ?? 100) / 100})`,
                                 }}
                               />
 
@@ -901,6 +887,8 @@ export default function GreetingClient({
               NAVIGATION
              ===================================================== */}
 
+          {p?.memoryVideo && <video className="publicMemoryVideo" src={p.memoryVideo} controls playsInline preload="metadata" />}
+
           {p && (
             <div className="publicNav">
               <button
@@ -994,7 +982,7 @@ export default function GreetingClient({
             ref={audioRef}
             loop
             onCanPlay={() => setAudioError("")}
-            onError={() => setAudioError("This URL could not be played as audio. Please provide a playable audio URL.")}
+            onError={() => setAudioError("Uploaded audio could not be played. Please try another MP3 file.")}
             onPlay={() =>
               setPlaying(true)
             }

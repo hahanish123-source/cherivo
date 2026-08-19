@@ -22,3 +22,36 @@ create policy "allow server side greeting access"
   with check (true);
 
 create index if not exists greetings_token_idx on public.greetings(token);
+
+-- Private greeting media is uploaded by the Next.js server with the service role
+-- and delivered to recipients through short-lived signed URLs.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('hanora-media', 'hanora-media', false, 20000000, array['audio/mpeg', 'video/mp4', 'video/webm', 'video/quicktime'])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "hanora media server read" on storage.objects;
+drop policy if exists "hanora media server insert" on storage.objects;
+drop policy if exists "hanora media server update" on storage.objects;
+drop policy if exists "hanora media server delete" on storage.objects;
+
+-- These policies document the intended boundary. The server's service-role
+-- client bypasses RLS; browser clients never receive that key.
+create policy "hanora media server read"
+  on storage.objects for select to service_role
+  using (bucket_id = 'hanora-media');
+
+create policy "hanora media server insert"
+  on storage.objects for insert to service_role
+  with check (bucket_id = 'hanora-media');
+
+create policy "hanora media server update"
+  on storage.objects for update to service_role
+  using (bucket_id = 'hanora-media')
+  with check (bucket_id = 'hanora-media');
+
+create policy "hanora media server delete"
+  on storage.objects for delete to service_role
+  using (bucket_id = 'hanora-media');

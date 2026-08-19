@@ -9,8 +9,12 @@ export async function POST(request: Request) {
     const file = formData.get("file");
     const kind = formData.get("kind");
 
-    if (!(file instanceof File) || (kind !== "video" && kind !== "audio")) {
-      return NextResponse.json({ error: "A valid media file and media type are required." }, { status: 400 });
+    if (!(file instanceof File) || (kind !== "audio" && kind !== "memory-video")) {
+      return NextResponse.json({ error: "A valid audio or memory video file is required." }, { status: 400 });
+    }
+
+    if (kind === "memory-video" && file.size > 20_000_000) {
+      return NextResponse.json({ error: "Video is too large. Please choose a video under 20 MB." }, { status: 413 });
     }
 
     const media = await uploadGreetingMedia(file, kind);
