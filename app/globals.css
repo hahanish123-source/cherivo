@@ -644,4 +644,208 @@ button:disabled{opacity:.55;cursor:not-allowed;}
     font-size: 34px;
     left: 4%;
   }
+}/* =========================================================
+   HANORA - FIX FLOATING PETALS
+   CSS ONLY - NO COPILOT REQUIRED
+   ========================================================= */
+
+/* Petal background container */
+.preview.bg-petals {
+  position: relative;
+  overflow: hidden;
+
+  /* Remove the old giant pink blob/background */
+  background-image: none !important;
+}
+
+/* Remove any old giant flower/emoji decoration */
+.preview.bg-petals::before,
+.preview.bg-petals::after {
+  content: "" !important;
+  position: absolute;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------
+   PETAL LAYER 1
+   --------------------------------------------------------- */
+
+.preview.bg-petals::before {
+  width: 12px;
+  height: 19px;
+
+  left: 4%;
+  top: -30px;
+
+  border-radius: 75% 25% 70% 30%;
+  background: rgba(255, 150, 190, 0.72);
+
+  box-shadow:
+    110px 90px 0 rgba(255, 170, 200, 0.60),
+    245px 35px 0 rgba(255, 135, 180, 0.55),
+    380px 150px 0 rgba(255, 180, 205, 0.65),
+    510px 70px 0 rgba(255, 145, 190, 0.58),
+    650px 220px 0 rgba(255, 175, 205, 0.62),
+    780px 100px 0 rgba(255, 135, 180, 0.55),
+    900px 300px 0 rgba(255, 180, 210, 0.60);
+
+  transform: rotate(25deg);
+
+  animation: hanoraPetalsFall1 13s linear infinite;
+
+  z-index: 1;
+}
+
+/* ---------------------------------------------------------
+   PETAL LAYER 2
+   --------------------------------------------------------- */
+
+.preview.bg-petals::after {
+  width: 9px;
+  height: 15px;
+
+  left: 15%;
+  top: -40px;
+
+  border-radius: 70% 30% 75% 25%;
+  background: rgba(255, 190, 215, 0.58);
+
+  box-shadow:
+    80px 180px 0 rgba(255, 145, 190, 0.55),
+    210px 70px 0 rgba(255, 175, 205, 0.65),
+    340px 260px 0 rgba(255, 135, 185, 0.52),
+    470px 130px 0 rgba(255, 190, 215, 0.58),
+    600px 340px 0 rgba(255, 150, 195, 0.55),
+    730px 190px 0 rgba(255, 180, 210, 0.60),
+    860px 390px 0 rgba(255, 145, 190, 0.50);
+
+  transform: rotate(-35deg);
+
+  animation: hanoraPetalsFall2 17s linear infinite;
+
+  z-index: 1;
+}
+
+/* ---------------------------------------------------------
+   FALLING ANIMATION
+   --------------------------------------------------------- */
+
+@keyframes hanoraPetalsFall1 {
+  0% {
+    transform:
+      translate3d(0, -30px, 0)
+      rotate(20deg);
+  }
+
+  25% {
+    transform:
+      translate3d(35px, 130px, 0)
+      rotate(80deg);
+  }
+
+  50% {
+    transform:
+      translate3d(-25px, 300px, 0)
+      rotate(150deg);
+  }
+
+  75% {
+    transform:
+      translate3d(40px, 470px, 0)
+      rotate(230deg);
+  }
+
+  100% {
+    transform:
+      translate3d(-20px, 700px, 0)
+      rotate(310deg);
+  }
+}
+
+@keyframes hanoraPetalsFall2 {
+  0% {
+    transform:
+      translate3d(0, -40px, 0)
+      rotate(-30deg);
+  }
+
+  25% {
+    transform:
+      translate3d(-45px, 160px, 0)
+      rotate(-100deg);
+  }
+
+  50% {
+    transform:
+      translate3d(30px, 330px, 0)
+      rotate(-170deg);
+  }
+
+  75% {
+    transform:
+      translate3d(-35px, 500px, 0)
+      rotate(-240deg);
+  }
+
+  100% {
+    transform:
+      translate3d(20px, 720px, 0)
+      rotate(-320deg);
+  }
+}
+
+/* ---------------------------------------------------------
+   KEEP CONTENT ABOVE PETALS
+   --------------------------------------------------------- */
+
+.preview.bg-petals > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Controls always remain clickable */
+.preview.bg-petals button,
+.preview.bg-petals input,
+.preview.bg-petals textarea,
+.preview.bg-petals select,
+.preview.bg-petals .previewEdit,
+.preview.bg-petals .previewToolbar {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+/* Petals never interfere with interaction */
+.preview.bg-petals::before,
+.preview.bg-petals::after {
+  pointer-events: none !important;
+}
+
+/* ---------------------------------------------------------
+   MOBILE
+   --------------------------------------------------------- */
+
+@media (max-width: 700px) {
+  .preview.bg-petals::before {
+    width: 9px;
+    height: 15px;
+
+    box-shadow:
+      70px 100px 0 rgba(255, 170, 200, 0.60),
+      180px 50px 0 rgba(255, 135, 180, 0.55),
+      290px 170px 0 rgba(255, 180, 205, 0.60),
+      400px 90px 0 rgba(255, 145, 190, 0.55),
+      520px 240px 0 rgba(255, 175, 205, 0.60);
+  }
+
+  .preview.bg-petals::after {
+    width: 7px;
+    height: 13px;
+
+    box-shadow:
+      60px 150px 0 rgba(255, 145, 190, 0.55),
+      160px 80px 0 rgba(255, 175, 205, 0.60),
+      270px 230px 0 rgba(255, 135, 185, 0.50),
+      380px 120px 0 rgba(255, 190, 215, 0.55);
+  }
 }
