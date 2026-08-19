@@ -465,3 +465,183 @@ button:disabled{opacity:.55;cursor:not-allowed;}
   .galleryPage.layout-scattered .galleryPhoto-5,.publicGalleryStage.layout-scattered .publicGalleryItem:nth-child(5){left:30%!important}
   .galleryPage.layout-scattered .galleryPhoto-6,.publicGalleryStage.layout-scattered .publicGalleryItem:nth-child(6){right:0!important}
 }
+/* =========================================================
+   HANORA BIG FLOATING ROSE PETALS
+   Visible in Create Preview without blocking controls
+   ========================================================= */
+
+.preview.bg-petals {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Petal layer */
+.preview.bg-petals .sceneInner,
+.preview.bg-petals .previewHint,
+.preview.bg-petals .progress,
+.preview.bg-petals .previewToolbar,
+.preview.bg-petals .previewEdit {
+  position: relative;
+  z-index: 5;
+}
+
+/* Large floating petals */
+.preview.bg-petals::after {
+  content: "🌸";
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+
+  left: 8%;
+  top: 18%;
+
+  font-size: 42px;
+  opacity: 0.75;
+
+  filter:
+    drop-shadow(0 8px 12px rgba(255, 90, 150, 0.35))
+    blur(0.1px);
+
+  animation:
+    hanoraPetalFloat1 7s ease-in-out infinite;
+}
+
+/* Second petal */
+.preview.bg-petals::before {
+  content: "🌸";
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+
+  right: 8%;
+  top: 42%;
+
+  font-size: 58px;
+  opacity: 0.65;
+
+  filter:
+    drop-shadow(0 10px 15px rgba(255, 90, 150, 0.4));
+
+  animation:
+    hanoraPetalFloat2 9s ease-in-out infinite;
+}
+
+/* Extra petals using the preview itself */
+.preview.bg-petals {
+  background-image:
+    radial-gradient(
+      circle at 15% 10%,
+      color-mix(in srgb, var(--bg1) 58%, transparent),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 85% 80%,
+      color-mix(in srgb, var(--bg2) 46%, transparent),
+      transparent 34%
+    ),
+    linear-gradient(
+      135deg,
+      var(--page-bg),
+      color-mix(in srgb, var(--bg3) 10%, var(--page-bg))
+    );
+}
+
+/* Petal animations */
+
+@keyframes hanoraPetalFloat1 {
+  0% {
+    transform:
+      translate3d(0, -20px, 0)
+      rotate(-15deg)
+      scale(0.8);
+  }
+
+  25% {
+    transform:
+      translate3d(45px, 80px, 0)
+      rotate(35deg)
+      scale(1);
+  }
+
+  50% {
+    transform:
+      translate3d(-20px, 180px, 0)
+      rotate(75deg)
+      scale(1.08);
+  }
+
+  75% {
+    transform:
+      translate3d(60px, 280px, 0)
+      rotate(120deg)
+      scale(0.95);
+  }
+
+  100% {
+    transform:
+      translate3d(-10px, 390px, 0)
+      rotate(170deg)
+      scale(0.8);
+  }
+}
+
+@keyframes hanoraPetalFloat2 {
+  0% {
+    transform:
+      translate3d(0, -30px, 0)
+      rotate(20deg)
+      scale(0.7);
+  }
+
+  25% {
+    transform:
+      translate3d(-55px, 90px, 0)
+      rotate(-35deg)
+      scale(0.95);
+  }
+
+  50% {
+    transform:
+      translate3d(20px, 200px, 0)
+      rotate(-80deg)
+      scale(1.1);
+  }
+
+  75% {
+    transform:
+      translate3d(-70px, 300px, 0)
+      rotate(-130deg)
+      scale(0.9);
+  }
+
+  100% {
+    transform:
+      translate3d(0, 420px, 0)
+      rotate(-180deg)
+      scale(0.7);
+  }
+}
+
+/* Keep petals behind all editing controls */
+.preview.bg-petals button,
+.preview.bg-petals input,
+.preview.bg-petals textarea,
+.preview.bg-petals select,
+.preview.bg-petals .previewEdit {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  .preview.bg-petals::before {
+    font-size: 42px;
+    right: 4%;
+  }
+
+  .preview.bg-petals::after {
+    font-size: 34px;
+    left: 4%;
+  }
+}
