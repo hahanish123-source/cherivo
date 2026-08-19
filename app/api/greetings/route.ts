@@ -18,6 +18,27 @@ function getBaseUrl(request: Request) {
   return new URL(request.url).origin;
 }
 
+function validateMediaUrl(value: unknown) {
+  if (typeof value !== "string" || !value) return;
+  if (value.startsWith("data:")) return;
+  const url = new URL(value);
+  if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("Media URLs must use http or https.");
+  if (/youtube\.com|youtu\.be|spotify\.com/i.test(url.hostname)) throw new Error("YouTube and Spotify URLs are not supported.");
+}
+
+function validateProjectMedia(project: Record<string, unknown>) {
+  validateMediaUrl(project.audioUrl);
+  if (project.backgroundVideo && typeof project.backgroundVideo === "string") validateMediaUrl(project.backgroundVideo);
+  if (Array.isArray(project.blocks)) {
+    for (const raw of project.blocks) {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+      const block = raw as Record<string, unknown>;
+      validateMediaUrl(block.audioUrl);
+      if (block.backgroundVideo && typeof block.backgroundVideo === "string") validateMediaUrl(block.backgroundVideo);
+    }
+  }
+}
+
 export async function GET() {
   const diagnostics = getSupabaseRuntimeDiagnostics();
   logSupabaseRuntimeDiagnostics("Hanora GET /api/greetings diagnostics");
@@ -54,9 +75,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Greeting data is missing or invalid." }, { status: 400 });
     }
 
+    validateProjectMedia(project as Record<string, unknown>);
+
     const serialized = JSON.stringify(project);
     const bytes = Buffer.byteLength(serialized, "utf8");
-    if (bytes > 3_800_000) {
+    const maxBytes = process.env.NODE_ENV !== "production" ? 30_000_000 : 3_800_000;
+    if (bytes > maxBytes) {
       return NextResponse.json(
         { error: "This greeting is too large to publish. Reduce photo/audio sizes or remove unused media." },
         { status: 413 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -30,6 +30,10 @@ type Block = {
   image?: string;
   images?: string[];
   imageOpacity?: number;
+  audioName?: string;
+  audioUrl?: string;
+  backgroundVideo?: string;
+  backgroundVideoOpacity?: number;
   galleryLayout?: string;
   visible?: boolean;
   items?: {
@@ -40,7 +44,7 @@ type Block = {
   }[];
 };
 
-type Project = {
+export type Project = {
   blocks: Block[];
   theme?: string;
   background?: string;
@@ -52,6 +56,9 @@ type Project = {
   globalMotion?: string;
   audioName?: string;
   audioUrl?: string;
+  backgroundVideo?: string;
+  backgroundVideoOpacity?: number;
+  backgroundOverlay?: number;
   customBg?: string;
   customBgOpacity?: number;
 };
@@ -116,6 +123,8 @@ export default function GreetingClient({
   const [smoke, setSmoke] = useState<number[]>([]);
 
   const [playing, setPlaying] = useState(false);
+  const [audioError, setAudioError] = useState("");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [galleryViewer, setGalleryViewer] = useState<{
     images: string[];
@@ -129,7 +138,38 @@ export default function GreetingClient({
       ? pages[Math.min(i, pages.length - 1)]
       : undefined;
 
-  const audio = project.audioUrl;
+  const audio = p?.audioUrl || project.audioUrl;
+  const audioName = p?.audioName || project.audioName;
+  const backgroundVideo = p?.backgroundVideo || project.backgroundVideo;
+  const backgroundVideoOpacity = p?.backgroundVideoOpacity ?? project.backgroundVideoOpacity ?? 50;
+
+  function attemptAudioPlayback() {
+    const audioElement = audioRef.current;
+    if (!audioElement) return;
+    void audioElement.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+  }
+
+  useEffect(() => {
+    const audioElement = audioRef.current;
+    if (!audioElement || !audio) return;
+    audioElement.src = audio;
+    audioElement.loop = true;
+    audioElement.load();
+
+    const retryAfterInteraction = () => attemptAudioPlayback();
+    document.addEventListener("pointerdown", retryAfterInteraction, { once: true });
+    document.addEventListener("keydown", retryAfterInteraction, { once: true });
+    attemptAudioPlayback();
+
+    return () => {
+      document.removeEventListener("pointerdown", retryAfterInteraction);
+      document.removeEventListener("keydown", retryAfterInteraction);
+      audioElement.pause();
+      audioElement.removeAttribute("src");
+      audioElement.load();
+      setPlaying(false);
+    };
+  }, [audio]);
 
   const next = () => {
     setI((x) =>
@@ -391,6 +431,23 @@ export default function GreetingClient({
               100,
           }}
         />
+      )}
+
+      {backgroundVideo && (
+        <video
+          className="publicBackgroundVideo"
+          src={backgroundVideo}
+          autoPlay
+          muted
+          loop
+          playsInline
+          aria-hidden="true"
+          style={{ opacity: backgroundVideoOpacity / 100 }}
+        />
+      )}
+
+      {(backgroundVideo || project.customBg) && (
+        <div className="publicMediaOverlay" style={{ opacity: (project.backgroundOverlay ?? 18) / 100 }} />
       )}
 
       {/* =========================================================
@@ -864,20 +921,10 @@ export default function GreetingClient({
                 : "Play music"
             }
             onClick={() => {
-              const audioElement =
-                document.getElementById(
-                  "hanora-audio"
-                ) as HTMLAudioElement | null;
-
-              if (!audioElement) {
-                return;
-              }
-
-              if (
-                audioElement.paused
-              ) {
-                void audioElement.play();
-                setPlaying(true);
+              const audioElement = audioRef.current;
+              if (!audioElement) return;
+              if (audioElement.paused) {
+                attemptAudioPlayback();
               } else {
                 audioElement.pause();
                 setPlaying(false);
@@ -894,13 +941,17 @@ export default function GreetingClient({
           <Volume2 size={15} />
 
           <span>
-            {project.audioName ||
+            {audioName ||
               "Your song"}
           </span>
 
           <audio
             id="hanora-audio"
             src={audio}
+            ref={audioRef}
+            loop
+            onCanPlay={() => setAudioError("")}
+            onError={() => setAudioError("This URL could not be played as audio. Please provide a playable audio URL.")}
             onPlay={() =>
               setPlaying(true)
             }
@@ -908,6 +959,7 @@ export default function GreetingClient({
               setPlaying(false)
             }
           />
+          {audioError && <small className="publicAudioError">{audioError}</small>}
         </div>
       )}
 
