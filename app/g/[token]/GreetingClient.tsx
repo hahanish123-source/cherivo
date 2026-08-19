@@ -399,7 +399,7 @@ export default function GreetingClient({
 
       <div className="publicTop">
         <span>
-          CHERIVO
+          HANORA
           <span>•</span>
         </span>
 
@@ -866,7 +866,7 @@ export default function GreetingClient({
             onClick={() => {
               const audioElement =
                 document.getElementById(
-                  "cherivo-audio"
+                  "hanora-audio"
                 ) as HTMLAudioElement | null;
 
               if (!audioElement) {
@@ -899,7 +899,7 @@ export default function GreetingClient({
           </span>
 
           <audio
-            id="cherivo-audio"
+            id="hanora-audio"
             src={audio}
             onPlay={() =>
               setPlaying(true)

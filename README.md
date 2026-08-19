@@ -1,6 +1,6 @@
-# Cherivo
+# Hanora
 
-Cherivo is a Next.js greeting creator prototype with a fully editable story editor.
+Hanora is a place to create beautiful personal moments and share them through private links.
 
 ## Run locally
 

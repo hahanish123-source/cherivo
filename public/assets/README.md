@@ -1,4 +1,4 @@
-# Cherivo assets
+# Hanora assets
 
 Put built-in, non-private assets here.
 

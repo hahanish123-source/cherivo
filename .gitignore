@@ -10,3 +10,6 @@ npm-debug.log*
 .cherivo-local/
 .env.local
 .env
+
+.vercel
+.env*

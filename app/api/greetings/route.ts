@@ -20,7 +20,7 @@ function getBaseUrl(request: Request) {
 
 export async function GET() {
   const diagnostics = getSupabaseRuntimeDiagnostics();
-  logSupabaseRuntimeDiagnostics("Cherivo GET /api/greetings diagnostics");
+  logSupabaseRuntimeDiagnostics("Hanora GET /api/greetings diagnostics");
 
   return NextResponse.json({
     ok: true,
@@ -28,14 +28,14 @@ export async function GET() {
       process.env.NODE_ENV !== "production" && process.env.CHERIVO_LOCAL_STORE !== "false"
         ? "local-development"
         : "supabase-production",
-    message: "Cherivo greeting API is ready.",
+    message: "Hanora greeting API is ready.",
     diagnostics,
   });
 }
 
 export async function POST(request: Request) {
   const diagnostics = getSupabaseRuntimeDiagnostics();
-  logSupabaseRuntimeDiagnostics("Cherivo POST /api/greetings diagnostics");
+  logSupabaseRuntimeDiagnostics("Hanora POST /api/greetings diagnostics");
 
   try {
     const body = (await request.json().catch(() => null)) ?? {};
@@ -74,8 +74,8 @@ export async function POST(request: Request) {
     });
   } catch (error: unknown) {
     const diagnostics = getSupabaseRuntimeDiagnostics();
-    logSupabaseRuntimeDiagnostics("Cherivo publish error diagnostics");
-    console.error("Cherivo publish error:", {
+    logSupabaseRuntimeDiagnostics("Hanora publish error diagnostics");
+    console.error("Hanora publish error:", {
       diagnostics,
       error,
     });
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
           ok: false,
           code: "missing_supabase_config",
           error:
-            "Cherivo is missing its production database configuration. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables, then redeploy.",
+            "Hanora is missing its production database configuration. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables, then redeploy.",
           diagnostics,
         },
         { status: 503 }

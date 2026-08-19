@@ -20,7 +20,7 @@ export function getSupabaseAdminConfig() {
 
   if (!url || !serviceRoleKey) {
     const error = new Error(
-      "Cherivo is missing its production database configuration. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables, then redeploy."
+      "Hanora is missing its production database configuration. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables, then redeploy."
     ) as Error & { code?: string };
     error.code = "missing_supabase_config";
     throw error;
