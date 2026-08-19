@@ -26,6 +26,18 @@ type Block = {
   bodySize?: number;
   lineHeight?: number;
   letterSpacing?: number;
+  titleFont?: string;
+  subtitleFont?: string;
+  headingFont?: string;
+  bodyFont?: string;
+  subtitleColor?: string;
+  bodyColor?: string;
+  cardColor?: string;
+  cardOpacity?: number;
+  letterColor?: string;
+  letterSize?: number;
+  letterLineHeight?: number;
+  letterAlign?: "left"|"center"|"right";
   radius?: number;
   image?: string;
   images?: string[];
@@ -61,6 +73,9 @@ export type Project = {
   backgroundOverlay?: number;
   customBg?: string;
   customBgOpacity?: number;
+  customBgScale?: number;
+  customBgPositionX?: number;
+  customBgPositionY?: number;
 };
 
 const themes: Record<string, [string, string, string, string]> = {
@@ -335,6 +350,8 @@ export default function GreetingClient({
       ] ?? backgrounds.aurora,
 
     fontFamily: getFont(project.globalFont),
+    "--story-spacing": `${project.globalSpacing ?? 18}px`,
+    "--global-radius": `${project.globalRadius ?? 34}px`,
   } as React.CSSProperties;
 
   return (
@@ -429,6 +446,8 @@ export default function GreetingClient({
             opacity:
               (project.customBgOpacity ?? 100) /
               100,
+            backgroundSize: `${project.customBgScale ?? 100}%`,
+            backgroundPosition: `${project.customBgPositionX ?? 50}% ${project.customBgPositionY ?? 50}%`,
           }}
         />
       )}
@@ -500,6 +519,23 @@ export default function GreetingClient({
         <div
           className="publicScene"
           key={p?.id || "empty"}
+          style={p ? {
+            "--title-font": getFont(p.titleFont || p.font),
+            "--subtitle-font": getFont(p.subtitleFont || p.font),
+            "--heading-font": getFont(p.headingFont || p.font),
+            "--body-font": getFont(p.bodyFont || p.font),
+            "--local": p.accent,
+            "--heading-color": p.headingColor,
+            "--subtitle-color": p.subtitleColor,
+            "--body-color": p.bodyColor,
+            "--emoji-color": p.emojiColor,
+            "--card-color": p.cardColor,
+            "--section-card-opacity": `${p.cardOpacity ?? 8}%`,
+            "--card-radius": `${p.radius ?? project.globalRadius ?? 22}px`,
+            "--body-size": `${p.bodySize ?? 17}px`,
+            "--line-height": p.lineHeight ?? 1.7,
+            "--letter-spacing": `${p.letterSpacing ?? 0}px`,
+          } as React.CSSProperties : undefined}
         >
           {/* =====================================================
               EMPTY
@@ -681,6 +717,13 @@ export default function GreetingClient({
                   )
                 )}
               </div>
+            </>
+          ) : p.type === "letter" ? (
+            <>
+              <div className="publicEmoji">{p.emoji}</div>
+              <div className="eyebrow">{p.subtitle}</div>
+              <h1 style={{fontSize:p.headingSize,color:p.headingColor}}>{p.heading}</h1>
+              <article className="publicLetter" style={{color:p.letterColor ?? "#2d2024",fontSize:p.letterSize ?? p.bodySize ?? 17,lineHeight:p.letterLineHeight ?? p.lineHeight ?? 1.8,textAlign:p.letterAlign ?? "left",fontFamily:getFont(p.bodyFont || p.font)}}><h2 style={{fontFamily:getFont(p.headingFont || p.font),color:p.headingColor}}>{p.heading}</h2><p>{p.text}</p></article>
             </>
           ) : p.type === "secret" ? (
             <>
