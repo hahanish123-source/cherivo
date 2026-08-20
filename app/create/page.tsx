@@ -770,34 +770,37 @@ export default function CreatePage() {
               />
             </label>
 
-            <div className="divider">🔤 Typography for this section</div>
+            <div className="divider">🔤 Section Typography</div>
+            <p className="helperText">
+              Customize fonts for this section. Unset fonts automatically inherit the Global Font.
+            </p>
             <div className="fontGrid">
               <label>
-                Section title font
+                Title Font
                 <select
                   value={current.titleFont ?? "sans"}
                   onChange={(e) => updateCurrent({ titleFont: e.target.value as FontName })}
                 >
-                  <option value="sans">DM Sans</option>
-                  <option value="serif">Playfair Display</option>
-                  <option value="script">Great Vibes</option>
-                  <option value="caveat">Caveat</option>
+                  <option value="sans">DM Sans (Sans-Serif)</option>
+                  <option value="serif">Playfair Display (Serif)</option>
+                  <option value="script">Great Vibes (Script)</option>
+                  <option value="caveat">Caveat (Handwritten)</option>
                 </select>
               </label>
               <label>
-                Subtitle font
+                Subtitle Font
                 <select
                   value={current.subtitleFont ?? "sans"}
                   onChange={(e) => updateCurrent({ subtitleFont: e.target.value as FontName })}
                 >
-                  <option value="sans">DM Sans</option>
-                  <option value="serif">Playfair Display</option>
-                  <option value="script">Great Vibes</option>
-                  <option value="caveat">Caveat</option>
+                  <option value="sans">DM Sans (Sans-Serif)</option>
+                  <option value="serif">Playfair Display (Serif)</option>
+                  <option value="script">Great Vibes (Script)</option>
+                  <option value="caveat">Caveat (Handwritten)</option>
                 </select>
               </label>
               <label>
-                Heading font
+                Heading Font
                 <select
                   value={current.headingFont ?? current.font ?? globalFont}
                   onChange={(e) =>
@@ -814,7 +817,7 @@ export default function CreatePage() {
                 </select>
               </label>
               <label>
-                Message font
+                Body Font
                 <select
                   value={current.bodyFont ?? "sans"}
                   onChange={(e) => updateCurrent({ bodyFont: e.target.value as FontName })}

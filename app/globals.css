@@ -1193,6 +1193,39 @@ button {
   }
 }
 
+.sceneInner {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  width: 100%;
+}
+
+.particleCanvas {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+
+.customBgContainer {
+  position: absolute !important;
+  inset: -10% !important;
+  width: 120% !important;
+  height: 120% !important;
+  overflow: hidden !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+
+.backgroundOverlayLayer {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+
 .previewEdit {
   position: absolute;
   right: 0;
@@ -1217,14 +1250,24 @@ button {
 }
 
 .editableDecor, .publicEmoji {
+  display: block;
+  margin: 0 auto 8px;
+  text-align: center;
   font-size: 48px;
-  margin-bottom: 8px;
   color: var(--emoji-color, var(--local, var(--accent)));
   filter: drop-shadow(0 0 20px color-mix(in srgb, var(--emoji-color, var(--local, var(--accent))) 45%, transparent));
   border: 0;
   background: transparent;
   cursor: pointer;
   transition: transform 0.25s ease;
+  width: fit-content;
+}
+
+.editableDecor[class*="emoji-anim-"],
+.publicEmoji[class*="emoji-anim-"] {
+  display: block !important;
+  margin-inline: auto !important;
+  text-align: center;
 }
 
 .editableDecor:hover {

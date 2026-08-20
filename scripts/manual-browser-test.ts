@@ -199,8 +199,9 @@ async function main() {
 
   console.log("✓ Connected to Chrome CDP:", versionData.Browser);
 
-  // Create a clean new tab at http://localhost:3000/create
-  const newTabRes = await fetch(`http://localhost:${debugPort}/json/new?http://localhost:3000/create`, { method: "PUT" });
+  // Create a clean new tab at http://localhost:PORT/create
+  const appPort = process.env.TEST_PORT || "3030";
+  const newTabRes = await fetch(`http://localhost:${debugPort}/json/new?http://localhost:${appPort}/create`, { method: "PUT" });
   const newTab = await newTabRes.json();
   const pageWsUrl = newTab.webSocketDebuggerUrl;
 
@@ -212,7 +213,7 @@ async function main() {
   const results: { test: number; name: string; status: "PASS" | "FAIL"; details: string }[] = [];
 
   try {
-    console.log("\n2. Waiting for http://localhost:3000/create to load...");
+    console.log(`\n2. Waiting for http://localhost:${appPort}/create to load...`);
     await waitForApp(client);
     await sleep(1500);
 

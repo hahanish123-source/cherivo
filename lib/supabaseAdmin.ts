@@ -1,16 +1,23 @@
 import { createClient } from "@supabase/supabase-js";
 
 export function isLocalDevelopmentFallbackEnabled() {
-  const hasSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
-  if (process.env.NODE_ENV === "production" && hasSupabase && process.env.CHERIVO_LOCAL_STORE !== "true") {
+  const url = process.env.SUPABASE_URL?.trim() || "";
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || "";
+  const hasValidSupabase = (url.startsWith("http://") || url.startsWith("https://")) && key.length > 20;
+  if (process.env.NODE_ENV === "production" && hasValidSupabase && process.env.CHERIVO_LOCAL_STORE !== "true") {
     return false;
   }
   return true;
 }
 
 export function getSupabaseRuntimeDiagnostics() {
+  const url = process.env.SUPABASE_URL?.trim() || "";
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || "";
+  const hasValidSupabase = (url.startsWith("http://") || url.startsWith("https://")) && key.length > 20;
+
   return {
     "SUPABASE_URL present": Boolean(process.env.SUPABASE_URL),
+    "SUPABASE_URL valid": url.startsWith("http://") || url.startsWith("https://"),
     "SUPABASE_SERVICE_ROLE_KEY present": Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
     NODE_ENV: process.env.NODE_ENV ?? "undefined",
     VERCEL_ENV: process.env.VERCEL_ENV ?? "undefined",
@@ -30,7 +37,7 @@ export function getSupabaseAdminConfig() {
   const url = process.env.SUPABASE_URL?.trim();
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
-  if (!url || !serviceRoleKey) {
+  if (!url || !serviceRoleKey || (!url.startsWith("http://") && !url.startsWith("https://"))) {
     const error = new Error(
       "Hanora is missing its production database configuration. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables, then redeploy."
     ) as Error & { code?: string };
@@ -67,7 +74,7 @@ export function supabaseAdmin() {
     }
 
     const wrapped = new Error(
-      "Supabase client initialization failed. Check the server environment and Supabase project configuration."
+      `Supabase client initialization failed: ${error instanceof Error ? error.message : String(error)}`
     ) as Error & { code?: string };
     wrapped.code = "supabase_client_init_failed";
     throw wrapped;

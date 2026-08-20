@@ -9,8 +9,8 @@ export async function POST(request: Request) {
     const file = formData.get("file");
     const kind = formData.get("kind");
 
-    if (!(file instanceof File) || (kind !== "audio" && kind !== "memory-video")) {
-      return NextResponse.json({ error: "A valid audio or memory video file is required." }, { status: 400 });
+    if (!(file instanceof File) || (kind !== "audio" && kind !== "memory-video" && kind !== "image")) {
+      return NextResponse.json({ error: "A valid media file (audio, video, or image) is required." }, { status: 400 });
     }
 
     if (kind === "memory-video" && file.size > 50_000_000) {
@@ -21,7 +21,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Audio is too large. Please choose an audio file under 20 MB." }, { status: 413 });
     }
 
-    const media = await uploadGreetingMedia(file, kind);
+    if (kind === "image" && file.size > 20_000_000) {
+      return NextResponse.json({ error: "Image is too large. Please choose an image under 20 MB." }, { status: 413 });
+    }
+
+    const media = await uploadGreetingMedia(file, kind as "audio" | "memory-video" | "image");
     const previewUrl = await getGreetingMediaUrl(media);
     return NextResponse.json({ ok: true, media, previewUrl });
   } catch (error) {

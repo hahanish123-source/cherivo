@@ -26,7 +26,7 @@ create index if not exists greetings_token_idx on public.greetings(token);
 -- Private greeting media is uploaded by the Next.js server with the service role
 -- and delivered to recipients through short-lived signed URLs.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('hanora-media', 'hanora-media', false, 20000000, array['audio/mpeg', 'video/mp4', 'video/webm', 'video/quicktime'])
+values ('hanora-media', 'hanora-media', false, 52428800, array['audio/mpeg', 'video/mp4', 'video/webm', 'video/quicktime', 'image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 on conflict (id) do update set
   public = excluded.public,
   file_size_limit = excluded.file_size_limit,
