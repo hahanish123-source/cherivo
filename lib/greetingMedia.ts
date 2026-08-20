@@ -175,6 +175,7 @@ async function resolveMedia(value: unknown): Promise<unknown> {
 export async function resolveGreetingMedia(project: Record<string, unknown>) {
   const resolved = { ...project };
   resolved.audioUrl = await resolveMedia(resolved.audioUrl);
+  resolved.customBg = (await resolveMedia(resolved.customBg)) as string | undefined;
 
   if (Array.isArray(resolved.blocks)) {
     resolved.blocks = await Promise.all(resolved.blocks.map(async (raw) => {
@@ -182,6 +183,7 @@ export async function resolveGreetingMedia(project: Record<string, unknown>) {
       const block = { ...(raw as Record<string, unknown>) };
       block.audioUrl = await resolveMedia(block.audioUrl);
       block.memoryVideo = await resolveMedia(block.memoryVideo);
+      block.customBg = (await resolveMedia(block.customBg)) as string | undefined;
       return block;
     }));
   }

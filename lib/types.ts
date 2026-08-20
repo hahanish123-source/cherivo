@@ -13,7 +13,18 @@ export type BlockType =
   | "gallery"
   | "custom";
 
-export type FontName = "sans" | "serif" | "script" | "caveat";
+export type FontName =
+  | "sans"
+  | "serif"
+  | "script"
+  | "caveat"
+  | "great-vibes"
+  | "dancing-script"
+  | "pacifico"
+  | "satisfy"
+  | "allura"
+  | "sacramento"
+  | string;
 
 export type ReasonItem = {
   id: string;
@@ -39,16 +50,20 @@ export type Block = {
   text: string;
   emoji: string;
   emojiAnimation?: string;
+  emojiSize?: number;
   font: FontName;
   titleFont: FontName;
   subtitleFont: FontName;
   headingFont: FontName;
   bodyFont: FontName;
+  letterFont?: FontName;
   accent: string;
   headingColor: string;
   subtitleColor: string;
   bodyColor: string;
   emojiColor: string;
+  titleSize?: number;
+  subtitleSize?: number;
   headingSize: number;
   bodySize: number;
   lineHeight: number;
@@ -57,6 +72,19 @@ export type Block = {
   cardColor: string;
   cardOpacity?: number;
   background?: string;
+  customBg?: string;
+  customBgName?: string;
+  customBgOpacity?: number;
+  customBgScale?: number;
+  customBgPositionX?: number;
+  customBgPositionY?: number;
+  customBgRotation?: number;
+  backgroundOverlay?: number;
+  backgroundBaseColor?: string;
+  bgColor1?: string;
+  bgColor2?: string;
+  bgColor3?: string;
+  bgColor4?: string;
   letterColor?: string;
   letterSize?: number;
   letterLineHeight?: number;

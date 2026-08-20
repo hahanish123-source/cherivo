@@ -60,8 +60,26 @@ export default function CreatePage() {
   const [addOpen, setAddOpen] = useState(false);
   const [selectedGalleryImage, setSelectedGalleryImage] = useState(0);
   const [previewDevice, setPreviewDevice] = useState<"mobile" | "desktop">("desktop");
-
   const bgFileInputRef = useRef<HTMLInputElement | null>(null);
+  const sectionBgFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const fontOptions = (
+    <>
+      <optgroup label="Standard Fonts">
+        <option value="sans">DM Sans (Sans-Serif)</option>
+        <option value="serif">Playfair Display (Serif)</option>
+      </optgroup>
+      <optgroup label="Cursive / Script">
+        <option value="great-vibes">Great Vibes</option>
+        <option value="dancing-script">Dancing Script</option>
+        <option value="caveat">Caveat</option>
+        <option value="pacifico">Pacifico</option>
+        <option value="satisfy">Satisfy</option>
+        <option value="allura">Allura</option>
+        <option value="sacramento">Sacramento</option>
+      </optgroup>
+    </>
+  );
 
   const visible = useMemo(() => blocks.filter((b) => b.visible), [blocks]);
   const current = normalizeBlock(blocks[selected] ?? defaultBlocks[0], 0, globalFont);
@@ -607,7 +625,7 @@ export default function CreatePage() {
       </header>
 
       <div className="creatorGrid">
-        <aside className="sidePanel">
+        <aside className="sidePanel storyPanel">
           <div className="sideTitle">
             <h2>Story flow</h2>
             <p>Drag or reorder your greeting scenes.</p>
@@ -770,64 +788,123 @@ export default function CreatePage() {
               />
             </label>
 
-            <div className="divider">🔤 Section Typography</div>
+            <div className="divider">🔤 Typography & Sizes</div>
             <p className="helperText">
-              Customize fonts for this section. Unset fonts automatically inherit the Global Font.
+              Customize fonts and individual font sizes for this section.
             </p>
-            <div className="fontGrid">
-              <label>
-                Title Font
-                <select
-                  value={current.titleFont ?? "sans"}
-                  onChange={(e) => updateCurrent({ titleFont: e.target.value as FontName })}
-                >
-                  <option value="sans">DM Sans (Sans-Serif)</option>
-                  <option value="serif">Playfair Display (Serif)</option>
-                  <option value="script">Great Vibes (Script)</option>
-                  <option value="caveat">Caveat (Handwritten)</option>
-                </select>
-              </label>
-              <label>
-                Subtitle Font
-                <select
-                  value={current.subtitleFont ?? "sans"}
-                  onChange={(e) => updateCurrent({ subtitleFont: e.target.value as FontName })}
-                >
-                  <option value="sans">DM Sans (Sans-Serif)</option>
-                  <option value="serif">Playfair Display (Serif)</option>
-                  <option value="script">Great Vibes (Script)</option>
-                  <option value="caveat">Caveat (Handwritten)</option>
-                </select>
-              </label>
-              <label>
-                Heading Font
-                <select
-                  value={current.headingFont ?? current.font ?? globalFont}
-                  onChange={(e) =>
-                    updateCurrent({
-                      headingFont: e.target.value as FontName,
-                      font: e.target.value as FontName
-                    })
-                  }
-                >
-                  <option value="serif">Playfair Display (Serif)</option>
-                  <option value="sans">DM Sans (Sans-Serif)</option>
-                  <option value="script">Great Vibes (Script)</option>
-                  <option value="caveat">Caveat (Handwritten)</option>
-                </select>
-              </label>
-              <label>
-                Body Font
-                <select
-                  value={current.bodyFont ?? "sans"}
-                  onChange={(e) => updateCurrent({ bodyFont: e.target.value as FontName })}
-                >
-                  <option value="sans">DM Sans (Sans-Serif)</option>
-                  <option value="serif">Playfair Display (Serif)</option>
-                  <option value="script">Great Vibes (Script)</option>
-                  <option value="caveat">Caveat (Handwritten)</option>
-                </select>
-              </label>
+
+            <div className="typographyControlGroup">
+              <div className="typoItem">
+                <div className="typoHeader">
+                  <span>Title</span>
+                  <span className="typoSizeVal">{current.titleSize ?? 12}px</span>
+                </div>
+                <div className="typoRow">
+                  <select
+                    value={current.titleFont ?? "sans"}
+                    onChange={(e) => updateCurrent({ titleFont: e.target.value as FontName })}
+                  >
+                    {fontOptions}
+                  </select>
+                  <input
+                    type="range"
+                    min="9"
+                    max="30"
+                    value={current.titleSize ?? 12}
+                    onChange={(e) => updateCurrent({ titleSize: Number(e.target.value) })}
+                    title="Title size"
+                  />
+                </div>
+              </div>
+
+              <div className="typoItem">
+                <div className="typoHeader">
+                  <span>Subtitle</span>
+                  <span className="typoSizeVal">{current.subtitleSize ?? 13}px</span>
+                </div>
+                <div className="typoRow">
+                  <select
+                    value={current.subtitleFont ?? "sans"}
+                    onChange={(e) => updateCurrent({ subtitleFont: e.target.value as FontName })}
+                  >
+                    {fontOptions}
+                  </select>
+                  <input
+                    type="range"
+                    min="10"
+                    max="36"
+                    value={current.subtitleSize ?? 13}
+                    onChange={(e) => updateCurrent({ subtitleSize: Number(e.target.value) })}
+                    title="Subtitle size"
+                  />
+                </div>
+              </div>
+
+              <div className="typoItem">
+                <div className="typoHeader">
+                  <span>Heading</span>
+                  <span className="typoSizeVal">{current.headingSize ?? 70}px</span>
+                </div>
+                <div className="typoRow">
+                  <select
+                    value={current.headingFont ?? current.font ?? globalFont}
+                    onChange={(e) =>
+                      updateCurrent({
+                        headingFont: e.target.value as FontName,
+                        font: e.target.value as FontName
+                      })
+                    }
+                  >
+                    {fontOptions}
+                  </select>
+                  <input
+                    type="range"
+                    min="24"
+                    max="110"
+                    value={current.headingSize ?? 70}
+                    onChange={(e) => updateCurrent({ headingSize: Number(e.target.value) })}
+                    title="Heading size"
+                  />
+                </div>
+              </div>
+
+              <div className="typoItem">
+                <div className="typoHeader">
+                  <span>Message</span>
+                  <span className="typoSizeVal">{current.bodySize ?? 17}px</span>
+                </div>
+                <div className="typoRow">
+                  <select
+                    value={current.bodyFont ?? "sans"}
+                    onChange={(e) => updateCurrent({ bodyFont: e.target.value as FontName })}
+                  >
+                    {fontOptions}
+                  </select>
+                  <input
+                    type="range"
+                    min="11"
+                    max="36"
+                    value={current.bodySize ?? 17}
+                    onChange={(e) => updateCurrent({ bodySize: Number(e.target.value) })}
+                    title="Message size"
+                  />
+                </div>
+              </div>
+
+              <div className="typoItem">
+                <div className="typoHeader">
+                  <span>Emoji / Icon Size</span>
+                  <span className="typoSizeVal">{current.emojiSize ?? 48}px</span>
+                </div>
+                <input
+                  type="range"
+                  min="20"
+                  max="120"
+                  value={current.emojiSize ?? 48}
+                  onChange={(e) => updateCurrent({ emojiSize: Number(e.target.value) })}
+                  title="Emoji size"
+                />
+              </div>
             </div>
 
             <div className="two">
@@ -855,20 +932,162 @@ export default function CreatePage() {
 
             {/* Section-specific Background if Different Mode is active */}
             {cardBackgroundMode === "different" && (
-              <div className="sectionBackgroundEditor">
-                <div className="divider">🎨 Section Background</div>
-                <p className="helperText">Choose a distinct background preset for this specific section.</p>
-                <select
-                  value={current.background ?? background}
-                  onChange={(e) => updateCurrent({ background: e.target.value })}
-                >
-                  <option value="aurora">🌌 Aurora</option>
-                  <option value="mesh">🫧 Liquid mesh</option>
-                  <option value="stars">✨ Starfield</option>
-                  <option value="petals">🌸 Floating petals</option>
-                  <option value="gradient">🎨 Gradient</option>
-                  <option value="minimal">◌ Minimal glow</option>
-                </select>
+              <div className="sectionBackgroundEditor" style={{ marginTop: "14px", padding: "14px", border: "1px solid var(--line)", borderRadius: "14px", background: "rgba(255,255,255,0.02)" }}>
+                <div className="divider" style={{ marginTop: 0 }}>🎨 Section Background</div>
+                <p className="helperText">Choose a distinct background preset or photo for this specific section.</p>
+
+                <label style={{ marginTop: "8px" }}>
+                  Background Preset
+                  <select
+                    value={current.background ?? background}
+                    onChange={(e) => updateCurrent({ background: e.target.value })}
+                  >
+                    <option value="aurora">🌌 Aurora</option>
+                    <option value="mesh">🫧 Liquid mesh</option>
+                    <option value="stars">✨ Starfield</option>
+                    <option value="petals">🌸 Floating petals</option>
+                    <option value="gradient">🎨 Gradient</option>
+                    <option value="minimal">◌ Minimal glow</option>
+                  </select>
+                </label>
+
+                <div style={{ marginTop: "12px" }}>
+                  <label style={{ fontSize: "12px", color: "var(--muted)", fontWeight: 600 }}>Section Background Photo</label>
+                  <input
+                    ref={sectionBgFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={(e) =>
+                      pickImage(
+                        e,
+                        (url) => updateCurrent({ customBg: url }),
+                        (name) => updateCurrent({ customBgName: name }),
+                        20_000_000
+                      )
+                    }
+                  />
+
+                  {!current.customBg ? (
+                    <button
+                      type="button"
+                      className="btn full small"
+                      style={{ marginTop: "6px" }}
+                      onClick={() => sectionBgFileInputRef.current?.click()}
+                    >
+                      📷 Choose background photo for this section
+                    </button>
+                  ) : (
+                    <div style={{ marginTop: "8px", padding: "10px", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "10px", background: "rgba(0,0,0,0.25)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                        <span style={{ fontSize: "11px", color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          🖼️ {current.customBgName || "section-bg.jpg"}
+                        </span>
+                        <div style={{ display: "flex", gap: "4px" }}>
+                          <button
+                            type="button"
+                            className="btn small"
+                            style={{ padding: "3px 8px", fontSize: "11px" }}
+                            onClick={() => sectionBgFileInputRef.current?.click()}
+                          >
+                            Replace
+                          </button>
+                          <button
+                            type="button"
+                            className="btn danger small"
+                            style={{ padding: "3px 8px", fontSize: "11px" }}
+                            onClick={() =>
+                              updateCurrent({
+                                customBg: "",
+                                customBgName: ""
+                              })
+                            }
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+
+                      <label>
+                        Zoom / Scale <strong>{current.customBgScale ?? 100}%</strong>
+                        <input
+                          type="range"
+                          min="100"
+                          max="250"
+                          value={current.customBgScale ?? 100}
+                          onChange={(e) => updateCurrent({ customBgScale: Number(e.target.value) })}
+                        />
+                      </label>
+                      <label>
+                        Horizontal position X <strong>{current.customBgPositionX ?? 50}%</strong>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={current.customBgPositionX ?? 50}
+                          onChange={(e) => updateCurrent({ customBgPositionX: Number(e.target.value) })}
+                        />
+                      </label>
+                      <label>
+                        Vertical position Y <strong>{current.customBgPositionY ?? 50}%</strong>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={current.customBgPositionY ?? 50}
+                          onChange={(e) => updateCurrent({ customBgPositionY: Number(e.target.value) })}
+                        />
+                      </label>
+                      <label>
+                        Rotation <strong>{current.customBgRotation ?? 0}°</strong>
+                        <input
+                          type="range"
+                          min="-180"
+                          max="180"
+                          value={current.customBgRotation ?? 0}
+                          onChange={(e) => updateCurrent({ customBgRotation: Number(e.target.value) })}
+                        />
+                      </label>
+                      <label>
+                        Photo opacity <strong>{current.customBgOpacity ?? 100}%</strong>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={current.customBgOpacity ?? 100}
+                          onChange={(e) => updateCurrent({ customBgOpacity: Number(e.target.value) })}
+                        />
+                      </label>
+                      <label>
+                        Background overlay <strong>{current.backgroundOverlay ?? 18}%</strong>
+                        <input
+                          type="range"
+                          min="0"
+                          max="60"
+                          value={current.backgroundOverlay ?? 18}
+                          onChange={(e) => updateCurrent({ backgroundOverlay: Number(e.target.value) })}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="btn small full"
+                        style={{ marginTop: "6px" }}
+                        onClick={() =>
+                          updateCurrent({
+                            customBgScale: 100,
+                            customBgPositionX: 50,
+                            customBgPositionY: 50,
+                            customBgRotation: 0,
+                            customBgOpacity: 100,
+                            backgroundOverlay: 18
+                          })
+                        }
+                      >
+                        Reset section background framing
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -1271,15 +1490,12 @@ export default function CreatePage() {
                   <label>
                     Letter title font
                     <select
-                      value={current.headingFont ?? "script"}
+                      value={current.headingFont ?? "great-vibes"}
                       onChange={(e) =>
                         updateCurrent({ headingFont: e.target.value as FontName })
                       }
                     >
-                      <option value="script">Great Vibes (Script)</option>
-                      <option value="serif">Playfair Display (Serif)</option>
-                      <option value="sans">DM Sans (Sans-Serif)</option>
-                      <option value="caveat">Caveat (Handwritten)</option>
+                      {fontOptions}
                     </select>
                   </label>
                   <label>
@@ -1290,10 +1506,7 @@ export default function CreatePage() {
                         updateCurrent({ bodyFont: e.target.value as FontName })
                       }
                     >
-                      <option value="serif">Playfair Display (Serif)</option>
-                      <option value="sans">DM Sans (Sans-Serif)</option>
-                      <option value="script">Great Vibes (Script)</option>
-                      <option value="caveat">Caveat (Handwritten)</option>
+                      {fontOptions}
                     </select>
                   </label>
                 </div>
@@ -1303,7 +1516,7 @@ export default function CreatePage() {
                     <input
                       type="range"
                       min="12"
-                      max="30"
+                      max="36"
                       value={current.letterSize ?? 17}
                       onChange={(e) => updateCurrent({ letterSize: Number(e.target.value) })}
                     />
@@ -1511,10 +1724,7 @@ export default function CreatePage() {
                 value={globalFont}
                 onChange={(e) => setGlobalFont(e.target.value as FontName)}
               >
-                <option value="serif">Playfair Display (Serif)</option>
-                <option value="sans">DM Sans (Sans-Serif)</option>
-                <option value="script">Great Vibes (Script)</option>
-                <option value="caveat">Caveat (Handwritten)</option>
+                {fontOptions}
               </select>
             </label>
             <label>

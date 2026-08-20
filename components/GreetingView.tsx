@@ -305,19 +305,34 @@ export default function GreetingView({
   };
 
   const themeColors = themes[project.theme || "dark"] ?? themes.dark;
-  const activeBg = (project.cardBackgroundMode === "different" && currentBlock?.background)
+  const isDifferentBg = project.cardBackgroundMode === "different";
+  const activeBg = (isDifferentBg && currentBlock?.background)
     ? currentBlock.background
     : (project.background || "aurora");
+
+  const activeCustomBg = isDifferentBg ? currentBlock?.customBg : project.customBg;
+  const activeCustomBgOpacity = isDifferentBg ? (currentBlock?.customBgOpacity ?? 100) : project.customBgOpacity;
+  const activeCustomBgScale = isDifferentBg ? (currentBlock?.customBgScale ?? 100) : project.customBgScale;
+  const activeCustomBgPositionX = isDifferentBg ? (currentBlock?.customBgPositionX ?? 50) : project.customBgPositionX;
+  const activeCustomBgPositionY = isDifferentBg ? (currentBlock?.customBgPositionY ?? 50) : project.customBgPositionY;
+  const activeCustomBgRotation = isDifferentBg ? (currentBlock?.customBgRotation ?? 0) : project.customBgRotation;
+  const activeBgOverlay = isDifferentBg ? (currentBlock?.backgroundOverlay ?? 18) : project.backgroundOverlay;
+
+  const activeBaseColor = (isDifferentBg && currentBlock?.backgroundBaseColor) ? currentBlock.backgroundBaseColor : (project.backgroundBaseColor || themeColors[0]);
+  const activeBg1 = (isDifferentBg && currentBlock?.bgColor1) ? currentBlock.bgColor1 : (project.bgColor1 || themeColors[1]);
+  const activeBg2 = (isDifferentBg && currentBlock?.bgColor2) ? currentBlock.bgColor2 : (project.bgColor2 || themeColors[2]);
+  const activeBg3 = (isDifferentBg && currentBlock?.bgColor3) ? currentBlock.bgColor3 : (project.bgColor3 || (project.theme === "light" ? "#e8f7ff" : "#38bdf8"));
+  const activeBg4 = (isDifferentBg && currentBlock?.bgColor4) ? currentBlock.bgColor4 : (project.bgColor4 || (project.theme === "light" ? "#fff0f5" : "#f59e0b"));
 
   const containerStyle: CSSProperties = {
     "--card-opacity": (project.globalCardOpacity ?? 14) / 100,
     "--card-opacity-pct": `${project.globalCardOpacity ?? 14}%`,
-    "--page-bg": project.backgroundBaseColor || themeColors[0],
-    "--bg1": project.bgColor1 || themeColors[1],
-    "--bg2": project.bgColor2 || themeColors[2],
-    "--bg3": project.bgColor3 || (project.theme === "light" ? "#e8f7ff" : "#38bdf8"),
-    "--bg4": project.bgColor4 || (project.theme === "light" ? "#fff0f5" : "#f59e0b"),
-    "--bg-overlay": (project.backgroundOverlay ?? 18) / 100,
+    "--page-bg": activeBaseColor,
+    "--bg1": activeBg1,
+    "--bg2": activeBg2,
+    "--bg3": activeBg3,
+    "--bg4": activeBg4,
+    "--bg-overlay": (activeBgOverlay ?? 18) / 100,
     "--accent": themeColors[1],
     "--accent2": themeColors[2],
     "--global-theme-text": project.globalTextColor || themeColors[3],
@@ -334,6 +349,7 @@ export default function GreetingView({
     const bodyFont = b.bodyFont || project.globalFont || "sans";
     const titleFont = b.titleFont || "sans";
     const subtitleFont = b.subtitleFont || "sans";
+    const letterFont = b.letterFont || "serif";
     const headingColor = b.headingColor || project.globalTextColor || themeColors[3];
     const bodyColor = b.bodyColor || project.globalTextColor || themeColors[3];
     const subtitleColor = b.subtitleColor || (project.theme === "light" ? "#be185d" : "#ff9fc2");
@@ -345,9 +361,13 @@ export default function GreetingView({
       "--subtitle-font": getFont(subtitleFont),
       "--heading-font": getFont(headingFont),
       "--body-font": getFont(bodyFont),
+      "--letter-font": getFont(letterFont),
       "--local": b.accent,
-      "--heading-size": `${b.headingSize}px`,
-      "--body-size": `${b.bodySize}px`,
+      "--title-size": `${b.titleSize ?? 12}px`,
+      "--subtitle-size": `${b.subtitleSize ?? 13}px`,
+      "--heading-size": `${b.headingSize ?? 70}px`,
+      "--body-size": `${b.bodySize ?? 17}px`,
+      "--emoji-size": `${b.emojiSize ?? 48}px`,
       "--line-height": b.lineHeight,
       "--letter-spacing": `${b.letterSpacing}px`,
       "--card-radius": `${b.radius}px`,
@@ -546,7 +566,7 @@ export default function GreetingView({
 
           {isScattered && images.length > 0 && (
             <p className="scatteredTapHint">
-              ✨ Tap a memory to see it disappear into dust ✨
+              Tap a memory to watch it disappear ✨
             </p>
           )}
 
@@ -639,7 +659,7 @@ export default function GreetingView({
               <button type="button" className="editableText eyebrow" onClick={() => onEditSection?.(b.id)}>
                 {b.subtitle}
               </button>
-              <button type="button" className="editableText heroTitle scriptTitle" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText heroTitle" onClick={() => onEditSection?.(b.id)}>
                 {b.heading}
               </button>
               <button type="button" className="letter editableLetter" onClick={() => onEditSection?.(b.id)}>
@@ -666,7 +686,7 @@ export default function GreetingView({
               <div className={`publicEmoji emoji-anim-${emojiAnim}`}>{b.emoji}</div>
               <div className="sectionKicker">{b.title}</div>
               <div className="eyebrow">{b.subtitle}</div>
-              <h1 className="heroTitle scriptTitle">{b.heading}</h1>
+              <h1 className="heroTitle">{b.heading}</h1>
               <article className="letter">
                 {b.image && (
                   <div className="letterPhotoMount">
@@ -924,24 +944,24 @@ export default function GreetingView({
       )}
 
       {/* Background Layers with Complete Cover & Rotation Support */}
-      {project.customBg && (
+      {activeCustomBg && (
         <>
           <div className="customBgContainer">
             <div
               className="customBgImage"
               style={{
-                backgroundImage: `url("${project.customBg}")`,
-                opacity: (project.customBgOpacity ?? 100) / 100,
-                transform: `scale(${Math.max(1, (project.customBgScale ?? 100) / 100)}) rotate(${project.customBgRotation ?? 0}deg)`,
-                backgroundPosition: `${project.customBgPositionX ?? 50}% ${
-                  project.customBgPositionY ?? 50
+                backgroundImage: `url("${activeCustomBg}")`,
+                opacity: (activeCustomBgOpacity ?? 100) / 100,
+                transform: `scale(${Math.max(1, (activeCustomBgScale ?? 100) / 100)}) rotate(${activeCustomBgRotation ?? 0}deg)`,
+                backgroundPosition: `${activeCustomBgPositionX ?? 50}% ${
+                  activeCustomBgPositionY ?? 50
                 }%`
               }}
             />
           </div>
           <div
             className="backgroundOverlayLayer"
-            style={{ opacity: (project.backgroundOverlay ?? 18) / 100 }}
+            style={{ opacity: (activeBgOverlay ?? 18) / 100 }}
           />
         </>
       )}

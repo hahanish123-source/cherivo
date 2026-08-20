@@ -211,11 +211,30 @@ export function uid(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
+export const validFonts: FontName[] = [
+  "sans",
+  "serif",
+  "script",
+  "caveat",
+  "great-vibes",
+  "dancing-script",
+  "pacifico",
+  "satisfy",
+  "allura",
+  "sacramento"
+];
+
 export function getFont(f?: string): string {
-  if (f === "script") return "var(--script)";
-  if (f === "serif") return "var(--serif)";
-  if (f === "caveat") return "var(--caveat)";
-  return "var(--sans)";
+  const fontKey = (f || "").toLowerCase().trim();
+  if (fontKey === "script" || fontKey === "great-vibes" || fontKey === "great vibes") return '"Great Vibes", cursive';
+  if (fontKey === "serif") return '"Playfair Display", Georgia, serif';
+  if (fontKey === "caveat") return '"Caveat", cursive';
+  if (fontKey === "dancing-script" || fontKey === "dancing script") return '"Dancing Script", cursive';
+  if (fontKey === "pacifico") return '"Pacifico", cursive';
+  if (fontKey === "satisfy") return '"Satisfy", cursive';
+  if (fontKey === "allura") return '"Allura", cursive';
+  if (fontKey === "sacramento") return '"Sacramento", cursive';
+  return '"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 }
 
 export function normalizeBlock(raw: any, fallbackIndex = 0, fallbackFont: FontName = "serif"): Block {
@@ -239,7 +258,6 @@ export function normalizeBlock(raw: any, fallbackIndex = 0, fallbackFont: FontNa
         : reasonDefaults)
     : undefined;
 
-  const validFonts: FontName[] = ["sans", "serif", "script", "caveat"];
   const safeFont = (fontVal: any, def: FontName): FontName =>
     validFonts.includes(fontVal) ? fontVal : def;
 
@@ -254,16 +272,20 @@ export function normalizeBlock(raw: any, fallbackIndex = 0, fallbackFont: FontNa
     text: raw.text !== undefined ? String(raw.text) : "Write something beautiful.",
     emoji: raw.emoji !== undefined ? String(raw.emoji) : "✨",
     emojiAnimation: typeof raw.emojiAnimation === "string" ? raw.emojiAnimation : undefined,
+    emojiSize: typeof raw.emojiSize === "number" ? raw.emojiSize : Number(raw.emojiSize ?? 48),
     font: defaultFont,
     titleFont: safeFont(raw.titleFont, "sans"),
     subtitleFont: safeFont(raw.subtitleFont, "sans"),
     headingFont: raw.headingFont ? safeFont(raw.headingFont, defaultFont) : defaultFont,
     bodyFont: raw.bodyFont ? safeFont(raw.bodyFont, "sans") : "sans",
+    letterFont: safeFont(raw.letterFont, "serif"),
     accent: raw.accent ?? "#ff4f8b",
     headingColor: raw.headingColor !== undefined ? String(raw.headingColor) : "",
     subtitleColor: raw.subtitleColor !== undefined ? String(raw.subtitleColor) : "",
     bodyColor: raw.bodyColor !== undefined ? String(raw.bodyColor) : "",
     emojiColor: raw.emojiColor !== undefined ? String(raw.emojiColor) : "",
+    titleSize: typeof raw.titleSize === "number" ? raw.titleSize : Number(raw.titleSize ?? 12),
+    subtitleSize: typeof raw.subtitleSize === "number" ? raw.subtitleSize : Number(raw.subtitleSize ?? 13),
     headingSize: typeof raw.headingSize === "number" ? raw.headingSize : Number(raw.headingSize ?? 70),
     bodySize: typeof raw.bodySize === "number" ? raw.bodySize : Number(raw.bodySize ?? 17),
     lineHeight: typeof raw.lineHeight === "number" ? raw.lineHeight : Number(raw.lineHeight ?? 1.75),
@@ -272,6 +294,19 @@ export function normalizeBlock(raw: any, fallbackIndex = 0, fallbackFont: FontNa
     cardColor: raw.cardColor ?? "#ffffff",
     cardOpacity: typeof raw.cardOpacity === "number" ? raw.cardOpacity : undefined,
     background: typeof raw.background === "string" ? raw.background : undefined,
+    customBg: typeof raw.customBg === "string" ? raw.customBg : undefined,
+    customBgName: typeof raw.customBgName === "string" ? raw.customBgName : undefined,
+    customBgOpacity: typeof raw.customBgOpacity === "number" ? raw.customBgOpacity : undefined,
+    customBgScale: typeof raw.customBgScale === "number" ? raw.customBgScale : undefined,
+    customBgPositionX: typeof raw.customBgPositionX === "number" ? raw.customBgPositionX : undefined,
+    customBgPositionY: typeof raw.customBgPositionY === "number" ? raw.customBgPositionY : undefined,
+    customBgRotation: typeof raw.customBgRotation === "number" ? raw.customBgRotation : undefined,
+    backgroundOverlay: typeof raw.backgroundOverlay === "number" ? raw.backgroundOverlay : undefined,
+    backgroundBaseColor: typeof raw.backgroundBaseColor === "string" ? raw.backgroundBaseColor : undefined,
+    bgColor1: typeof raw.bgColor1 === "string" ? raw.bgColor1 : undefined,
+    bgColor2: typeof raw.bgColor2 === "string" ? raw.bgColor2 : undefined,
+    bgColor3: typeof raw.bgColor3 === "string" ? raw.bgColor3 : undefined,
+    bgColor4: typeof raw.bgColor4 === "string" ? raw.bgColor4 : undefined,
     letterColor: raw.letterColor ?? "#2d2024",
     letterSize: typeof raw.letterSize === "number" ? raw.letterSize : Number(raw.letterSize ?? 17),
     letterLineHeight: typeof raw.letterLineHeight === "number" ? raw.letterLineHeight : Number(raw.letterLineHeight ?? 1.8),
@@ -320,7 +355,6 @@ export function normalizeProject(raw: any): GreetingProject {
     };
   }
 
-  const validFonts: FontName[] = ["sans", "serif", "script", "caveat"];
   const globalFont: FontName = validFonts.includes(raw.globalFont) ? raw.globalFont : "serif";
 
   const rawBlocks = Array.isArray(raw.blocks) && raw.blocks.length > 0 ? raw.blocks : defaultBlocks;
