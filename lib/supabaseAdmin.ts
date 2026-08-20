@@ -1,8 +1,11 @@
-import "server-only";
 import { createClient } from "@supabase/supabase-js";
 
 export function isLocalDevelopmentFallbackEnabled() {
-  return process.env.NODE_ENV !== "production" && process.env.CHERIVO_LOCAL_STORE !== "false";
+  const hasSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (process.env.NODE_ENV === "production" && hasSupabase && process.env.CHERIVO_LOCAL_STORE !== "true") {
+    return false;
+  }
+  return true;
 }
 
 export function getSupabaseRuntimeDiagnostics() {

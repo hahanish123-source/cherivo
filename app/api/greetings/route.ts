@@ -1,6 +1,6 @@
-
 import { NextResponse } from "next/server";
 import { createGreeting } from "@/lib/greetingStore";
+import { normalizeProject } from "@/lib/greetingConfig";
 import {
   getSupabaseRuntimeDiagnostics,
   isMissingSupabaseConfigError,
@@ -74,17 +74,18 @@ export async function POST(request: Request) {
 
     validateProjectMedia(project as Record<string, unknown>);
 
-    const serialized = JSON.stringify(project);
+    const normalizedProject = normalizeProject(project);
+    const serialized = JSON.stringify(normalizedProject);
     const bytes = Buffer.byteLength(serialized, "utf8");
-    const maxBytes = process.env.NODE_ENV !== "production" ? 30_000_000 : 3_800_000;
+    const maxBytes = 80_000_000;
     if (bytes > maxBytes) {
       return NextResponse.json(
-        { error: "This greeting is too large to publish. Reduce photo/audio sizes or remove unused media." },
+        { error: "This greeting is too large to publish (exceeds 80 MB). Reduce photo/video/audio sizes or remove unused media." },
         { status: 413 }
       );
     }
 
-    const { token } = await createGreeting(title.slice(0, 120), project as Record<string, unknown>);
+    const { token } = await createGreeting(title.slice(0, 120), normalizedProject as unknown as Record<string, unknown>);
     const url = `${getBaseUrl(request)}/g/${token}`;
 
     return NextResponse.json({

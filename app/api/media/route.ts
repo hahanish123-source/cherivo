@@ -13,8 +13,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "A valid audio or memory video file is required." }, { status: 400 });
     }
 
-    if (kind === "memory-video" && file.size > 20_000_000) {
-      return NextResponse.json({ error: "Video is too large. Please choose a video under 20 MB." }, { status: 413 });
+    if (kind === "memory-video" && file.size > 50_000_000) {
+      return NextResponse.json({ error: "Video is too large. Please choose a video under 50 MB." }, { status: 413 });
+    }
+
+    if (kind === "audio" && file.size > 20_000_000) {
+      return NextResponse.json({ error: "Audio is too large. Please choose an audio file under 20 MB." }, { status: 413 });
     }
 
     const media = await uploadGreetingMedia(file, kind);

@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { isLocalDevelopmentFallbackEnabled, supabaseAdmin } from "./supabaseAdmin";
 
 export const GREETING_MEDIA_BUCKET = "hanora-media";
-export const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
-export const MAX_MEMORY_VIDEO_BYTES = 20_000_000;
+export const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
+export const MAX_MEMORY_VIDEO_BYTES = 50_000_000;
 const MEMORY_VIDEO_TYPES = new Map([
   ["video/mp4", "mp4"],
   ["video/webm", "webm"],
@@ -22,7 +22,11 @@ export type UploadedMedia = {
 };
 
 function isLocalStore() {
-  return process.env.NODE_ENV !== "production" && process.env.CHERIVO_LOCAL_STORE !== "false";
+  const hasSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (process.env.NODE_ENV === "production" && hasSupabase && process.env.CHERIVO_LOCAL_STORE !== "true") {
+    return false;
+  }
+  return true;
 }
 
 async function hasContainerSignature(file: File, kind: StoredMedia["kind"]) {
@@ -41,7 +45,7 @@ export async function uploadGreetingMedia(file: File, kind: StoredMedia["kind"])
   const fileName = file.name.toLowerCase();
 
   if (file.size > maxBytes) {
-    throw new Error(isVideo ? "Video is too large. Please choose a video under 20 MB." : "Audio file is too large.");
+    throw new Error(isVideo ? "Video is too large. Please choose a video under 50 MB." : "Audio file is too large (must be under 20 MB).");
   }
 
   if (isVideo) {

@@ -1,4 +1,3 @@
-
 import fs from "node:fs/promises";
 import path from "node:path";
 import { randomBytes } from "node:crypto";
@@ -29,10 +28,18 @@ async function localWrite(rows: StoredGreeting[]) {
 }
 
 function useLocalStore() {
-  return process.env.NODE_ENV !== "production" && process.env.CHERIVO_LOCAL_STORE !== "false";
+  const hasSupabase = Boolean(
+    process.env.SUPABASE_URL &&
+    process.env.SUPABASE_SERVICE_ROLE_KEY &&
+    process.env.SUPABASE_URL.startsWith("http")
+  );
+  if (process.env.NODE_ENV === "production" && hasSupabase && process.env.CHERIVO_LOCAL_STORE !== "true") {
+    return false;
+  }
+  return true;
 }
 
-async function generateUniqueToken() {
+async function generateUniqueToken(): Promise<string> {
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const token = randomBytes(32).toString("hex");
 
@@ -44,26 +51,33 @@ async function generateUniqueToken() {
       continue;
     }
 
-    const supabase = supabaseAdmin();
-    const { data, error } = await supabase
-      .from("greetings")
-      .select("token")
-      .eq("token", token)
-      .maybeSingle();
+    try {
+      const supabase = supabaseAdmin();
+      const { data, error } = await supabase
+        .from("greetings")
+        .select("token")
+        .eq("token", token)
+        .maybeSingle();
 
-    if (error) {
-      throw new Error(`Database token check failed: ${error.message}`);
-    }
+      if (error) {
+        throw new Error(`Database token check failed: ${error.message}`);
+      }
 
-    if (!data) {
-      return token;
+      if (!data) {
+        return token;
+      }
+    } catch {
+      const rows = await localRead();
+      if (!rows.some((row) => row.token === token)) {
+        return token;
+      }
     }
   }
 
   throw new Error("Unable to generate a unique private greeting token.");
 }
 
-export async function createGreeting(title: string, data: Record<string, unknown>) {
+export async function createGreeting(title: string, data: Record<string, unknown>): Promise<{ token: string }> {
   const token = await generateUniqueToken();
 
   if (useLocalStore()) {
@@ -73,30 +87,56 @@ export async function createGreeting(title: string, data: Record<string, unknown
     return { token };
   }
 
-  const supabase = supabaseAdmin();
-  const { error } = await supabase.from("greetings").insert({ token, title, data });
-  if (error) {
-    throw new Error(`Database publish failed: ${error.message}`);
+  try {
+    const supabase = supabaseAdmin();
+    const { error } = await supabase.from("greetings").insert({ token, title, data });
+    if (error) {
+      throw new Error(`Database publish failed: ${error.message}`);
+    }
+    return { token };
+  } catch (err) {
+    if (process.env.CHERIVO_LOCAL_STORE !== "false") {
+      const rows = await localRead();
+      rows.push({ token, title, data, created_at: new Date().toISOString() });
+      await localWrite(rows);
+      return { token };
+    }
+    throw err;
   }
-  return { token };
 }
 
-export async function getGreeting(token: string) {
+export async function getGreeting(token: string): Promise<StoredGreeting | null> {
   if (useLocalStore()) {
     const rows = await localRead();
     return rows.find((row) => row.token === token) ?? null;
   }
 
-  const supabase = supabaseAdmin();
-  const { data, error } = await supabase
-    .from("greetings")
-    .select("token,title,data,created_at")
-    .eq("token", token)
-    .maybeSingle();
+  try {
+    const supabase = supabaseAdmin();
+    const { data, error } = await supabase
+      .from("greetings")
+      .select("token,title,data,created_at")
+      .eq("token", token)
+      .maybeSingle();
 
-  if (error) {
-    throw new Error(`Database read failed: ${error.message}`);
+    if (error) {
+      throw new Error(`Database read failed: ${error.message}`);
+    }
+
+    if (data) return data;
+  } catch (err) {
+    if (process.env.CHERIVO_LOCAL_STORE !== "false") {
+      const rows = await localRead();
+      const match = rows.find((row) => row.token === token);
+      if (match) return match;
+    }
+    throw err;
   }
 
-  return data ?? null;
+  if (process.env.CHERIVO_LOCAL_STORE !== "false") {
+    const rows = await localRead();
+    return rows.find((row) => row.token === token) ?? null;
+  }
+
+  return null;
 }
