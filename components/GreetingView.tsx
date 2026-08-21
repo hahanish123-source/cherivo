@@ -330,12 +330,14 @@ export default function GreetingView({
     : (project.background || "aurora");
 
   const rawCustomBg = isDifferentBg ? currentBlock?.customBg : project.customBg;
-  const activeCustomBg =
-    typeof rawCustomBg === "string"
-      ? rawCustomBg
-      : rawCustomBg && typeof rawCustomBg === "object"
-      ? customBgPreviews[(rawCustomBg as any).path] || ""
-      : "";
+  let activeCustomBg = "";
+  if (typeof rawCustomBg === "string") {
+    activeCustomBg = customBgPreviews[rawCustomBg] || rawCustomBg;
+  } else if (rawCustomBg && typeof rawCustomBg === "object") {
+    const p = (rawCustomBg as any).path;
+    const u = (rawCustomBg as any).url;
+    activeCustomBg = (p && customBgPreviews[p]) || u || (typeof p === "string" && (p.startsWith("http") || p.startsWith("data:")) ? p : "");
+  }
   const activeCustomBgOpacity = isDifferentBg ? (currentBlock?.customBgOpacity ?? 100) : project.customBgOpacity;
   const activeCustomBgScale = isDifferentBg ? (currentBlock?.customBgScale ?? 100) : project.customBgScale;
   const activeCustomBgPositionX = isDifferentBg ? (currentBlock?.customBgPositionX ?? 50) : project.customBgPositionX;

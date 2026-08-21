@@ -148,30 +148,40 @@ export async function uploadGreetingMedia(file: File, kind: StoredMedia["kind"])
 }
 
 export async function getGreetingMediaUrl(value: unknown): Promise<string> {
-  if (typeof value === "string" && value.startsWith("data:")) return value;
+  if (typeof value === "string") {
+    if (value.startsWith("data:") || value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) {
+      return value;
+    }
+    return value;
+  }
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("Media URL generation failed: invalid media reference");
+    return "";
   }
 
   const media = value as Partial<StoredMedia>;
   if (media.storage !== "supabase" || typeof media.path !== "string") {
-    throw new Error("Media URL generation failed: invalid media reference");
+    return "";
   }
 
   try {
     const { data } = supabaseAdmin().storage.from(GREETING_MEDIA_BUCKET).getPublicUrl(media.path);
-    if (!data?.publicUrl) throw new Error("Media URL generation failed: missing public URL");
+    if (!data?.publicUrl) return "";
     return data.publicUrl;
   } catch (err) {
     if (isLocalDevelopmentFallbackEnabled()) {
       return "";
     }
-    throw err;
+    return "";
   }
 }
 
 async function resolveMedia(value: unknown): Promise<unknown> {
-  if (typeof value === "string") return value.startsWith("data:") ? value : "";
+  if (typeof value === "string") {
+    if (value.startsWith("data:") || value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) {
+      return value;
+    }
+    return value;
+  }
   if (!value || typeof value !== "object" || Array.isArray(value)) return value;
   const media = value as Partial<StoredMedia>;
   if (media.storage !== "supabase" || typeof media.path !== "string") return value;
