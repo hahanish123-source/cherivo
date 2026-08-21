@@ -25,6 +25,11 @@ import {
 } from "@/lib/greetingConfig";
 import GreetingView from "@/components/GreetingView";
 import {
+  signInWithGoogle,
+  signOut,
+  getSupabaseClient
+} from "@/lib/supabaseClient";
+import {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
@@ -105,8 +110,9 @@ export default function CreatePage() {
   const [reminderDate, setReminderDate] = useState("");
   const [reminderModalOpen, setReminderModalOpen] = useState(false);
 
-  // Studio tabs: "card" | "theme"
-  const [activeTab, setActiveTab] = useState<"card" | "theme">("card");
+  // Studio tabs: "card" | "theme" | "story"
+  const [activeTab, setActiveTab] = useState<"card" | "theme" | "story">("card");
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Preview & Viewport
   const [previewOnly, setPreviewOnly] = useState(false);
@@ -263,15 +269,34 @@ export default function CreatePage() {
     pendingMediaSizes
   ]);
 
-  // Load project on mount
+  // Load project on mount & Supabase user session
   useEffect(() => {
-    const saved = localStorage.getItem("hanora-project") ?? localStorage.getItem("cherivo-project");
-    const storedUser = localStorage.getItem("hanora-user");
-    if (storedUser) {
-      try {
-        setUserProfile(JSON.parse(storedUser));
-      } catch {}
+    const client = getSupabaseClient();
+    if (client) {
+      client.auth.getUser().then(({ data }) => {
+        if (data?.user) {
+          setUserProfile({
+            id: data.user.id,
+            email: data.user.email || "",
+            name: data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "Creator"
+          });
+        }
+      });
+
+      const { data: authListener } = client.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) {
+          setUserProfile({
+            id: session.user.id,
+            email: session.user.email || "",
+            name: session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "Creator"
+          });
+        } else {
+          setUserProfile(null);
+        }
+      });
     }
+
+    const saved = localStorage.getItem("hanora-project") ?? localStorage.getItem("cherivo-project");
 
     if (!saved) return;
     try {
@@ -503,6 +528,7 @@ export default function CreatePage() {
     localStorage.removeItem("cherivo-project");
 
     try {
+      const uId = userProfile?.id || "anonymous";
       await fetch("/api/drafts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -511,7 +537,8 @@ export default function CreatePage() {
           project: data,
           targetEventDate,
           reminderDate,
-          userId: userProfile?.id || "guest"
+          targetEventTitle,
+          userId: uId
         })
       });
     } catch {}
@@ -521,7 +548,8 @@ export default function CreatePage() {
 
   async function loadDrafts() {
     try {
-      const res = await fetch(`/api/drafts?userId=${encodeURIComponent(userProfile?.id || "guest")}`);
+      const uId = userProfile?.id || "anonymous";
+      const res = await fetch(`/api/drafts?userId=${encodeURIComponent(uId)}`);
       if (res.ok) {
         const data = await res.json();
         setSavedDraftsList(data.drafts || []);
@@ -531,19 +559,35 @@ export default function CreatePage() {
   }
 
   function restoreDraft(draft: GreetingDraft) {
+    if (!draft.project) return;
     const proj = normalizeProject(draft.project);
     if (proj.blocks) setBlocks(proj.blocks);
-    if (proj.theme) setTheme(proj.theme);
+    if (proj.theme && themes[proj.theme]) setTheme(proj.theme);
     if (proj.background) setBackground(proj.background);
     if (proj.cardBackgroundMode) setCardBackgroundMode(proj.cardBackgroundMode);
+    if (proj.emojiAnimation) setEmojiAnimation(proj.emojiAnimation);
     if (proj.globalFont) setGlobalFont(proj.globalFont);
     if (proj.globalTextColor) setGlobalTextColor(proj.globalTextColor);
+    if (proj.globalCardOpacity !== undefined) setGlobalCardOpacity(proj.globalCardOpacity);
+    if (proj.globalRadius !== undefined) setGlobalRadius(proj.globalRadius);
+    if (proj.globalSpacing !== undefined) setGlobalSpacing(proj.globalSpacing);
+    if (proj.globalMotion) setGlobalMotion(proj.globalMotion);
+    if (proj.audioName) setAudioName(proj.audioName);
     if (proj.audioUrl) setAudioUrl(proj.audioUrl);
     if (proj.customBg) setCustomBg(proj.customBg);
+    if (proj.customBgName) setCustomBgName(proj.customBgName);
+    if (proj.customBgOpacity !== undefined) setCustomBgOpacity(proj.customBgOpacity);
+    if (proj.customBgScale !== undefined) setCustomBgScale(proj.customBgScale);
+    if (proj.customBgPositionX !== undefined) setCustomBgPositionX(proj.customBgPositionX);
+    if (proj.customBgPositionY !== undefined) setCustomBgPositionY(proj.customBgPositionY);
+    if (proj.customBgRotation !== undefined) setCustomBgRotation(proj.customBgRotation);
     if (proj.targetEventTitle) setTargetEventTitle(proj.targetEventTitle);
     if (proj.targetEventDate) setTargetEventDate(proj.targetEventDate);
     if (proj.reminderDate) setReminderDate(proj.reminderDate);
-    setPublishTitle(draft.title || "A Hanora moment");
+    if (draft.title) setPublishTitle(draft.title);
+    if (draft.targetEventTitle) setTargetEventTitle(draft.targetEventTitle);
+    if (draft.targetEventDate) setTargetEventDate(draft.targetEventDate);
+    if (draft.reminderDate) setReminderDate(draft.reminderDate);
     resolveMediaOnMount(proj);
     setDraftsOpen(false);
     notify("Draft loaded ✨");
@@ -552,7 +596,8 @@ export default function CreatePage() {
   async function deleteDraftRecord(draftId: string) {
     if (!window.confirm("Delete this draft and remove its media from cloud storage?")) return;
     try {
-      const res = await fetch(`/api/drafts?id=${encodeURIComponent(draftId)}`, { method: "DELETE" });
+      const uId = userProfile?.id || "anonymous";
+      const res = await fetch(`/api/drafts?id=${encodeURIComponent(draftId)}&userId=${encodeURIComponent(uId)}`, { method: "DELETE" });
       if (res.ok) {
         setSavedDraftsList((prev) => prev.filter((d) => d.id !== draftId));
         notify("Draft and storage purged 🗑️");
@@ -1282,14 +1327,15 @@ export default function CreatePage() {
         </div>
 
         {/* Right Column: Customization Studio (Tabs: Card Inspector vs Design & Theme) */}
+        {/* Right Column: Customization Studio (3 Primary Categories: Design, Story, Edit) */}
         <aside className="sidePanel editor">
-          {/* Studio Tab Switcher */}
+          {/* Studio Tab Switcher with 3 Primary Categories */}
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              gridTemplateColumns: "1fr 1fr 1fr",
               gap: "4px",
-              padding: "8px",
+              padding: "6px",
               background: "rgba(0,0,0,0.4)",
               borderRadius: "12px",
               marginBottom: "14px"
@@ -1297,21 +1343,131 @@ export default function CreatePage() {
           >
             <button
               type="button"
-              className={`btn small ${activeTab === "card" ? "primary" : ""}`}
-              onClick={() => setActiveTab("card")}
-              style={{ justifyContent: "center" }}
+              className={`btn small ${activeTab === "theme" ? "primary" : ""}`}
+              onClick={() => setActiveTab("theme")}
+              style={{ justifyContent: "center", fontSize: "11px", padding: "6px 2px" }}
             >
-              <Pencil size={13} /> Edit Card ({selected + 1})
+              <Sparkles size={13} /> Design
             </button>
             <button
               type="button"
-              className={`btn small ${activeTab === "theme" ? "primary" : ""}`}
-              onClick={() => setActiveTab("theme")}
-              style={{ justifyContent: "center" }}
+              className={`btn small ${activeTab === "story" ? "primary" : ""}`}
+              onClick={() => setActiveTab("story")}
+              style={{ justifyContent: "center", fontSize: "11px", padding: "6px 2px" }}
             >
-              <Sparkles size={13} /> Design & Theme
+              <Copy size={13} /> Story ({blocks.length})
+            </button>
+            <button
+              type="button"
+              className={`btn small ${activeTab === "card" ? "primary" : ""}`}
+              onClick={() => setActiveTab("card")}
+              style={{ justifyContent: "center", fontSize: "11px", padding: "6px 2px" }}
+            >
+              <Pencil size={13} /> Edit ({selected + 1})
             </button>
           </div>
+
+          {/* ================================================================
+              TAB 3: STORY FLOW CARDS
+              ================================================================ */}
+          {activeTab === "story" && (
+            <div>
+              <div className="editorHead">
+                <div>
+                  <h2 style={{ fontSize: "16px", margin: 0 }}>Story Flow Deck</h2>
+                  <small style={{ color: "var(--accent)" }}>{blocks.length} cards in greeting sequence</small>
+                </div>
+                <button
+                  type="button"
+                  className="btn small primary"
+                  onClick={() => setAddOpen(true)}
+                >
+                  <Plus size={12} /> Add Card
+                </button>
+              </div>
+              <div className="storyList" style={{ marginTop: "12px" }}>
+                {blocks.map((b, i) => (
+                  <div
+                    className={`storyItem ${i === selected ? "selected" : ""}`}
+                    key={b.id}
+                    onClick={() => {
+                      selectBlock(i);
+                      setActiveTab("card");
+                    }}
+                  >
+                    <button
+                      type="button"
+                      title="Move up"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        moveBlock(i, i - 1);
+                      }}
+                      disabled={i === 0}
+                    >
+                      <ArrowUp size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      title="Move down"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        moveBlock(i, i + 1);
+                      }}
+                      disabled={i === blocks.length - 1}
+                    >
+                      <ArrowDown size={13} />
+                    </button>
+
+                    <div className="storyMain">
+                      <b>{b.emoji ? `${b.emoji} ` : ""}{b.title}</b>
+                      <small>{b.type}</small>
+                    </div>
+
+                    <button
+                      type="button"
+                      title="Duplicate card"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        duplicateBlock(i);
+                      }}
+                    >
+                      <Copy size={12} />
+                    </button>
+
+                    <button
+                      type="button"
+                      title={b.visible ? "Hide scene" : "Show scene"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleVisible(i);
+                      }}
+                    >
+                      {b.visible ? <Eye size={13} /> : <EyeOff size={13} />}
+                    </button>
+
+                    <button
+                      type="button"
+                      title="Remove scene"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeBlock(i);
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="addAnything"
+                style={{ marginTop: "14px" }}
+                onClick={() => setAddOpen(true)}
+              >
+                <Plus size={15} /> Add new card template
+              </button>
+            </div>
+          )}
 
           {/* ================================================================
               TAB 1: CARD INSPECTOR
@@ -1745,11 +1901,22 @@ export default function CreatePage() {
                           }}
                         />
                       </label>
+                      <label>
+                        Photo Opacity <strong>{current.imageOpacity ?? 100}%</strong>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={current.imageOpacity ?? 100}
+                          onChange={(e) => updateCurrent({ imageOpacity: Number(e.target.value) })}
+                        />
+                      </label>
                       <button
                         type="button"
                         className="btn small full"
                         onClick={() => {
                           updateCurrent({
+                            imageOpacity: 100,
                             imageAdjustments: {
                               ...(current.imageAdjustments ?? {}),
                               hero: { scale: 100, x: 50, y: 50 },
@@ -2664,6 +2831,170 @@ export default function CreatePage() {
         </aside>
       </div>
 
+      {/* Mobile Creative Studio Bottom Bar (3 Primary Tools) */}
+      <nav className="mobileStudioBar">
+        <button
+          type="button"
+          className={`mobileStudioToolBtn ${activeTab === "theme" && mobileDrawerOpen ? "active" : ""}`}
+          onClick={() => {
+            setActiveTab("theme");
+            setMobileDrawerOpen(true);
+          }}
+        >
+          <Sparkles size={18} />
+          <span>Design & Theme</span>
+        </button>
+        <button
+          type="button"
+          className={`mobileStudioToolBtn ${activeTab === "story" && mobileDrawerOpen ? "active" : ""}`}
+          onClick={() => {
+            setActiveTab("story");
+            setMobileDrawerOpen(true);
+          }}
+        >
+          <Copy size={18} />
+          <span>Story Cards</span>
+        </button>
+        <button
+          type="button"
+          className={`mobileStudioToolBtn ${activeTab === "card" && mobileDrawerOpen ? "active" : ""}`}
+          onClick={() => {
+            setActiveTab("card");
+            setMobileDrawerOpen(true);
+          }}
+        >
+          <Pencil size={18} />
+          <span>Edit Card ({selected + 1})</span>
+        </button>
+      </nav>
+
+      {/* Mobile Contextual Drawer */}
+      {mobileDrawerOpen && (
+        <div className="mobileStudioDrawer">
+          <div className="mobileStudioDrawerHead">
+            <h3 style={{ margin: 0, fontSize: "15px", color: "#fff", display: "flex", alignItems: "center", gap: "6px" }}>
+              {activeTab === "theme" && <><Sparkles size={16} /> Design & Theme</>}
+              {activeTab === "story" && <><Copy size={16} /> Story Cards ({blocks.length})</>}
+              {activeTab === "card" && <><Pencil size={16} /> Edit Section: {current.title}</>}
+            </h3>
+            <button
+              type="button"
+              className="btn small"
+              onClick={() => setMobileDrawerOpen(false)}
+            >
+              Done / Close
+            </button>
+          </div>
+          {activeTab === "story" && (
+            <div className="storyList">
+              {blocks.map((b, i) => (
+                <div
+                  className={`storyItem ${i === selected ? "selected" : ""}`}
+                  key={b.id}
+                  onClick={() => {
+                    selectBlock(i);
+                    setActiveTab("card");
+                  }}
+                >
+                  <div className="storyMain">
+                    <b>{b.emoji ? `${b.emoji} ` : ""}{b.title}</b>
+                    <small>{b.type}</small>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      duplicateBlock(i);
+                    }}
+                  >
+                    <Copy size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleVisible(i);
+                    }}
+                  >
+                    {b.visible ? <Eye size={13} /> : <EyeOff size={13} />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeBlock(i);
+                    }}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="addAnything"
+                style={{ marginTop: "10px" }}
+                onClick={() => {
+                  setMobileDrawerOpen(false);
+                  setAddOpen(true);
+                }}
+              >
+                <Plus size={15} /> Add Section
+              </button>
+            </div>
+          )}
+          {activeTab === "card" && (
+            <div>
+              {/* Quick card select row */}
+              <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "8px", marginBottom: "12px" }}>
+                {blocks.map((b, i) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    className={`btn small ${i === selected ? "primary" : "ghost"}`}
+                    style={{ whiteSpace: "nowrap", flexShrink: 0 }}
+                    onClick={() => selectBlock(i)}
+                  >
+                    {b.emoji} {i + 1}. {b.title}
+                  </button>
+                ))}
+              </div>
+              <div className="formGroup">
+                <label>Card Title</label>
+                <input value={current.title} onChange={(e) => updateCurrent({ title: e.target.value })} />
+              </div>
+              <div className="formGroup" style={{ marginTop: "8px" }}>
+                <label>Heading</label>
+                <input value={current.heading} onChange={(e) => updateCurrent({ heading: e.target.value })} />
+              </div>
+              <div className="formGroup" style={{ marginTop: "8px" }}>
+                <label>Message</label>
+                <textarea rows={3} value={current.text} onChange={(e) => updateCurrent({ text: e.target.value })} />
+              </div>
+            </div>
+          )}
+          {activeTab === "theme" && (
+            <div>
+              <label>Theme Preset</label>
+              <select value={theme} onChange={(e) => setTheme(e.target.value)}>
+                <option value="dark">Dark Theme</option>
+                <option value="light">Light Theme</option>
+                <option value="romantic">Romantic Theme</option>
+                <option value="dreamy">Dreamy Theme</option>
+              </select>
+              <label style={{ marginTop: "10px" }}>Background Texture</label>
+              <select value={background} onChange={(e) => setBackground(e.target.value)}>
+                <option value="aurora">🌌 Aurora</option>
+                <option value="mesh">🫧 Liquid mesh</option>
+                <option value="stars">✨ Starfield</option>
+                <option value="petals">🌸 Floating petals</option>
+                <option value="gradient">🎨 Gradient</option>
+                <option value="minimal">◌ Minimal glow</option>
+              </select>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Add Section Modal */}
       {addOpen && (
         <div className="modal" onClick={() => setAddOpen(false)}>
@@ -2829,8 +3160,10 @@ export default function CreatePage() {
                 <button
                   type="button"
                   className="btn danger full"
-                  onClick={() => {
-                    localStorage.removeItem("hanora-user");
+                  onClick={async () => {
+                    try {
+                      await signOut();
+                    } catch {}
                     setUserProfile(null);
                     setAuthModalOpen(false);
                     notify("Signed out");
@@ -2847,13 +3180,13 @@ export default function CreatePage() {
                 <button
                   type="button"
                   className="btn full primary"
-                  style={{ marginTop: "14px", padding: "12px", fontSize: "14px" }}
-                  onClick={() => {
-                    const mockUser = { id: `user-${Date.now()}`, email: "creator@hanora.app", name: "Hanora Creator" };
-                    localStorage.setItem("hanora-user", JSON.stringify(mockUser));
-                    setUserProfile(mockUser);
-                    setAuthModalOpen(false);
-                    notify("Signed in with Google ✨");
+                  style={{ marginTop: "14px", padding: "12px", fontSize: "14px", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px" }}
+                  onClick={async () => {
+                    try {
+                      await signInWithGoogle();
+                    } catch (err: any) {
+                      notify(err.message || "Google sign-in could not be initiated");
+                    }
                   }}
                 >
                   <LogIn size={16} /> Continue with Google

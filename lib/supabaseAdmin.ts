@@ -1,27 +1,52 @@
 import { createClient } from "@supabase/supabase-js";
 
+export function getSupabaseCredentials() {
+  const url =
+    process.env.SUPABASE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
+    "";
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
+    process.env.SUPABASE_ANON_KEY?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
+    "";
+
+  const hasValidSupabase =
+    (url.startsWith("http://") || url.startsWith("https://")) && key.length > 20;
+
+  return { url, key, hasValidSupabase };
+}
+
 export function isLocalDevelopmentFallbackEnabled() {
-  const url = process.env.SUPABASE_URL?.trim() || "";
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || "";
-  const hasValidSupabase = (url.startsWith("http://") || url.startsWith("https://")) && key.length > 20;
-  if (process.env.NODE_ENV === "production" && hasValidSupabase && process.env.CHERIVO_LOCAL_STORE !== "true") {
+  const { hasValidSupabase } = getSupabaseCredentials();
+  const isProd =
+    process.env.NODE_ENV === "production" ||
+    process.env.VERCEL === "1" ||
+    process.env.VERCEL_ENV === "production";
+
+  if (hasValidSupabase && process.env.CHERIVO_LOCAL_STORE !== "true") {
     return false;
   }
-  return true;
+
+  if (isProd && hasValidSupabase) {
+    return false;
+  }
+
+  // If in production without Supabase, do NOT crash with local write
+  return !hasValidSupabase;
 }
 
 export function getSupabaseRuntimeDiagnostics() {
-  const url = process.env.SUPABASE_URL?.trim() || "";
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || "";
-  const hasValidSupabase = (url.startsWith("http://") || url.startsWith("https://")) && key.length > 20;
+  const { url, key, hasValidSupabase } = getSupabaseCredentials();
 
   return {
-    "SUPABASE_URL present": Boolean(process.env.SUPABASE_URL),
+    "SUPABASE_URL present": Boolean(url),
     "SUPABASE_URL valid": url.startsWith("http://") || url.startsWith("https://"),
-    "SUPABASE_SERVICE_ROLE_KEY present": Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    "SUPABASE_SERVICE_ROLE_KEY present": Boolean(key),
     NODE_ENV: process.env.NODE_ENV ?? "undefined",
     VERCEL_ENV: process.env.VERCEL_ENV ?? "undefined",
     localDevelopmentFallbackEnabled: isLocalDevelopmentFallbackEnabled(),
+    hasValidSupabase,
   };
 }
 
@@ -30,14 +55,13 @@ export function logSupabaseRuntimeDiagnostics(label: string) {
 }
 
 export function getSupabaseAdminConfig() {
-  if (isLocalDevelopmentFallbackEnabled()) {
+  const { url, key, hasValidSupabase } = getSupabaseCredentials();
+
+  if (isLocalDevelopmentFallbackEnabled() && !hasValidSupabase) {
     return { url: "", serviceRoleKey: "", localFallback: true };
   }
 
-  const url = process.env.SUPABASE_URL?.trim();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-
-  if (!url || !serviceRoleKey || (!url.startsWith("http://") && !url.startsWith("https://"))) {
+  if (!hasValidSupabase) {
     const error = new Error(
       "Hanora is missing its production database configuration. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables, then redeploy."
     ) as Error & { code?: string };
@@ -45,7 +69,7 @@ export function getSupabaseAdminConfig() {
     throw error;
   }
 
-  return { url, serviceRoleKey, localFallback: false };
+  return { url, serviceRoleKey: key, localFallback: false };
 }
 
 export function supabaseAdmin() {

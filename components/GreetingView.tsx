@@ -87,6 +87,7 @@ export default function GreetingView({
   // Interactive states
   const [candles, setCandles] = useState<boolean[]>([false, false, false]);
   const [smoke, setSmoke] = useState<number[]>([]);
+  const [candleFinale, setCandleFinale] = useState(false);
   const [secretRevealed, setSecretRevealed] = useState(false);
   const [galleryViewer, setGalleryViewer] = useState<{ images: string[]; index: number } | null>(null);
   const [dustedPhotos, setDustedPhotos] = useState<number[]>([]);
@@ -181,14 +182,17 @@ export default function GreetingView({
 
     if (next.every(Boolean)) {
       setConfettiActive(true);
+      setCandleFinale(true);
       window.setTimeout(() => {
         setConfettiActive(false);
-        if (currentSceneIndex < visibleBlocks.length - 1) {
-          setScene(currentSceneIndex + 1);
-        }
-        setCandles([false, false, false]);
-      }, 1800);
+      }, 3800);
     }
+  };
+
+  const relightCandles = () => {
+    setCandles([false, false, false]);
+    setSmoke([]);
+    setCandleFinale(false);
   };
 
   const handleSecretToggle = (reveal: boolean) => {
@@ -299,16 +303,10 @@ export default function GreetingView({
 
   // Gallery interactions
   const openGalleryPhoto = (images: string[], index: number, isScattered: boolean, targetElement?: HTMLElement) => {
-    if (isScattered) {
-      if (targetElement) {
-        triggerDustDisintegration(targetElement);
-      }
-      setGalleryScatter(true);
-      setDustedPhotos((v) => (v.includes(index) ? v : [...v, index]));
-      window.setTimeout(() => setGalleryScatter(false), 1050);
-    } else {
-      setGalleryViewer({ images, index });
+    if (isScattered && targetElement) {
+      triggerDustDisintegration(targetElement);
     }
+    setGalleryViewer({ images, index });
   };
 
   const closeGalleryPhoto = () => setGalleryViewer(null);
@@ -690,7 +688,7 @@ export default function GreetingView({
 
           {isScattered && images.length > 0 && (
             <p className="scatteredTapHint">
-              Tap a memory to watch it disappear ✨
+              Tap a photo to explore our memories ❤️
             </p>
           )}
 
@@ -949,35 +947,64 @@ export default function GreetingView({
             </>
           )}
 
-          <div className="cakeGraphic">
-            <div className="cakePlate" />
-            <div className="cakeBody">
-              <div className="cakeTop" />
-              <div className="cakeCream" />
+          {!candleFinale ? (
+            <>
+              <div className="cakeGraphic">
+                <div className="cakePlate" />
+                <div className="cakeBody">
+                  <div className="cakeTop" />
+                  <div className="cakeCream" />
+                </div>
+                <div className="candles">
+                  {candles.map((off, i) => (
+                    <span className="candleWrap" key={i}>
+                      <span className={`flame ${off ? "flameOff" : ""}`} />
+                      {smoke.includes(i) && <span className="smokePuff" />}
+                      <button
+                        type="button"
+                        aria-label={`Candle ${i + 1}`}
+                        className={`candleStick ${off ? "off" : ""}`}
+                        onClick={blowCandle}
+                      />
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="heroTextWrap customScrollbar">
+                <p className="heroText">
+                  {b.text || "Tap a candle to blow it out. Make a special wish for the year ahead ✨"}
+                </p>
+              </div>
+              <button type="button" className="btn primary" onClick={blowCandle} style={{ marginTop: "12px" }}>
+                🎂 Blow a candle
+              </button>
+            </>
+          ) : (
+            <div className="candleFinaleWrap">
+              <div className="candleFinaleEmojis">
+                <span>🎂</span>
+                <span>✨</span>
+                <span>🎉</span>
+                <span>🎁</span>
+                <span>❤️</span>
+              </div>
+              <h2 className="candleFinaleTitle">Happy Birthday, once again! 🎂✨❤️</h2>
+              <p className="candleFinaleMessage">
+                May your special day be filled with endless joy, magic, and sweet memories. May all your dreams come true!
+              </p>
+              <div className="candleFinaleActions">
+                <button type="button" className="btn ghost small" onClick={relightCandles}>
+                  🕯️ Relight candles
+                </button>
+                {onOpenResponseModal && (
+                  <button type="button" className="btn primary small" onClick={onOpenResponseModal}>
+                    💌 Send a Response
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="candles">
-              {candles.map((off, i) => (
-                <span className="candleWrap" key={i}>
-                  <span className={`flame ${off ? "flameOff" : ""}`} />
-                  {smoke.includes(i) && <span className="smokePuff" />}
-                  <button
-                    type="button"
-                    aria-label={`Candle ${i + 1}`}
-                    className={`candleStick ${off ? "off" : ""}`}
-                    onClick={blowCandle}
-                  />
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="heroTextWrap customScrollbar">
-            <p className="heroText">
-              Tap a candle to blow it out. Watch the flame flicker, fade and leave a soft trail of smoke.
-            </p>
-          </div>
-          <button type="button" className="btn" onClick={blowCandle}>
-            Blow a candle
-          </button>
+          )}
+
           {nav}
         </div>
       );

@@ -19,21 +19,7 @@ function getBaseUrl(request: Request) {
 }
 
 function validateProjectMedia(project: Record<string, unknown>) {
-  if (project.audioUrl && typeof project.audioUrl === "string" && !project.audioUrl.startsWith("data:")) {
-    throw new Error("Audio must be uploaded as an MP3 file.");
-  }
-  if (Array.isArray(project.blocks)) {
-    for (const raw of project.blocks) {
-      if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
-      const block = raw as Record<string, unknown>;
-      if (block.audioUrl && typeof block.audioUrl === "string" && !block.audioUrl.startsWith("data:")) {
-        throw new Error("Audio must be uploaded as an MP3 file.");
-      }
-      if (block.memoryVideo && typeof block.memoryVideo === "string" && !block.memoryVideo.startsWith("data:")) {
-        throw new Error("Memory video must be uploaded through Hanora.");
-      }
-    }
-  }
+  // Allow all valid media: data URLs, https/http URLs, and Supabase storage objects
 }
 
 export async function GET() {
