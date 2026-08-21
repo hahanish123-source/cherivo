@@ -159,14 +159,9 @@ export async function getGreetingMediaUrl(value: unknown): Promise<string> {
   }
 
   try {
-    const { data, error } = await supabaseAdmin().storage.from(GREETING_MEDIA_BUCKET).createSignedUrl(media.path, 3600);
-    if (error) {
-      const { data: pubData } = supabaseAdmin().storage.from(GREETING_MEDIA_BUCKET).getPublicUrl(media.path);
-      if (pubData?.publicUrl) return pubData.publicUrl;
-      throw new Error(`Media URL generation failed: ${error.message}`);
-    }
-    if (!data?.signedUrl) throw new Error("Media URL generation failed: missing URL");
-    return data.signedUrl;
+    const { data } = supabaseAdmin().storage.from(GREETING_MEDIA_BUCKET).getPublicUrl(media.path);
+    if (!data?.publicUrl) throw new Error("Media URL generation failed: missing public URL");
+    return data.publicUrl;
   } catch (err) {
     if (isLocalDevelopmentFallbackEnabled()) {
       return "";
