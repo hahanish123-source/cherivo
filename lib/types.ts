@@ -3,6 +3,7 @@ import type { StoredMedia } from "./greetingMedia";
 export type BlockType =
   | "welcome"
   | "reasons"
+  | "incidents"
   | "memories"
   | "letter"
   | "secret"
@@ -31,6 +32,16 @@ export type ReasonItem = {
   title: string;
   text: string;
   emoji: string;
+};
+
+export type IncidentItem = {
+  id: string;
+  title: string;
+  tag?: string;
+  date?: string;
+  text: string;
+  emoji: string;
+  image?: string;
 };
 
 export type ImageAdjustment = {
@@ -96,10 +107,13 @@ export type Block = {
   audioName?: string;
   audioUrl?: MediaValue;
   memoryVideo?: MediaValue;
+  secretImage?: string;
+  secretVideo?: MediaValue;
   galleryLayout?: string;
   galleryBackground?: "transparent" | "black" | "white" | string;
   visible: boolean;
   items?: ReasonItem[];
+  incidents?: IncidentItem[];
 };
 
 export type GreetingProject = {
@@ -129,6 +143,29 @@ export type GreetingProject = {
   bgColor3?: string;
   bgColor4?: string;
   backgroundOverlay?: number;
+  targetEventDate?: string;
+  reminderDate?: string;
+  targetEventTitle?: string;
+};
+
+export type GreetingResponse = {
+  id: string;
+  token: string;
+  senderName?: string;
+  message: string;
+  emojis?: string[];
+  createdAt: string;
+};
+
+export type GreetingDraft = {
+  id: string;
+  userId?: string;
+  title: string;
+  targetEventDate?: string;
+  reminderDate?: string;
+  targetEventTitle?: string;
+  updatedAt: string;
+  project: GreetingProject;
 };
 
 export type StoredGreetingRecord = {

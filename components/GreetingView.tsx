@@ -12,7 +12,7 @@ import {
   Pause,
   X
 } from "lucide-react";
-import type { Block, GreetingProject, ImageAdjustment } from "@/lib/types";
+import type { Block, GreetingProject, ImageAdjustment, IncidentItem } from "@/lib/types";
 import { getFont, backgrounds, themes } from "@/lib/greetingConfig";
 import Particles from "./Particles";
 
@@ -24,6 +24,9 @@ export type GreetingViewProps = {
   onEditSection?: (blockId: string) => void;
   onEditReason?: (blockId: string, reasonIndex: number) => void;
   onAddReason?: () => void;
+  onEditIncident?: (blockId: string, incidentIndex: number) => void;
+  onAddIncident?: () => void;
+  onOpenResponseModal?: () => void;
   previewDevice?: "desktop" | "mobile";
   title?: string;
   memoryVideoPreviews?: Record<string, string>;
@@ -51,6 +54,9 @@ export default function GreetingView({
   onEditSection,
   onEditReason,
   onAddReason,
+  onEditIncident,
+  onAddIncident,
+  onOpenResponseModal,
   previewDevice = "desktop",
   title = "A Hanora moment",
   memoryVideoPreviews = {},
@@ -95,6 +101,17 @@ export default function GreetingView({
   const dustCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const dustParticlesRef = useRef<DustParticle[]>([]);
   const dustAnimRef = useRef<number | null>(null);
+
+  // Keyboard Escape listener to close photo lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && galleryViewer) {
+        setGalleryViewer(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [galleryViewer]);
 
   const activeAudioUrl =
     typeof currentBlock?.audioUrl === "string"
@@ -436,18 +453,30 @@ export default function GreetingView({
               Keep going <ArrowRight size={16} />
             </button>
           ) : (
-            <button
-              type="button"
-              className="btn primary"
-              onClick={() => {
-                setScene(0);
-                setSecretRevealed(false);
-                setCandles([false, false, false]);
-                setDustedPhotos([]);
-              }}
-            >
-              <RotateCcw size={16} /> Replay
-            </button>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
+              {!isEditable && onOpenResponseModal && (
+                <button
+                  type="button"
+                  className="btn primary replyBtn"
+                  onClick={onOpenResponseModal}
+                  style={{ background: "linear-gradient(135deg, #ff4f8b 0%, #7c5cff 100%)", color: "#fff", fontWeight: 600 }}
+                >
+                  💌 Reply to Greeting
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => {
+                  setScene(0);
+                  setSecretRevealed(false);
+                  setCandles([false, false, false]);
+                  setDustedPhotos([]);
+                }}
+              >
+                <RotateCcw size={16} /> Replay
+              </button>
+            </div>
           )}
         </div>
       </>
@@ -524,6 +553,91 @@ export default function GreetingView({
           {isEditable && (
             <button type="button" className="addReasonPreview" onClick={onAddReason}>
               <span>+ Add another reason</span>
+            </button>
+          )}
+
+          {nav}
+        </div>
+      );
+    }
+
+    if (b.type === "incidents") {
+      return (
+        <div className="sceneInner incidentsScene" style={style}>
+          {editBadge}
+          {isEditable ? (
+            <>
+              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => onEditSection?.(b.id)}>
+                {b.emoji}
+              </button>
+              <button type="button" className="editableText sectionKicker" onClick={() => onEditSection?.(b.id)}>
+                {b.title}
+              </button>
+              <button type="button" className="editableText eyebrow" onClick={() => onEditSection?.(b.id)}>
+                {b.subtitle}
+              </button>
+              <button type="button" className="editableText heroTitle" onClick={() => onEditSection?.(b.id)}>
+                {b.heading}
+              </button>
+              <div className="heroTextWrap customScrollbar">
+                <button type="button" className="editableText heroText" onClick={() => onEditSection?.(b.id)}>
+                  {b.text}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className={`publicEmoji emoji-anim-${emojiAnim}`}>{b.emoji}</div>
+              <div className="sectionKicker">{b.title}</div>
+              <div className="eyebrow">{b.subtitle}</div>
+              <h1 className="heroTitle">{b.heading}</h1>
+              <div className="heroTextWrap customScrollbar">
+                <p className="heroText">{b.text}</p>
+              </div>
+            </>
+          )}
+
+          <div className="incidentCards">
+            {(b.incidents ?? []).map((inc, i) => (
+              <article
+                className="incidentCard"
+                key={inc.id || i}
+                onClick={() => (isEditable ? onEditIncident?.(b.id, i) : undefined)}
+                style={{ cursor: isEditable ? "pointer" : "default" }}
+              >
+                {isEditable && (
+                  <span className="cardEdit" title="Edit this incident">
+                    <Pencil size={12} />
+                  </span>
+                )}
+                <div className="incidentCardHeader">
+                  <span className="incidentTag">{inc.tag || `Incident #${i + 1}`}</span>
+                  {inc.date && <span className="incidentDate">{inc.date}</span>}
+                </div>
+                <h3>
+                  <span className={`emoji-anim-${emojiAnim}`} style={{ display: "inline-block", marginRight: "8px" }}>{inc.emoji}</span>
+                  {inc.title}
+                </h3>
+                <p>{inc.text}</p>
+                {inc.image && (
+                  <div
+                    className="incidentPhoto"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openGalleryPhoto([inc.image!], 0, false);
+                    }}
+                    title="Click to zoom photo"
+                  >
+                    <img src={inc.image} alt={inc.title} />
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+
+          {isEditable && (
+            <button type="button" className="addReasonPreview" onClick={onAddIncident}>
+              <span>+ Add another incident</span>
             </button>
           )}
 
@@ -721,6 +835,14 @@ export default function GreetingView({
     }
 
     if (b.type === "secret") {
+      const secretImg = b.secretImage || b.image;
+      const resolvedSecretVideo =
+        typeof b.secretVideo === "string"
+          ? b.secretVideo
+          : typeof b.memoryVideo === "string"
+          ? b.memoryVideo
+          : memoryVideoPreviews[b.id] || "";
+
       return (
         <div className="sceneInner secretScene" style={style}>
           {editBadge}
@@ -765,9 +887,31 @@ export default function GreetingView({
             <div className="secretReveal">
               <span>✦</span>
               <h2>{b.text}</h2>
+              {secretImg && (
+                <div
+                  className="secretPhotoMount"
+                  onClick={() => openGalleryPhoto([secretImg], 0, false)}
+                  style={{ cursor: "pointer", marginTop: "14px" }}
+                >
+                  <img src={secretImg} alt="Secret memory" />
+                </div>
+              )}
+              {resolvedSecretVideo && (
+                <div style={{ marginTop: "14px", width: "100%", maxWidth: "420px" }}>
+                  <video
+                    className="memoryVideoPreview"
+                    src={resolvedSecretVideo}
+                    controls
+                    autoPlay
+                    playsInline
+                    preload="metadata"
+                  />
+                </div>
+              )}
               <button
                 type="button"
                 className="btn"
+                style={{ marginTop: "16px" }}
                 onClick={() => handleSecretToggle(false)}
               >
                 Hide again

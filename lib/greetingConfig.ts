@@ -1,9 +1,36 @@
-import type { Block, BlockType, FontName, GreetingProject, ReasonItem } from "./types";
+import type { Block, BlockType, FontName, GreetingProject, IncidentItem, ReasonItem } from "./types";
 
 export const reasonDefaults: ReasonItem[] = [
   { id: "r1", title: "Your laugh", text: "The way your laugh makes an ordinary moment feel lighter.", emoji: "😊" },
   { id: "r2", title: "Your kindness", text: "The little things you do that make people feel seen.", emoji: "💗" },
   { id: "r3", title: "Your way of making ordinary days memorable", text: "Somehow even the smallest moments become memories with you.", emoji: "✨" }
+];
+
+export const incidentDefaults: IncidentItem[] = [
+  {
+    id: "inc-1",
+    title: "The Day We Met",
+    tag: "First Memory",
+    date: "Day 1",
+    text: "Who knew that a random conversation would turn into one of my most cherished friendships?",
+    emoji: "☕"
+  },
+  {
+    id: "inc-2",
+    title: "That Uncontrollable Laugh Incident",
+    tag: "Most Hilarious",
+    date: "That unforgettable night",
+    text: "We started laughing over the dumbest thing and couldn't stop for 20 minutes straight until our stomachs hurt!",
+    emoji: "😂"
+  },
+  {
+    id: "inc-3",
+    title: "When You Had My Back",
+    tag: "Core Memory",
+    date: "Always",
+    text: "Without even hesitating, you were right there when I needed someone the most. I'll never forget that.",
+    emoji: "🛡️"
+  }
 ];
 
 export const defaultBlocks: Block[] = [
@@ -233,6 +260,20 @@ export function normalizeBlock(raw: any, fallbackIndex = 0, fallbackFont: FontNa
         : reasonDefaults)
     : undefined;
 
+  const incidents = raw.type === "incidents"
+    ? (Array.isArray(raw.incidents)
+        ? raw.incidents.map((x: any, i: number) => ({
+            id: x?.id ?? uid(),
+            title: x?.title ?? `Incident #${i + 1}`,
+            tag: x?.tag ?? "Core Memory",
+            date: x?.date ?? "",
+            text: x?.text ?? "Write about what happened...",
+            emoji: x?.emoji ?? "✨",
+            image: x?.image ? String(x.image) : undefined
+          }))
+        : incidentDefaults)
+    : undefined;
+
   const safeFont = (fontVal: any, def: FontName): FontName =>
     validFonts.includes(fontVal) ? fontVal : def;
 
@@ -300,10 +341,13 @@ export function normalizeBlock(raw: any, fallbackIndex = 0, fallbackFont: FontNa
     audioName: raw.audioName ? String(raw.audioName) : "",
     audioUrl: raw.audioUrl,
     memoryVideo: raw.memoryVideo,
+    secretImage: raw.secretImage ? String(raw.secretImage) : undefined,
+    secretVideo: raw.secretVideo,
     galleryLayout: raw.galleryLayout ? String(raw.galleryLayout) : "collage",
     galleryBackground: raw.galleryBackground === "black" || raw.galleryBackground === "white" ? raw.galleryBackground : "transparent",
     visible: raw.visible !== false,
-    ...(items ? { items } : {})
+    ...(items ? { items } : {}),
+    ...(incidents ? { incidents } : {})
   };
 }
 
@@ -364,6 +408,9 @@ export function normalizeProject(raw: any): GreetingProject {
     bgColor2: raw.bgColor2 ?? themeColors[2],
     bgColor3: raw.bgColor3 ?? (theme === "light" ? "#e8f7ff" : "#38bdf8"),
     bgColor4: raw.bgColor4 ?? (theme === "light" ? "#fff0f5" : "#f59e0b"),
-    backgroundOverlay: typeof raw.backgroundOverlay === "number" ? raw.backgroundOverlay : Number(raw.backgroundOverlay ?? 18)
+    backgroundOverlay: typeof raw.backgroundOverlay === "number" ? raw.backgroundOverlay : Number(raw.backgroundOverlay ?? 18),
+    targetEventDate: typeof raw.targetEventDate === "string" ? raw.targetEventDate : undefined,
+    reminderDate: typeof raw.reminderDate === "string" ? raw.reminderDate : undefined,
+    targetEventTitle: typeof raw.targetEventTitle === "string" ? raw.targetEventTitle : undefined
   };
 }

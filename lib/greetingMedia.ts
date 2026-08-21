@@ -180,6 +180,16 @@ async function resolveMedia(value: unknown): Promise<unknown> {
   return getGreetingMediaUrl(value);
 }
 
+export async function deleteGreetingMediaPaths(paths: string[]): Promise<void> {
+  if (!paths || paths.length === 0 || isLocalStore()) return;
+  try {
+    const supabase = supabaseAdmin();
+    await supabase.storage.from(GREETING_MEDIA_BUCKET).remove(paths);
+  } catch (err) {
+    console.warn("Media deletion warning:", err);
+  }
+}
+
 export async function resolveGreetingMedia(project: Record<string, unknown>) {
   const resolved = { ...project };
   resolved.audioUrl = await resolveMedia(resolved.audioUrl);
@@ -191,6 +201,7 @@ export async function resolveGreetingMedia(project: Record<string, unknown>) {
       const block = { ...(raw as Record<string, unknown>) };
       block.audioUrl = await resolveMedia(block.audioUrl);
       block.memoryVideo = await resolveMedia(block.memoryVideo);
+      block.secretVideo = await resolveMedia(block.secretVideo);
       block.customBg = (await resolveMedia(block.customBg)) as string | undefined;
       return block;
     }));

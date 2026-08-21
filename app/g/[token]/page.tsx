@@ -37,6 +37,7 @@ export default async function GreetingPage({
       );
       return (
         <GreetingClient
+          token={token}
           project={resolvedProject as Record<string, unknown>}
           title={data.title || "A Hanora moment"}
         />

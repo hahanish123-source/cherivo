@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "A greeting title is required." }, { status: 400 });
     }
 
-    const { project } = body;
+    const { project, userId, targetEventDate, reminderDate } = body;
     if (!project || typeof project !== "object" || Array.isArray(project)) {
       return NextResponse.json({ error: "Greeting data is missing or invalid." }, { status: 400 });
     }
@@ -85,7 +85,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const { token } = await createGreeting(title.slice(0, 120), normalizedProject as unknown as Record<string, unknown>);
+    const { token } = await createGreeting(
+      title.slice(0, 120),
+      normalizedProject as unknown as Record<string, unknown>,
+      {
+        userId: typeof userId === "string" ? userId : undefined,
+        targetEventDate: typeof targetEventDate === "string" ? targetEventDate : normalizedProject.targetEventDate,
+        reminderDate: typeof reminderDate === "string" ? reminderDate : normalizedProject.reminderDate
+      }
+    );
     const url = `${getBaseUrl(request)}/g/${token}`;
 
     return NextResponse.json({

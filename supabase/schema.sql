@@ -6,14 +6,37 @@ create table if not exists public.greetings (
   token text not null unique,
   title text not null default 'Hanora moment',
   data jsonb not null,
+  user_id text,
+  target_event_date text,
+  reminder_date text,
   created_at timestamptz not null default now()
 );
 
--- The browser must never query this table directly.
--- The Next.js server uses SUPABASE_SERVICE_ROLE_KEY to read/write it.
--- The service-role client bypasses RLS, but the database policy must still allow
--- the server-side insert/select path to work when the app is configured correctly.
+-- Recipient responses & reactions
+create table if not exists public.greeting_responses (
+  id uuid primary key default gen_random_uuid(),
+  token text not null references public.greetings(token) on delete cascade,
+  sender_name text,
+  message text not null,
+  emojis jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+-- User drafts with event & reminder dates
+create table if not exists public.greeting_drafts (
+  id text primary key,
+  user_id text not null,
+  title text not null default 'Untitled draft',
+  target_event_date text,
+  reminder_date text,
+  target_event_title text,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
 alter table public.greetings enable row level security;
+alter table public.greeting_responses enable row level security;
+alter table public.greeting_drafts enable row level security;
 
 drop policy if exists "allow server side greeting access" on public.greetings;
 create policy "allow server side greeting access"
@@ -21,7 +44,21 @@ create policy "allow server side greeting access"
   using (true)
   with check (true);
 
+drop policy if exists "allow server side response access" on public.greeting_responses;
+create policy "allow server side response access"
+  on public.greeting_responses for all
+  using (true)
+  with check (true);
+
+drop policy if exists "allow server side drafts access" on public.greeting_drafts;
+create policy "allow server side drafts access"
+  on public.greeting_drafts for all
+  using (true)
+  with check (true);
+
 create index if not exists greetings_token_idx on public.greetings(token);
+create index if not exists greetings_responses_token_idx on public.greeting_responses(token);
+create index if not exists greeting_drafts_user_idx on public.greeting_drafts(user_id);
 
 -- Private greeting media is uploaded by the Next.js server with the service role
 -- and delivered to recipients through short-lived signed URLs.
