@@ -379,7 +379,14 @@ export default function CreatePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: publishTitle, project })
       });
-      const data = await res.json();
+      let data: any;
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(text || `Publish failed with status code ${res.status}`);
+      }
       if (!res.ok) throw new Error(data.error || "Could not publish");
 
       setPublishedLink(data.url);
@@ -474,8 +481,11 @@ export default function CreatePage() {
         try {
           const res = await fetch(`/api/media?path=${encodeURIComponent(val.path)}&kind=${val.kind}`);
           if (res.ok) {
-            const data = await res.json();
-            return data.previewUrl || "";
+            const contentType = res.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              const data = await res.json();
+              return data.previewUrl || "";
+            }
           }
         } catch {}
       }
@@ -518,11 +528,8 @@ export default function CreatePage() {
       e.target.value = "";
       return;
     }
-    const header = new Uint8Array(await file.slice(0, 32).arrayBuffer());
-    const isValid =
-      (header[0] === 0x49 && header[1] === 0x44 && header[2] === 0x33) ||
-      (header[0] === 0xff && (header[1] & 0xe0) === 0xe0);
-    if (file.type !== "audio/mpeg" || !file.name.toLowerCase().endsWith(".mp3") || !isValid) {
+    const ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    if (ext !== ".mp3") {
       notify("Choose a valid MP3 audio file");
       e.target.value = "";
       return;
@@ -555,8 +562,10 @@ export default function CreatePage() {
       e.target.value = "";
       return;
     }
-    const allowed = new Set(["video/mp4", "video/webm", "video/quicktime"]);
-    if (!allowed.has(file.type)) {
+    const ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    const allowedExts = new Set([".mp4", ".webm", ".mov", ".qt"]);
+    const allowedTypes = new Set(["video/mp4", "video/webm", "video/quicktime", "video/x-quicktime"]);
+    if (!allowedTypes.has(file.type) && !allowedExts.has(ext)) {
       notify("Unsupported video type. Choose an MP4, WebM, or MOV video.");
       e.target.value = "";
       return;
@@ -2247,11 +2256,18 @@ export default function CreatePage() {
             </label>
             {(audioUrl || audioPreviewUrl) && (
               <div className="audioControlCard">
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
-                  <Volume2 size={16} style={{ flexShrink: 0, color: "var(--accent)" }} />
-                  <b style={{ fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {audioName || "Selected music"}
-                  </b>
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px", overflow: "hidden", flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
+                    <Volume2 size={16} style={{ flexShrink: 0, color: "var(--accent)" }} />
+                    <b style={{ fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {audioName || "Selected music"}
+                    </b>
+                  </div>
+                  {audioUrl && typeof audioUrl === "object" && typeof audioUrl.size === "number" && (
+                    <small style={{ fontSize: "10px", color: "var(--muted)", paddingLeft: "24px" }}>
+                      Size: {audioUrl.size >= 1048576 ? `${(audioUrl.size / 1048576).toFixed(1)} MB` : `${(audioUrl.size / 1024).toFixed(0)} KB`}
+                    </small>
+                  )}
                 </div>
                 <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
                   <button

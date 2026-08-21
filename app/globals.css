@@ -34,6 +34,11 @@
   box-sizing: border-box;
 }
 
+html, body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 79, 139, 0.45) rgba(18, 12, 24, 0.95);
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -1067,31 +1072,36 @@ button {
   pointer-events: none;
 }
 
-/* Custom Scrollbars */
-.customScrollbar {
+/* Global Custom Scrollbars */
+* {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 111, 158, 0.4) transparent;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  scrollbar-color: rgba(255, 79, 139, 0.45) rgba(18, 12, 24, 0.95);
 }
 
-.customScrollbar::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.customScrollbar::-webkit-scrollbar-track {
-  background: transparent;
+::-webkit-scrollbar-track {
+  background: rgba(18, 12, 24, 0.95);
+  border-radius: 999px;
 }
 
-.customScrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 111, 158, 0.35);
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 79, 139, 0.45);
   border-radius: 999px;
   transition: background 0.2s ease;
 }
 
-.customScrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 111, 158, 0.65);
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 79, 139, 0.75);
+}
+
+/* Custom Scrollbar Helper */
+.customScrollbar {
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .heroTextWrap {
@@ -2580,8 +2590,7 @@ button {
     position: sticky;
     top: 0;
     z-index: 100;
-    height: 35vh;
-    min-height: 260px;
+    height: 320px;
     flex-shrink: 0;
     background: #000;
     overflow: hidden;
@@ -2590,16 +2599,18 @@ button {
     box-sizing: border-box;
   }
   .previewWrap .preview {
-    min-height: 100% !important;
-    height: 100% !important;
+    min-height: 520px !important;
+    height: 520px !important;
     padding: 10px !important;
     border-radius: 0 !important;
-    width: 100%;
+    width: 166.6% !important;
     box-sizing: border-box;
+    transform: scale(0.6);
+    transform-origin: top left;
   }
   .previewWrap .sceneInner {
-    min-height: 100% !important;
-    height: 100% !important;
+    min-height: 520px !important;
+    height: 520px !important;
   }
   .sidePanel.editor {
     display: block !important;

@@ -129,7 +129,19 @@ export async function uploadGreetingMedia(file: File, kind: StoredMedia["kind"])
   }
 
   if (uploadResult.error) {
-    throw new Error(`Media upload failed: ${uploadResult.error.message}. Ensure the Supabase Storage bucket '${GREETING_MEDIA_BUCKET}' exists.`);
+    let extraMsg = "";
+    try {
+      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+      if (listError) {
+        extraMsg = ` (Could not list buckets: ${listError.message})`;
+      } else {
+        const names = buckets.map(b => b.name).join(", ");
+        extraMsg = ` (Existing buckets in this Supabase project: [${names}])`;
+      }
+    } catch (e: any) {
+      extraMsg = ` (Failed to list buckets: ${e?.message})`;
+    }
+    throw new Error(`Media upload failed: ${uploadResult.error.message}.${extraMsg} Ensure the Supabase Storage bucket '${GREETING_MEDIA_BUCKET}' exists.`);
   }
 
   return { storage: "supabase", path, kind, size: file.size };

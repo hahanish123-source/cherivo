@@ -335,14 +335,17 @@ async function main() {
     return false;
   })()`);
 
-  await sleep(2500);
-
-  const publishedUrl = await client.eval(`(() => {
-    const box = document.querySelector('.publishedLinkBox');
-    const span = box ? box.querySelector('span') : null;
-    const a = document.querySelector('a[target="_blank"]');
-    return (span && span.textContent) || (a && a.getAttribute('href')) || '';
-  })()`);
+  let publishedUrl = "";
+  for (let i = 0; i < 20; i++) {
+    publishedUrl = await client.eval(`(() => {
+      const box = document.querySelector('.publishedLinkBox');
+      const span = box ? box.querySelector('span') : null;
+      const a = document.querySelector('a[target="_blank"]');
+      return (span && span.textContent) || (a && a.getAttribute('href')) || '';
+    })()`);
+    if (publishedUrl) break;
+    await sleep(400);
+  }
 
   console.log(`✓ Created public greeting link: ${publishedUrl}`);
 
