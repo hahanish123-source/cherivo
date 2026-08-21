@@ -64,10 +64,9 @@ import {
 
 export default function CreatePage() {
   const [blocks, setBlocks] = useState<Block[]>(defaultBlocks);
-  const [selected, setSelected] = useState(0);
+  const [selectedId, setSelectedId] = useState<string>("welcome");
   const [selectedReason, setSelectedReason] = useState(0);
   const [selectedIncident, setSelectedIncident] = useState(0);
-  const [scene, setScene] = useState(0);
   const [theme, setTheme] = useState("dark");
   const [background, setBackground] = useState("aurora");
   const [cardBackgroundMode, setCardBackgroundMode] = useState<"same" | "different">("same");
@@ -168,7 +167,13 @@ export default function CreatePage() {
   ];
 
   const visible = useMemo(() => blocks.filter((b) => b.visible), [blocks]);
-  const current = normalizeBlock(blocks[selected] ?? defaultBlocks[0], 0, globalFont);
+  const selectedIndex = useMemo(() => {
+    const idx = blocks.findIndex((b) => b.id === selectedId);
+    return idx >= 0 ? idx : 0;
+  }, [blocks, selectedId]);
+
+  const selected = selectedIndex;
+  const current = normalizeBlock(blocks[selected] ?? defaultBlocks[0], selected, globalFont);
 
   // Collect all uploaded memory photos across the project for reuse in Letter
   const allMemoryPhotos = useMemo(() => {
@@ -249,7 +254,10 @@ export default function CreatePage() {
       if (!raw) return;
       const data = JSON.parse(raw);
       const proj = normalizeProject(data);
-      if (proj.blocks && proj.blocks.length > 0) setBlocks(proj.blocks);
+      if (proj.blocks && proj.blocks.length > 0) {
+        setBlocks(proj.blocks);
+        setSelectedId(proj.blocks[0].id);
+      }
       if (proj.theme && themes[proj.theme]) setTheme(proj.theme);
       if (proj.background) setBackground(proj.background);
       if (proj.cardBackgroundMode) setCardBackgroundMode(proj.cardBackgroundMode);
@@ -283,12 +291,6 @@ export default function CreatePage() {
     } catch {}
   }, []);
 
-  // Sync scene when selected changes
-  useEffect(() => {
-    const visibleIndex = visible.findIndex((v) => v.id === blocks[selected]?.id);
-    if (visibleIndex >= 0) setScene(visibleIndex);
-  }, [selected, blocks, visible]);
-
   function stopAudioPreview() {
     if (audioPreviewElRef.current) {
       audioPreviewElRef.current.pause();
@@ -315,17 +317,21 @@ export default function CreatePage() {
     }
   }
 
-  function selectBlock(i: number) {
-    setSelected(i);
+  function selectBlockById(id: string) {
+    setSelectedId(id);
     setSelectedReason(0);
     setSelectedIncident(0);
-    const visibleIndex = visible.findIndex((v) => v.id === blocks[i]?.id);
-    if (visibleIndex >= 0) setScene(visibleIndex);
+  }
+
+  function selectBlock(i: number) {
+    if (i >= 0 && i < blocks.length && blocks[i]) {
+      selectBlockById(blocks[i].id);
+    }
   }
 
   function updateCurrent(patch: Partial<Block>) {
     setBlocks((prev) =>
-      prev.map((b, i) => (i === selected ? normalizeBlock({ ...b, ...patch }, i, globalFont) : b))
+      prev.map((b) => (b.id === current.id ? normalizeBlock({ ...b, ...patch }, selected, globalFont) : b))
     );
   }
 
@@ -799,7 +805,7 @@ export default function CreatePage() {
     const [item] = next.splice(from, 1);
     next.splice(to, 0, item);
     setBlocks(next);
-    setSelected(to);
+    setSelectedId(item.id);
   }
 
   function removeBlock(i: number) {
@@ -807,19 +813,24 @@ export default function CreatePage() {
       notify("You need at least one section");
       return;
     }
+    const removedId = blocks[i]?.id;
     const next = blocks.filter((_, idx) => idx !== i);
     setBlocks(next);
-    setSelected(Math.max(0, Math.min(selected, next.length - 1)));
+    if (selectedId === removedId) {
+      const nextIdx = Math.max(0, Math.min(i, next.length - 1));
+      setSelectedId(next[nextIdx].id);
+    }
     notify("Section removed");
   }
 
   function duplicateBlock(i: number) {
     const src = blocks[i];
-    const copy = normalizeBlock({ ...src, id: uid(), title: `${src.title} (Copy)` }, i + 1, globalFont);
+    const newId = uid();
+    const copy = normalizeBlock({ ...src, id: newId, title: `${src.title} (Copy)` }, i + 1, globalFont);
     const next = [...blocks];
     next.splice(i + 1, 0, copy);
     setBlocks(next);
-    setSelected(i + 1);
+    setSelectedId(newId);
     notify("Section duplicated ✨");
   }
 
@@ -845,9 +856,10 @@ export default function CreatePage() {
       custom: "Special Moment"
     };
 
+    const newId = uid();
     const block = normalizeBlock(
       {
-        id: uid(),
+        id: newId,
         type,
         title: titles[type] ?? "Special Moment",
         subtitle: "A little moment",
@@ -878,7 +890,7 @@ export default function CreatePage() {
       globalFont
     );
     setBlocks((prev) => [...prev, block]);
-    setSelected(blocks.length);
+    setSelectedId(newId);
     setAddOpen(false);
     setActiveTab("card");
     notify("New section added ✨");
@@ -1426,10 +1438,10 @@ export default function CreatePage() {
         <div className="storyList" style={{ marginTop: "12px" }}>
           {blocks.map((b, i) => (
             <div
-              className={`storyItem ${i === selected ? "selected" : ""}`}
+              className={`storyItem ${b.id === current.id ? "selected" : ""}`}
               key={b.id}
               onClick={() => {
-                selectBlock(i);
+                selectBlockById(b.id);
                 setActiveTab("card");
               }}
             >
@@ -2578,36 +2590,30 @@ export default function CreatePage() {
 
           <GreetingView
             project={projectData()}
-            sceneIndex={scene}
-            onSceneChange={setScene}
             isEditable={true}
             selectedBlockId={current.id}
+            onSelectBlock={(blockId) => {
+              selectBlockById(blockId);
+              setActiveTab("card");
+              setMobileDrawerOpen(true);
+            }}
             onEditSection={(blockId) => {
-              const idx = blocks.findIndex((b) => b.id === blockId);
-              if (idx >= 0) {
-                selectBlock(idx);
-                setActiveTab("card");
-                setMobileDrawerOpen(true);
-              }
+              selectBlockById(blockId);
+              setActiveTab("card");
+              setMobileDrawerOpen(true);
             }}
             onEditReason={(blockId, reasonIdx) => {
-              const idx = blocks.findIndex((b) => b.id === blockId);
-              if (idx >= 0) {
-                setSelected(idx);
-                setSelectedReason(reasonIdx);
-                setActiveTab("card");
-                setMobileDrawerOpen(true);
-              }
+              selectBlockById(blockId);
+              setSelectedReason(reasonIdx);
+              setActiveTab("card");
+              setMobileDrawerOpen(true);
             }}
             onAddReason={addReason}
             onEditIncident={(blockId, incIdx) => {
-              const idx = blocks.findIndex((b) => b.id === blockId);
-              if (idx >= 0) {
-                setSelected(idx);
-                setSelectedIncident(incIdx);
-                setActiveTab("card");
-                setMobileDrawerOpen(true);
-              }
+              selectBlockById(blockId);
+              setSelectedIncident(incIdx);
+              setActiveTab("card");
+              setMobileDrawerOpen(true);
             }}
             onAddIncident={addIncident}
             previewDevice={previewDevice}
@@ -2958,8 +2964,6 @@ export default function CreatePage() {
           <div className={`fullPreviewStage device-${previewDevice}`}>
             <GreetingView
               project={projectData()}
-              sceneIndex={scene}
-              onSceneChange={setScene}
               isEditable={false}
               previewDevice={previewDevice}
               title={publishTitle}

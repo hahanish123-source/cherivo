@@ -2590,6 +2590,19 @@ button {
   width: 100%;
 }
 
+.greetingSequenceContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--section-spacing, 24px);
+  width: 100%;
+}
+
+.greetingSectionBlock {
+  position: relative;
+  width: 100%;
+  scroll-margin-top: 20px;
+}
+
 /* ==========================================================================
    AUTHENTIC HANORA CREATOR STUDIO LAYOUT (Desktop >= 851px)
    ========================================================================== */
