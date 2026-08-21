@@ -110,12 +110,11 @@ export default function CreatePage() {
   const [reminderDate, setReminderDate] = useState("");
   const [reminderModalOpen, setReminderModalOpen] = useState(false);
 
-  // Studio tabs: "card" | "theme" | "story"
-  const [activeTab, setActiveTab] = useState<"card" | "theme" | "story">("card");
+  // Studio tabs: "theme" (Design & Theme) | "story" (Story flow) | "card" (Edit card)
+  const [activeTab, setActiveTab] = useState<"theme" | "story" | "card">("theme");
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Preview & Viewport
-  const [previewOnly, setPreviewOnly] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<"mobile" | "desktop">("desktop");
   const [fullPreviewOpen, setFullPreviewOpen] = useState(false);
 
@@ -188,121 +187,69 @@ export default function CreatePage() {
     return photos;
   }, [blocks]);
 
-  // Project size calculation in bytes
+  // Total project approximate byte size for capacity indicator
   const projectBytes = useMemo(() => {
-    let configSize = 0;
     try {
-      const data = projectData();
-      const cleanData = JSON.parse(JSON.stringify(data));
-      if (typeof cleanData.audioUrl === "string" && cleanData.audioUrl.startsWith("data:")) cleanData.audioUrl = "";
-      if (typeof cleanData.customBg === "string" && cleanData.customBg.startsWith("data:")) cleanData.customBg = "";
-      if (Array.isArray(cleanData.blocks)) {
-        cleanData.blocks.forEach((b: any) => {
-          if (typeof b.audioUrl === "string" && b.audioUrl.startsWith("data:")) b.audioUrl = "";
-          if (typeof b.memoryVideo === "string" && b.memoryVideo.startsWith("data:")) b.memoryVideo = "";
-          if (typeof b.customBg === "string" && b.customBg.startsWith("data:")) b.customBg = "";
-          if (Array.isArray(b.images)) {
-            b.images = b.images.map((img: any) => (typeof img === "string" && img.startsWith("data:") ? "" : img));
-          }
+      const serialized = JSON.stringify({
+        blocks,
+        customBg,
+        audioUrl,
+        theme,
+        background
+      });
+      const baseBytes = new Blob([serialized]).size;
+      const pendingTotal = Object.values(pendingMediaSizes).reduce((acc, v) => acc + v, 0);
+      return baseBytes + pendingTotal;
+    } catch {
+      return 0;
+    }
+  }, [blocks, customBg, audioUrl, theme, background, pendingMediaSizes]);
+
+  function notify(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(""), 3500);
+  }
+
+  // Google Auth Listener
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUserProfile({
+          id: session.user.id,
+          email: session.user.email || "",
+          name: session.user.user_metadata?.full_name || session.user.user_metadata?.name
         });
       }
-      configSize = new Blob([JSON.stringify(cleanData)]).size;
-    } catch {}
+    });
 
-    let mediaSize = 0;
-    const countSize = (val: any) => {
-      if (!val) return;
-      if (typeof val === "string" && val.startsWith("data:")) {
-        const comma = val.indexOf(",");
-        if (comma >= 0) {
-          mediaSize += Math.round(((val.length - comma - 1) * 3) / 4);
-        }
-      } else if (typeof val === "object" && val !== null && "size" in val && typeof val.size === "number") {
-        mediaSize += val.size;
-      }
-    };
-
-    countSize(audioUrl);
-    countSize(customBg);
-    blocks.forEach((b) => {
-      countSize(b.audioUrl);
-      countSize(b.memoryVideo);
-      countSize(b.secretVideo);
-      countSize(b.customBg);
-      if (Array.isArray(b.images)) {
-        b.images.forEach((img) => countSize(img));
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUserProfile({
+          id: session.user.id,
+          email: session.user.email || "",
+          name: session.user.user_metadata?.full_name || session.user.user_metadata?.name
+        });
+      } else {
+        setUserProfile(null);
       }
     });
 
-    Object.values(pendingMediaSizes).forEach((sz) => {
-      mediaSize += sz;
-    });
+    return () => subscription.unsubscribe();
+  }, []);
 
-    return configSize + mediaSize;
-  }, [
-    blocks,
-    theme,
-    background,
-    cardBackgroundMode,
-    emojiAnimation,
-    globalFont,
-    globalTextColor,
-    globalCardOpacity,
-    globalRadius,
-    globalSpacing,
-    globalMotion,
-    audioName,
-    audioUrl,
-    customBg,
-    customBgName,
-    customBgOpacity,
-    customBgScale,
-    customBgPositionX,
-    customBgPositionY,
-    customBgRotation,
-    backgroundBaseColor,
-    bgColor1,
-    bgColor2,
-    bgColor3,
-    bgColor4,
-    backgroundOverlay,
-    pendingMediaSizes
-  ]);
-
-  // Load project on mount & Supabase user session
+  // Restore Draft on Mount
   useEffect(() => {
-    const client = getSupabaseClient();
-    if (client) {
-      client.auth.getUser().then(({ data }) => {
-        if (data?.user) {
-          setUserProfile({
-            id: data.user.id,
-            email: data.user.email || "",
-            name: data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "Creator"
-          });
-        }
-      });
-
-      const { data: authListener } = client.auth.onAuthStateChange((_event, session) => {
-        if (session?.user) {
-          setUserProfile({
-            id: session.user.id,
-            email: session.user.email || "",
-            name: session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "Creator"
-          });
-        } else {
-          setUserProfile(null);
-        }
-      });
-    }
-
-    const saved = localStorage.getItem("hanora-project") ?? localStorage.getItem("cherivo-project");
-
-    if (!saved) return;
     try {
-      const x = JSON.parse(saved);
-      const proj = normalizeProject(x);
-      if (proj.blocks) setBlocks(proj.blocks);
+      const raw = localStorage.getItem("hanora-project") || localStorage.getItem("cherivo-project");
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      const proj = normalizeProject(data);
+      if (proj.blocks && proj.blocks.length > 0) setBlocks(proj.blocks);
       if (proj.theme && themes[proj.theme]) setTheme(proj.theme);
       if (proj.background) setBackground(proj.background);
       if (proj.cardBackgroundMode) setCardBackgroundMode(proj.cardBackgroundMode);
@@ -322,81 +269,41 @@ export default function CreatePage() {
       if (proj.customBgPositionX !== undefined) setCustomBgPositionX(proj.customBgPositionX);
       if (proj.customBgPositionY !== undefined) setCustomBgPositionY(proj.customBgPositionY);
       if (proj.customBgRotation !== undefined) setCustomBgRotation(proj.customBgRotation);
+      if (proj.backgroundBaseColor) setBackgroundBaseColor(proj.backgroundBaseColor);
+      if (proj.bgColor1) setBgColor1(proj.bgColor1);
+      if (proj.bgColor2) setBgColor2(proj.bgColor2);
+      if (proj.bgColor3) setBgColor3(proj.bgColor3);
+      if (proj.bgColor4) setBgColor4(proj.bgColor4);
+      if (proj.backgroundOverlay !== undefined) setBackgroundOverlay(proj.backgroundOverlay);
       if (proj.targetEventTitle) setTargetEventTitle(proj.targetEventTitle);
       if (proj.targetEventDate) setTargetEventDate(proj.targetEventDate);
       if (proj.reminderDate) setReminderDate(proj.reminderDate);
-      if (x.themeOverride) {
-        setThemeOverride(true);
-        if (proj.backgroundBaseColor) setBackgroundBaseColor(proj.backgroundBaseColor);
-        if (proj.bgColor1) setBgColor1(proj.bgColor1);
-        if (proj.bgColor2) setBgColor2(proj.bgColor2);
-        if (proj.bgColor3) setBgColor3(proj.bgColor3);
-        if (proj.bgColor4) setBgColor4(proj.bgColor4);
-      }
-      if (proj.backgroundOverlay !== undefined) setBackgroundOverlay(proj.backgroundOverlay);
-
+      if (data.themeOverride !== undefined) setThemeOverride(Boolean(data.themeOverride));
       resolveMediaOnMount(proj);
     } catch {}
   }, []);
 
+  // Sync scene when selected changes
   useEffect(() => {
-    const [bg, accent, accent2, text] = themes[theme] ?? themes.dark;
-    document.documentElement.style.setProperty("--bg", bg);
-    document.documentElement.style.setProperty("--accent", accent);
-    document.documentElement.style.setProperty("--accent2", accent2);
-    document.documentElement.style.setProperty("--global-theme-text", text);
-    if (!themeOverride) {
-      setBackgroundBaseColor(bg);
-      setBgColor1(accent);
-      setBgColor2(accent2);
-      setBgColor3(theme === "light" ? "#e8f7ff" : "#38bdf8");
-      setBgColor4(theme === "light" ? "#fff0f5" : "#f59e0b");
-    }
-  }, [theme, themeOverride]);
-
-  useEffect(() => {
-    if (scene > visible.length - 1) {
-      setScene(Math.max(0, visible.length - 1));
-    }
-  }, [visible.length, scene]);
-
-  useEffect(() => {
-    return () => {
-      if (audioPreviewElRef.current) {
-        audioPreviewElRef.current.pause();
-        audioPreviewElRef.current.src = "";
-      }
-    };
-  }, []);
-
-  function notify(m: string) {
-    setToast(m);
-    window.setTimeout(() => setToast(""), 1800);
-  }
+    const visibleIndex = visible.findIndex((v) => v.id === blocks[selected]?.id);
+    if (visibleIndex >= 0) setScene(visibleIndex);
+  }, [selected, blocks, visible]);
 
   function stopAudioPreview() {
     if (audioPreviewElRef.current) {
       audioPreviewElRef.current.pause();
-      audioPreviewElRef.current.src = "";
+      audioPreviewElRef.current.currentTime = 0;
     }
     setAudioPreviewPlaying(false);
   }
 
   function toggleAudioPreview() {
-    const targetUrl = audioPreviewUrl || (typeof audioUrl === "string" ? audioUrl : "");
-    if (!targetUrl) return;
-
+    if (!audioPreviewElRef.current) return;
     if (audioPreviewPlaying) {
       stopAudioPreview();
     } else {
-      if (!audioPreviewElRef.current) {
-        audioPreviewElRef.current = new Audio();
-        audioPreviewElRef.current.onended = () => setAudioPreviewPlaying(false);
-        audioPreviewElRef.current.onerror = () => {
-          setAudioPreviewPlaying(false);
-          notify("Could not play audio preview");
-        };
-      }
+      const targetUrl = audioPreviewUrl || (typeof audioUrl === "string" ? audioUrl : "");
+      if (!targetUrl) return;
       audioPreviewElRef.current.src = targetUrl;
       void audioPreviewElRef.current
         .play()
@@ -478,7 +385,7 @@ export default function CreatePage() {
     };
     updateCurrent({ incidents: [...(current.incidents ?? []), item] });
     setSelectedIncident((current.incidents ?? []).length);
-    notify("Story incident added 😂");
+    notify("Incident added ✨");
   }
 
   function deleteIncident(index: number) {
@@ -490,7 +397,7 @@ export default function CreatePage() {
 
   function projectData(): GreetingProject {
     return normalizeProject({
-      blocks: blocks.map((b, idx) => normalizeBlock(b, idx, globalFont)),
+      blocks,
       theme,
       background,
       cardBackgroundMode,
@@ -973,6 +880,7 @@ export default function CreatePage() {
     setBlocks((prev) => [...prev, block]);
     setSelected(blocks.length);
     setAddOpen(false);
+    setActiveTab("card");
     notify("New section added ✨");
   }
 
@@ -1000,17 +908,26 @@ export default function CreatePage() {
       r.onerror = () => reject(new Error("Could not read image"));
       r.onload = () => {
         const img = new window.Image();
+        img.onerror = () => reject(new Error("Could not load image"));
         img.onload = () => {
-          const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+          let { width, height } = img;
+          if (width > maxSide || height > maxSide) {
+            if (width > height) {
+              height = Math.round((height * maxSide) / width);
+              width = maxSide;
+            } else {
+              width = Math.round((width * maxSide) / height);
+              height = maxSide;
+            }
+          }
           const canvas = document.createElement("canvas");
-          canvas.width = Math.max(1, Math.round(img.width * scale));
-          canvas.height = Math.max(1, Math.round(img.height * scale));
+          canvas.width = width;
+          canvas.height = height;
           const ctx = canvas.getContext("2d");
-          if (!ctx) return reject(new Error("Canvas unavailable"));
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          if (!ctx) return reject(new Error("No 2D context"));
+          ctx.drawImage(img, 0, 0, width, height);
           resolve(canvas.toDataURL("image/jpeg", quality));
         };
-        img.onerror = () => reject(new Error("Invalid image"));
         img.src = String(r.result);
       };
       r.readAsDataURL(file);
@@ -1020,13 +937,14 @@ export default function CreatePage() {
   async function pickGalleryImages(e: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    if (current.type !== "memories" && current.type !== "gallery") return;
-    const existing = current.images ?? (current.image ? [current.image] : []);
-    if (existing.length >= 20) return notify("You can add up to 20 photos");
-    const chosen = files.slice(0, 20 - existing.length);
+    const currentImgs = current.images ?? (current.image ? [current.image] : []);
+    const remaining = 20 - currentImgs.length;
+    if (remaining <= 0) return notify("Maximum 20 photos reached");
+    const toProcess = files.slice(0, remaining);
     try {
-      const urls = await Promise.all(chosen.map((f) => compressImage(f, 1200, 0.75)));
-      updateCurrent({ images: [...existing, ...urls], image: [...existing, ...urls][0] });
+      const urls = await Promise.all(toProcess.map((f) => compressImage(f, 1400, 0.78)));
+      const next = [...currentImgs, ...urls];
+      updateCurrent({ images: next, image: next[0] ?? "" });
       notify(`${urls.length} photo${urls.length > 1 ? "s" : ""} added ✨`);
     } catch {
       notify("One of the photos could not be processed");
@@ -1072,6 +990,1422 @@ export default function CreatePage() {
     return diff;
   }, [targetEventDate]);
 
+  // ============================================================================
+  // RENDER: DESIGN & THEME CONTROLS (Authentic Hanora Full Suite)
+  // ============================================================================
+  function renderThemeTab() {
+    return (
+      <div className="tabPaneContent">
+        <div className="editorHead">
+          <h2 style={{ fontSize: "16px", margin: 0 }}>🎨 Global Design & Theme</h2>
+        </div>
+
+        {/* Theme Presets */}
+        <div className="divider" style={{ marginTop: "6px" }}>Theme Presets</div>
+        <div className="themeGrid">
+          {[
+            ["dark", "Dark"],
+            ["light", "Light"],
+            ["system", "System"],
+            ["romantic", "Romantic"],
+            ["dreamy", "Dreamy"]
+          ].map(([v, l]) => (
+            <button
+              type="button"
+              key={v}
+              className={`themeOption ${theme === v ? "active" : ""}`}
+              onClick={() => {
+                setTheme(v);
+                setThemeOverride(false);
+              }}
+            >
+              <span className={`themeSwatch sw-${v}`} />
+              {l}
+            </button>
+          ))}
+        </div>
+
+        {/* Dynamic Background Presets */}
+        <div className="divider">🌈 Dynamic Background</div>
+        <div className="backgroundOptions">
+          {Object.entries({
+            aurora: "🌌 Aurora",
+            mesh: "🫧 Liquid mesh",
+            stars: "✨ Starfield",
+            petals: "🌸 Floating petals",
+            gradient: "🎨 Gradient",
+            minimal: "◌ Minimal glow"
+          }).map(([v, l]) => (
+            <button
+              type="button"
+              key={v}
+              className={`bgOption ${background === v && !customBg ? "active" : ""}`}
+              onClick={() => {
+                setBackground(v);
+                setCustomBg("");
+              }}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+
+        {/* Gradient Palette Colors */}
+        <div className="divider">🎨 Gradient Palette</div>
+        <div className="colorPanel">
+          <label>
+            Base colour
+            <input
+              className="color"
+              type="color"
+              value={backgroundBaseColor}
+              onChange={(e) => {
+                setThemeOverride(true);
+                setBackgroundBaseColor(e.target.value);
+              }}
+            />
+          </label>
+          <label>
+            Colour 1
+            <input
+              className="color"
+              type="color"
+              value={bgColor1}
+              onChange={(e) => {
+                setThemeOverride(true);
+                setBgColor1(e.target.value);
+              }}
+            />
+          </label>
+          <label>
+            Colour 2
+            <input
+              className="color"
+              type="color"
+              value={bgColor2}
+              onChange={(e) => {
+                setThemeOverride(true);
+                setBgColor2(e.target.value);
+              }}
+            />
+          </label>
+          <label>
+            Colour 3
+            <input
+              className="color"
+              type="color"
+              value={bgColor3}
+              onChange={(e) => {
+                setThemeOverride(true);
+                setBgColor3(e.target.value);
+              }}
+            />
+          </label>
+          <label>
+            Colour 4
+            <input
+              className="color"
+              type="color"
+              value={bgColor4}
+              onChange={(e) => {
+                setThemeOverride(true);
+                setBgColor4(e.target.value);
+              }}
+            />
+          </label>
+        </div>
+
+        <label style={{ marginTop: "8px" }}>
+          Background overlay <strong>{backgroundOverlay}%</strong>
+          <input
+            type="range"
+            min="0"
+            max="60"
+            value={backgroundOverlay}
+            onChange={(e) => setBackgroundOverlay(Number(e.target.value))}
+          />
+        </label>
+
+        {/* Custom Wallpaper Background */}
+        <div className="divider">🖼️ Custom Wallpaper Photo</div>
+        <p className="helperText">Upload a wallpaper image applied across your greeting with full zoom, position, and opacity control.</p>
+
+        <input
+          ref={bgFileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={uploadGlobalBackground}
+        />
+
+        {!customBg ? (
+          <button
+            type="button"
+            className="btn full"
+            style={{ marginTop: "6px" }}
+            onClick={() => bgFileInputRef.current?.click()}
+          >
+            📷 Choose background wallpaper
+          </button>
+        ) : (
+          <div className="customBgManager" style={{ marginTop: "8px", padding: "12px", border: "1px solid var(--line)", borderRadius: "14px", background: "rgba(255,255,255,0.03)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+              <div style={{ fontSize: "12px", fontWeight: 600, color: "#fff" }}>
+                🖼️ {customBgName || "wallpaper.jpg"}
+              </div>
+              <div style={{ display: "flex", gap: "6px" }}>
+                <button
+                  type="button"
+                  className="btn small"
+                  onClick={() => bgFileInputRef.current?.click()}
+                >
+                  Replace
+                </button>
+                <button
+                  type="button"
+                  className="btn danger small"
+                  onClick={() => {
+                    setCustomBg("");
+                    setCustomBgName("");
+                  }}
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+
+            <label>
+              Zoom / Scale <strong>{customBgScale}%</strong>
+              <input
+                type="range"
+                min="100"
+                max="250"
+                value={customBgScale}
+                onChange={(e) => setCustomBgScale(Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Horizontal position X <strong>{customBgPositionX}%</strong>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={customBgPositionX}
+                onChange={(e) => setCustomBgPositionX(Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Vertical position Y <strong>{customBgPositionY}%</strong>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={customBgPositionY}
+                onChange={(e) => setCustomBgPositionY(Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Rotation <strong>{customBgRotation}°</strong>
+              <input
+                type="range"
+                min="-180"
+                max="180"
+                value={customBgRotation}
+                onChange={(e) => setCustomBgRotation(Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Photo opacity <strong>{customBgOpacity}%</strong>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={customBgOpacity}
+                onChange={(e) => setCustomBgOpacity(Number(e.target.value))}
+              />
+            </label>
+            <button
+              type="button"
+              className="btn small full"
+              style={{ marginTop: "6px" }}
+              onClick={() => {
+                setCustomBgScale(100);
+                setCustomBgPositionX(50);
+                setCustomBgPositionY(50);
+                setCustomBgRotation(0);
+                setCustomBgOpacity(100);
+              }}
+            >
+              Reset wallpaper framing
+            </button>
+          </div>
+        )}
+
+        {/* Card Background Mode */}
+        <div className="divider">🖼️ Card Background Mode</div>
+        <div style={{ display: "flex", gap: "12px", margin: "8px 0 14px" }}>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "13px" }}>
+            <input
+              type="radio"
+              name="cardBgMode"
+              checked={cardBackgroundMode === "same"}
+              onChange={() => setCardBackgroundMode("same")}
+            />
+            Same background for all sections
+          </label>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "13px" }}>
+            <input
+              type="radio"
+              name="cardBgMode"
+              checked={cardBackgroundMode === "different"}
+              onChange={() => setCardBackgroundMode("different")}
+            />
+            Different background per section
+          </label>
+        </div>
+
+        {/* Global Typography */}
+        <div className="divider">🔤 Global Typography</div>
+        <label>
+          Global Font
+          <select
+            value={globalFont}
+            onChange={(e) => setGlobalFont(e.target.value as FontName)}
+          >
+            {fontOptions}
+          </select>
+        </label>
+        <label>
+          Greeting Text Colour
+          <input
+            className="color"
+            type="color"
+            value={globalTextColor}
+            onChange={(e) => setGlobalTextColor(e.target.value)}
+          />
+        </label>
+
+        {/* Card Transparency & Radius */}
+        <div className="divider">🧱 Card Transparency & Radius</div>
+        <label>
+          Card Transparency (Global) <strong>{globalCardOpacity}%</strong>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={globalCardOpacity}
+            onChange={(e) => setGlobalCardOpacity(Number(e.target.value))}
+          />
+        </label>
+        <label>
+          Card Corner Radius <strong>{globalRadius}px</strong>
+          <input
+            type="range"
+            min="0"
+            max="48"
+            value={globalRadius}
+            onChange={(e) => setGlobalRadius(Number(e.target.value))}
+          />
+        </label>
+        <label>
+          Section spacing <strong>{globalSpacing}px</strong>
+          <input
+            type="range"
+            min="6"
+            max="50"
+            value={globalSpacing}
+            onChange={(e) => setGlobalSpacing(Number(e.target.value))}
+          />
+        </label>
+
+        {/* Emoji Motion & Style */}
+        <div className="divider">🎭 Global Emoji Motion</div>
+        <select
+          value={emojiAnimation}
+          onChange={(e) => setEmojiAnimation(e.target.value)}
+        >
+          {emojiAnimationOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+
+        <div className="divider">🎬 Global Motion Style</div>
+        <select
+          value={globalMotion}
+          onChange={(e) => setGlobalMotion(e.target.value)}
+        >
+          <option value="cinematic">Cinematic</option>
+          <option value="soft">Soft</option>
+          <option value="snappy">Snappy</option>
+          <option value="none">None</option>
+        </select>
+
+        {/* Background Music */}
+        <div className="divider">🎵 Background Music</div>
+        <p className="helperText">Upload an MP3 song to play softly with the greeting.</p>
+        <label>
+          Upload MP3 (Max 20MB)
+          <input
+            type="file"
+            accept="audio/mpeg,.mp3"
+            onChange={uploadAudio}
+            disabled={mediaUploading}
+          />
+        </label>
+        {(audioUrl || audioPreviewUrl) && (
+          <div className="audioControlCard">
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px", overflow: "hidden", flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
+                <Volume2 size={16} style={{ flexShrink: 0, color: "var(--accent)" }} />
+                <b style={{ fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {audioName || "Selected music"}
+                </b>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+              <button
+                type="button"
+                className={`btn small ${audioPreviewPlaying ? "primary" : ""}`}
+                onClick={toggleAudioPreview}
+                title={audioPreviewPlaying ? "Pause preview" : "Play preview"}
+              >
+                {audioPreviewPlaying ? <Pause size={13} /> : <Play size={13} />}
+                {audioPreviewPlaying ? "Pause" : "Preview"}
+              </button>
+              <button
+                type="button"
+                className="btn danger small"
+                onClick={() => {
+                  stopAudioPreview();
+                  setAudioName("");
+                  setAudioUrl("");
+                  setAudioPreviewUrl("");
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        )}
+        <audio ref={audioPreviewElRef} onEnded={() => setAudioPreviewPlaying(false)} />
+
+        {/* Draft Actions */}
+        <div className="draftActions" style={{ marginTop: "24px" }}>
+          <button type="button" className="btn" onClick={save}>
+            <Save size={14} /> Save changes
+          </button>
+          <button type="button" className="btn danger" onClick={deleteCurrentDraft}>
+            <Trash2 size={14} /> Clear draft
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // RENDER: STORY FLOW CARDS
+  // ============================================================================
+  function renderStoryTab() {
+    return (
+      <div className="tabPaneContent">
+        <div className="editorHead">
+          <div>
+            <h2 style={{ fontSize: "16px", margin: 0 }}>Story Flow Deck</h2>
+            <small style={{ color: "var(--accent)" }}>{blocks.length} cards in greeting sequence</small>
+          </div>
+          <button
+            type="button"
+            className="btn small primary"
+            onClick={() => setAddOpen(true)}
+          >
+            <Plus size={12} /> Add Card
+          </button>
+        </div>
+        <div className="storyList" style={{ marginTop: "12px" }}>
+          {blocks.map((b, i) => (
+            <div
+              className={`storyItem ${i === selected ? "selected" : ""}`}
+              key={b.id}
+              onClick={() => {
+                selectBlock(i);
+                setActiveTab("card");
+              }}
+            >
+              <button
+                type="button"
+                title="Move up"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  moveBlock(i, i - 1);
+                }}
+                disabled={i === 0}
+              >
+                <ArrowUp size={13} />
+              </button>
+              <button
+                type="button"
+                title="Move down"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  moveBlock(i, i + 1);
+                }}
+                disabled={i === blocks.length - 1}
+              >
+                <ArrowDown size={13} />
+              </button>
+
+              <div className="storyMain">
+                <b>{b.emoji ? `${b.emoji} ` : ""}{b.title}</b>
+                <small>{b.type}</small>
+              </div>
+
+              <button
+                type="button"
+                title="Duplicate card"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  duplicateBlock(i);
+                }}
+              >
+                <Copy size={12} />
+              </button>
+
+              <button
+                type="button"
+                title={b.visible ? "Hide scene" : "Show scene"}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleVisible(i);
+                }}
+              >
+                {b.visible ? <Eye size={13} /> : <EyeOff size={13} />}
+              </button>
+
+              <button
+                type="button"
+                title="Remove scene"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeBlock(i);
+                }}
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="addAnything"
+          style={{ marginTop: "14px" }}
+          onClick={() => setAddOpen(true)}
+        >
+          <Plus size={15} /> Add new card template
+        </button>
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // RENDER: EDIT CARD INSPECTOR (Full Suite)
+  // ============================================================================
+  function renderCardTab() {
+    return (
+      <div className="tabPaneContent">
+        <div className="editorHead">
+          <div>
+            <h2 style={{ fontSize: "16px", margin: 0 }}>
+              Section {selected + 1}: {current.title}
+            </h2>
+            <small style={{ color: "var(--accent)" }}>Type: {current.type}</small>
+          </div>
+          <div style={{ display: "flex", gap: "6px" }}>
+            <button
+              type="button"
+              className="btn small"
+              disabled={selected === 0}
+              onClick={() => selectBlock(selected - 1)}
+              title="Previous Section"
+            >
+              ◀
+            </button>
+            <button
+              type="button"
+              className="btn small"
+              disabled={selected === blocks.length - 1}
+              onClick={() => selectBlock(selected + 1)}
+              title="Next Section"
+            >
+              ▶
+            </button>
+          </div>
+        </div>
+
+        {mediaUploading && <div className="mediaUploadStatus">Uploading media…</div>}
+
+        <label>
+          Section title
+          <input
+            value={current.title ?? "Untitled section"}
+            onChange={(e) => updateCurrent({ title: e.target.value })}
+          />
+        </label>
+        <label>
+          Subtitle
+          <input
+            value={current.subtitle ?? "A little moment"}
+            onChange={(e) => updateCurrent({ subtitle: e.target.value })}
+          />
+        </label>
+        <label>
+          Heading
+          <input
+            value={current.heading ?? "Your moment"}
+            onChange={(e) => updateCurrent({ heading: e.target.value })}
+          />
+        </label>
+        <label>
+          Message
+          <textarea
+            value={current.text ?? "Write something beautiful."}
+            onChange={(e) => updateCurrent({ text: e.target.value })}
+          />
+        </label>
+
+        {/* Typography & Sizes for This Section */}
+        <div className="divider">🔤 Typography & Font Sizes</div>
+        <div className="typographyControlGroup">
+          <div className="typoItem">
+            <div className="typoHeader">
+              <span>Title Size</span>
+              <span className="typoSizeVal">{current.titleSize ?? 12}px</span>
+            </div>
+            <div className="typoRow" style={{ display: "flex", gap: "8px" }}>
+              <select
+                value={current.titleFont ?? globalFont}
+                onChange={(e) => updateCurrent({ titleFont: e.target.value as FontName })}
+              >
+                {fontOptions}
+              </select>
+              <input
+                type="range"
+                min="10"
+                max="36"
+                value={current.titleSize ?? 12}
+                onChange={(e) => updateCurrent({ titleSize: Number(e.target.value) })}
+              />
+            </div>
+          </div>
+
+          <div className="typoItem" style={{ marginTop: "8px" }}>
+            <div className="typoHeader">
+              <span>Subtitle Size</span>
+              <span className="typoSizeVal">{current.subtitleSize ?? 14}px</span>
+            </div>
+            <div className="typoRow" style={{ display: "flex", gap: "8px" }}>
+              <select
+                value={current.subtitleFont ?? globalFont}
+                onChange={(e) => updateCurrent({ subtitleFont: e.target.value as FontName })}
+              >
+                {fontOptions}
+              </select>
+              <input
+                type="range"
+                min="10"
+                max="36"
+                value={current.subtitleSize ?? 14}
+                onChange={(e) => updateCurrent({ subtitleSize: Number(e.target.value) })}
+              />
+            </div>
+          </div>
+
+          <div className="typoItem" style={{ marginTop: "8px" }}>
+            <div className="typoHeader">
+              <span>Heading Size</span>
+              <span className="typoSizeVal">{current.headingSize ?? 70}px</span>
+            </div>
+            <div className="typoRow" style={{ display: "flex", gap: "8px" }}>
+              <select
+                value={current.headingFont ?? current.font ?? globalFont}
+                onChange={(e) => updateCurrent({ headingFont: e.target.value as FontName })}
+              >
+                {fontOptions}
+              </select>
+              <input
+                type="range"
+                min="24"
+                max="120"
+                value={current.headingSize ?? 70}
+                onChange={(e) => updateCurrent({ headingSize: Number(e.target.value) })}
+              />
+            </div>
+          </div>
+
+          <div className="typoItem" style={{ marginTop: "8px" }}>
+            <div className="typoHeader">
+              <span>Body Text Size</span>
+              <span className="typoSizeVal">{current.bodySize ?? 17}px</span>
+            </div>
+            <div className="typoRow" style={{ display: "flex", gap: "8px" }}>
+              <select
+                value={current.bodyFont ?? "sans"}
+                onChange={(e) => updateCurrent({ bodyFont: e.target.value as FontName })}
+              >
+                {fontOptions}
+              </select>
+              <input
+                type="range"
+                min="12"
+                max="32"
+                value={current.bodySize ?? 17}
+                onChange={(e) => updateCurrent({ bodySize: Number(e.target.value) })}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Section Colors */}
+        <div className="divider">🎨 Section Colors</div>
+        <div className="colorPanel">
+          <label>
+            Accent
+            <input
+              className="color"
+              type="color"
+              value={current.accent ?? "#ff4f8b"}
+              onChange={(e) => updateCurrent({ accent: e.target.value })}
+            />
+          </label>
+          <label>
+            Heading
+            <input
+              className="color"
+              type="color"
+              value={current.headingColor || globalTextColor}
+              onChange={(e) => updateCurrent({ headingColor: e.target.value })}
+            />
+          </label>
+          <label>
+            Subtitle
+            <input
+              className="color"
+              type="color"
+              value={current.subtitleColor || "#ff9fc2"}
+              onChange={(e) => updateCurrent({ subtitleColor: e.target.value })}
+            />
+          </label>
+          <label>
+            Body
+            <input
+              className="color"
+              type="color"
+              value={current.bodyColor || "#c8bacb"}
+              onChange={(e) => updateCurrent({ bodyColor: e.target.value })}
+            />
+          </label>
+          <label>
+            Emoji
+            <input
+              className="color"
+              type="color"
+              value={current.emojiColor || "#ff86b0"}
+              onChange={(e) => updateCurrent({ emojiColor: e.target.value })}
+            />
+          </label>
+        </div>
+
+        {/* Card Styling */}
+        <div className="divider">🧱 Card Styling</div>
+        <div className="two">
+          <label>
+            Card colour
+            <input
+              className="color"
+              type="color"
+              value={current.cardColor ?? "#ffffff"}
+              onChange={(e) => updateCurrent({ cardColor: e.target.value })}
+            />
+          </label>
+          <label>
+            Card opacity <strong>{current.cardOpacity ?? globalCardOpacity}%</strong>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={current.cardOpacity ?? globalCardOpacity}
+              onChange={(e) => updateCurrent({ cardOpacity: Number(e.target.value) })}
+            />
+          </label>
+        </div>
+        <div className="two">
+          <label>
+            Corner radius <strong>{current.radius ?? globalRadius}px</strong>
+            <input
+              type="range"
+              min="0"
+              max="48"
+              value={current.radius ?? globalRadius}
+              onChange={(e) => updateCurrent({ radius: Number(e.target.value) })}
+            />
+          </label>
+          <label>
+            Line spacing <strong>{Number(current.lineHeight ?? 1.75).toFixed(2)}</strong>
+            <input
+              type="range"
+              min="1"
+              max="2.4"
+              step=".05"
+              value={current.lineHeight ?? 1.75}
+              onChange={(e) => updateCurrent({ lineHeight: Number(e.target.value) })}
+            />
+          </label>
+        </div>
+        <label>
+          Letter spacing <strong>{current.letterSpacing ?? 0}px</strong>
+          <input
+            type="range"
+            min="-1"
+            max="6"
+            step=".2"
+            value={current.letterSpacing ?? 0}
+            onChange={(e) => updateCurrent({ letterSpacing: Number(e.target.value) })}
+          />
+        </label>
+
+        {/* Emoji & Animation */}
+        <div className="two">
+          <label>
+            Emoji
+            <input
+              value={current.emoji}
+              onChange={(e) => updateCurrent({ emoji: e.target.value })}
+            />
+          </label>
+          <label>
+            Emoji Animation
+            <select
+              value={current.emojiAnimation || emojiAnimation}
+              onChange={(e) => updateCurrent({ emojiAnimation: e.target.value })}
+            >
+              {emojiAnimationOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {/* Image Opacity Slider */}
+        <label>
+          Image Opacity: <strong>{current.imageOpacity ?? 100}%</strong>
+          <input
+            type="range"
+            min="10"
+            max="100"
+            value={current.imageOpacity ?? 100}
+            onChange={(e) => updateCurrent({ imageOpacity: Number(e.target.value) })}
+          />
+        </label>
+
+        {/* HERO / WELCOME PHOTO MANAGER */}
+        {(current.type === "welcome" || current.type === "image") && (
+          <div className="heroPhotoManager">
+            <div className="divider">📸 Hero / Feature Photo</div>
+            <label>
+              Upload / Replace photo
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => pickImage(e, (url) => updateCurrent({ image: url }))}
+              />
+            </label>
+            {current.image && (
+              <div className="heroAdjustmentControls" style={{ marginTop: "8px" }}>
+                <label>
+                  Photo zoom <strong>{heroAdjustment.scale}%</strong>
+                  <input
+                    type="range"
+                    min="50"
+                    max="200"
+                    value={heroAdjustment.scale}
+                    onChange={(e) =>
+                      updateImageAdjustment(0, { scale: Number(e.target.value) })
+                    }
+                  />
+                </label>
+                <div className="two">
+                  <label>
+                    Position X <strong>{heroAdjustment.x}%</strong>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={heroAdjustment.x}
+                      onChange={(e) => updateImageAdjustment(0, { x: Number(e.target.value) })}
+                    />
+                  </label>
+                  <label>
+                    Position Y <strong>{heroAdjustment.y}%</strong>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={heroAdjustment.y}
+                      onChange={(e) => updateImageAdjustment(0, { y: Number(e.target.value) })}
+                    />
+                  </label>
+                </div>
+                <div style={{ display: "flex", gap: "6px", marginTop: "6px" }}>
+                  <button
+                    type="button"
+                    className="btn small"
+                    onClick={() => resetImageAdjustment(0)}
+                  >
+                    <RotateCcw size={12} /> Reset pan/zoom
+                  </button>
+                  <button
+                    type="button"
+                    className="btn danger small"
+                    onClick={() => updateCurrent({ image: "" })}
+                  >
+                    <Trash2 size={12} /> Remove photo
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* REASONS LIST MANAGER */}
+        {current.type === "reasons" && (
+          <div className="reasonsManager">
+            <div className="divider">❤️ Reasons List ({(current.items ?? []).length})</div>
+            {(current.items ?? reasonDefaults).map((r, i) => (
+              <div
+                key={r.id || i}
+                className={`reasonRow ${selectedReason === i ? "selected" : ""}`}
+                onClick={() => setSelectedReason(i)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px",
+                  borderRadius: "8px",
+                  background: selectedReason === i ? "rgba(255,79,139,0.15)" : "rgba(255,255,255,0.03)",
+                  border: selectedReason === i ? "1px solid var(--accent)" : "1px solid var(--line)",
+                  marginBottom: "6px",
+                  cursor: "pointer"
+                }}
+              >
+                <span>{r.emoji}</span>
+                <span style={{ flex: 1, fontSize: "12px", fontWeight: 600 }}>{r.title}</span>
+                <button
+                  type="button"
+                  className="iconBtn danger"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteReason(i);
+                  }}
+                  title="Delete reason"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="btn small full"
+              style={{ marginTop: "6px" }}
+              onClick={addReason}
+            >
+              <Plus size={13} /> Add reason
+            </button>
+
+            {reason && (
+              <div className="reasonFields" style={{ marginTop: "10px" }}>
+                <label>
+                  Reason title
+                  <input
+                    value={reason.title}
+                    onChange={(e) => updateReason(selectedReason, { title: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Reason text
+                  <textarea
+                    value={reason.text}
+                    onChange={(e) => updateReason(selectedReason, { text: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Reason emoji
+                  <input
+                    value={reason.emoji}
+                    onChange={(e) => updateReason(selectedReason, { emoji: e.target.value })}
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* PHOTO GALLERY & MEMORIES MANAGER */}
+        {(current.type === "memories" || current.type === "gallery") && (
+          <div className="galleryManager">
+            <div className="divider">
+              🖼️ Photo Gallery ({(current.images ?? []).length} / 20)
+            </div>
+
+            <label>
+              Gallery Layout
+              <select
+                value={current.galleryLayout || "scattered"}
+                onChange={(e) =>
+                  updateCurrent({ galleryLayout: e.target.value as Block["galleryLayout"] })
+                }
+              >
+                <option value="scattered">✨ Scattered & Interactive (Dust Disintegration)</option>
+                <option value="collage">Auto Dynamic Collage</option>
+                <option value="grid">Balanced Grid</option>
+                <option value="masonry">Masonry</option>
+                <option value="polaroid">Polaroid</option>
+                <option value="filmstrip">Filmstrip</option>
+                <option value="hero">Hero Showcase</option>
+              </select>
+            </label>
+
+            <label>
+              Gallery Frame Background
+              <select
+                value={current.galleryBackground || "transparent"}
+                onChange={(e) =>
+                  updateCurrent({ galleryBackground: e.target.value as Block["galleryBackground"] })
+                }
+              >
+                <option value="transparent">Transparent</option>
+                <option value="black">Deep Dark Glass</option>
+                <option value="white">Frosted White Glass</option>
+              </select>
+            </label>
+
+            <label style={{ marginTop: "8px" }}>
+              Upload photos (up to 20)
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={pickGalleryImages}
+              />
+            </label>
+
+            {(current.images ?? []).length > 0 && (
+              <div
+                className="galleryThumbsGrid"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gap: "6px",
+                  marginTop: "10px"
+                }}
+              >
+                {(current.images ?? []).map((src, i) => (
+                  <div
+                    key={i}
+                    className="galleryThumbWrapper"
+                    style={{
+                      position: "relative",
+                      borderRadius: "6px",
+                      overflow: "hidden",
+                      aspectRatio: "1",
+                      border: selectedGalleryImage === i ? "2px solid var(--accent)" : "1px solid var(--line)"
+                    }}
+                    onClick={() => setSelectedGalleryImage(i)}
+                  >
+                    <img
+                      src={src}
+                      alt={`Memory ${i + 1}`}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeGalleryImage(i);
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "2px",
+                        right: "2px",
+                        background: "rgba(0,0,0,0.7)",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "50%",
+                        width: "20px",
+                        height: "20px",
+                        display: "grid",
+                        placeItems: "center",
+                        cursor: "pointer"
+                      }}
+                      title="Remove photo"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Optional Memory Video Upload (Up to 50 MB) */}
+            <div className="memoryVideoManager" style={{ marginTop: "14px" }}>
+              <div className="divider">🎬 Memory Video (Up to 50 MB)</div>
+              <label>
+                Upload Video (MP4 / WebM / MOV)
+                <input
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime,video/*"
+                  onChange={uploadMemoryVideo}
+                  disabled={mediaUploading}
+                />
+              </label>
+              {current.memoryVideo && (
+                <div style={{ marginTop: "8px" }}>
+                  <button
+                    type="button"
+                    className="btn danger small full"
+                    onClick={() => {
+                      updateCurrent({ memoryVideo: undefined });
+                      setMemoryVideoPreview((prev) => {
+                        const copy = { ...prev };
+                        delete copy[current.id];
+                        return copy;
+                      });
+                    }}
+                  >
+                    Remove video
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* LETTER STYLING */}
+        {current.type === "letter" && (
+          <div className="letterControls">
+            <div className="divider">💌 Letter Customization</div>
+            <div className="two">
+              <label>
+                Letter text colour
+                <input
+                  className="color"
+                  type="color"
+                  value={current.letterColor ?? "#2d2024"}
+                  onChange={(e) => updateCurrent({ letterColor: e.target.value })}
+                />
+              </label>
+              <label>
+                Letter background colour
+                <input
+                  className="color"
+                  type="color"
+                  value={current.cardColor ?? "#fff8ea"}
+                  onChange={(e) => updateCurrent({ cardColor: e.target.value })}
+                />
+              </label>
+            </div>
+            <div className="two">
+              <label>
+                Title font
+                <select
+                  value={current.headingFont ?? "great-vibes"}
+                  onChange={(e) => updateCurrent({ headingFont: e.target.value as FontName })}
+                >
+                  {fontOptions}
+                </select>
+              </label>
+              <label>
+                Body font
+                <select
+                  value={current.bodyFont ?? "serif"}
+                  onChange={(e) => updateCurrent({ bodyFont: e.target.value as FontName })}
+                >
+                  {fontOptions}
+                </select>
+              </label>
+            </div>
+            <div className="two">
+              <label>
+                Letter size <strong>{current.letterSize ?? 17}px</strong>
+                <input
+                  type="range"
+                  min="12"
+                  max="36"
+                  value={current.letterSize ?? 17}
+                  onChange={(e) => updateCurrent({ letterSize: Number(e.target.value) })}
+                />
+              </label>
+              <label>
+                Line spacing <strong>{Number(current.letterLineHeight ?? 1.8).toFixed(2)}</strong>
+                <input
+                  type="range"
+                  min="1"
+                  max="2.5"
+                  step=".05"
+                  value={current.letterLineHeight ?? 1.8}
+                  onChange={(e) => updateCurrent({ letterLineHeight: Number(e.target.value) })}
+                />
+              </label>
+            </div>
+            <label>
+              Letter alignment
+              <select
+                value={current.letterAlign ?? "left"}
+                onChange={(e) => updateCurrent({ letterAlign: e.target.value as Block["letterAlign"] })}
+              >
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+            </label>
+
+            {allMemoryPhotos.length > 0 && (
+              <div className="memoryPicker" style={{ marginTop: "10px" }}>
+                <label style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "6px", display: "block" }}>
+                  Pick from uploaded memory photos:
+                </label>
+                <div className="thumbGrid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px" }}>
+                  {allMemoryPhotos.map((src, i) => (
+                    <button
+                      type="button"
+                      key={i}
+                      className="thumbItem"
+                      style={{
+                        border: current.image === src ? "2px solid var(--accent)" : "1px solid var(--line)",
+                        borderRadius: "6px",
+                        overflow: "hidden",
+                        padding: 0,
+                        height: "50px"
+                      }}
+                      onClick={() => updateCurrent({ image: current.image === src ? "" : src })}
+                    >
+                      <img src={src} alt={`Memory ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SECRET / TAP-TO-REVEAL MANAGER */}
+        {current.type === "secret" && (
+          <div className="secretRevealManager">
+            <div className="divider">🎁 Tap-to-Reveal Hidden Media</div>
+            <p className="helperText">Add hidden text, a hidden memory photo, and a secret video message revealed upon heart tap.</p>
+            <label>
+              Secret Message
+              <textarea
+                value={current.text}
+                onChange={(e) => updateCurrent({ text: e.target.value })}
+              />
+            </label>
+            <label style={{ marginTop: "8px" }}>
+              Upload secret photo
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => pickImage(e, (url) => updateCurrent({ secretImage: url }))}
+              />
+            </label>
+            {current.secretImage && (
+              <button
+                type="button"
+                className="btn small danger"
+                style={{ marginTop: "6px" }}
+                onClick={() => updateCurrent({ secretImage: "" })}
+              >
+                <Trash2 size={12} /> Remove secret photo
+              </button>
+            )}
+            <label style={{ marginTop: "10px" }}>
+              Upload secret video (Up to 50 MB)
+              <input
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime,video/*"
+                onChange={uploadSecretVideo}
+                disabled={mediaUploading}
+              />
+            </label>
+            {current.secretVideo && (
+              <button
+                type="button"
+                className="btn small danger"
+                style={{ marginTop: "6px" }}
+                onClick={() => updateCurrent({ secretVideo: "" })}
+              >
+                <Trash2 size={12} /> Remove secret video
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* CAKE / CANDLE FINALE */}
+        {current.type === "cake" && (
+          <div className="cakeManager">
+            <div className="divider">🎂 Birthday Cake & Wish Finale</div>
+            <label>
+              Candle Instructions / Wish Prompt
+              <textarea
+                value={current.text}
+                onChange={(e) => updateCurrent({ text: e.target.value })}
+                placeholder="Tap a candle to blow it out. Make a special wish for the year ahead ✨"
+              />
+            </label>
+          </div>
+        )}
+
+        {/* MEMORABLE INCIDENTS */}
+        {current.type === "incidents" && (
+          <div className="incidentsManager">
+            <div className="divider">😂 Story Incidents ({(current.incidents ?? []).length})</div>
+            {(current.incidents ?? incidentDefaults).map((inc, i) => (
+              <div
+                key={inc.id || i}
+                className={`incidentRow ${selectedIncident === i ? "selected" : ""}`}
+                onClick={() => setSelectedIncident(i)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px",
+                  borderRadius: "8px",
+                  background: selectedIncident === i ? "rgba(255,79,139,0.15)" : "rgba(255,255,255,0.03)",
+                  border: selectedIncident === i ? "1px solid var(--accent)" : "1px solid var(--line)",
+                  marginBottom: "6px",
+                  cursor: "pointer"
+                }}
+              >
+                <span>{inc.emoji}</span>
+                <div style={{ flex: 1 }}>
+                  <b style={{ fontSize: "12px" }}>{inc.title}</b>
+                  <span style={{ fontSize: "10px", color: "var(--muted)", display: "block" }}>{inc.tag}</span>
+                </div>
+                <button
+                  type="button"
+                  className="iconBtn danger"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteIncident(i);
+                  }}
+                  title="Delete incident"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="btn small full"
+              style={{ marginTop: "6px" }}
+              onClick={addIncident}
+            >
+              <Plus size={13} /> Add incident
+            </button>
+
+            {incident && (
+              <div className="incidentFields" style={{ marginTop: "10px" }}>
+                <div className="two">
+                  <label>
+                    Title
+                    <input
+                      value={incident.title}
+                      onChange={(e) => updateIncident(selectedIncident, { title: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    Tag / Label
+                    <input
+                      value={incident.tag || ""}
+                      onChange={(e) => updateIncident(selectedIncident, { tag: e.target.value })}
+                    />
+                  </label>
+                </div>
+                <div className="two">
+                  <label>
+                    Date
+                    <input
+                      value={incident.date || ""}
+                      onChange={(e) => updateIncident(selectedIncident, { date: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    Emoji
+                    <input
+                      value={incident.emoji}
+                      onChange={(e) => updateIncident(selectedIncident, { emoji: e.target.value })}
+                    />
+                  </label>
+                </div>
+                <label>
+                  Incident Story
+                  <textarea
+                    value={incident.text}
+                    onChange={(e) => updateIncident(selectedIncident, { text: e.target.value })}
+                  />
+                </label>
+                <label style={{ marginTop: "6px" }}>
+                  Incident Photo
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => pickImage(e, (url) => updateIncident(selectedIncident, { image: url }))}
+                  />
+                </label>
+                {incident.image && (
+                  <button
+                    type="button"
+                    className="btn small danger"
+                    style={{ marginTop: "6px" }}
+                    onClick={() => updateIncident(selectedIncident, { image: "" })}
+                  >
+                    <Trash2 size={12} /> Remove photo
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SECTION CUSTOM BACKGROUND (WHEN DIFFERENT BACKGROUNDS SELECTED) */}
+        {cardBackgroundMode === "different" && (
+          <div className="sectionBgManager" style={{ marginTop: "14px" }}>
+            <div className="divider">🖼️ Individual Section Wallpaper</div>
+            <input
+              ref={sectionBgFileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={uploadSectionBackground}
+            />
+            <button
+              type="button"
+              className="btn full small"
+              onClick={() => sectionBgFileInputRef.current?.click()}
+            >
+              📷 Upload section wallpaper
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // MAIN RETURN JSX (Authentic Hanora Look & Feel)
+  // ============================================================================
   return (
     <main className="creator">
       {/* Top Header Navigation */}
@@ -1113,7 +2447,7 @@ export default function CreatePage() {
 
         <div className="topActions">
           <div
-            className="capacityIndicator"
+            className="capacityIndicator hideOnMobile"
             style={{
               fontSize: "11px",
               color: projectBytes > 70_000_000 ? "#ff4976" : "var(--muted)",
@@ -1171,163 +2505,9 @@ export default function CreatePage() {
         </div>
       </header>
 
-      {/* Main 3-Column Creator Studio */}
+      {/* Main Studio Grid */}
       <div className="creatorGrid">
-        {/* Left Column: Story Navigation & Card Deck */}
-        <aside className="sidePanel storyPanel">
-          <div className="sideTitle" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <h2>Story flow</h2>
-              <p>{blocks.length} sections in sequence</p>
-            </div>
-            <button
-              type="button"
-              className="btn small primary"
-              style={{ padding: "4px 9px", fontSize: "11px" }}
-              onClick={() => setAddOpen(true)}
-            >
-              <Plus size={12} /> Add
-            </button>
-          </div>
-
-          <div className="storyList">
-            {blocks.map((b, i) => (
-              <div
-                className={`storyItem ${i === selected ? "selected" : ""}`}
-                key={b.id}
-                onClick={() => selectBlock(i)}
-              >
-                <button
-                  type="button"
-                  title="Move up"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    moveBlock(i, i - 1);
-                  }}
-                  disabled={i === 0}
-                >
-                  <ArrowUp size={13} />
-                </button>
-                <button
-                  type="button"
-                  title="Move down"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    moveBlock(i, i + 1);
-                  }}
-                  disabled={i === blocks.length - 1}
-                >
-                  <ArrowDown size={13} />
-                </button>
-
-                <div className="storyMain">
-                  <b>{b.emoji ? `${b.emoji} ` : ""}{b.title}</b>
-                  <small>{b.type}</small>
-                </div>
-
-                <button
-                  type="button"
-                  title="Duplicate card"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    duplicateBlock(i);
-                  }}
-                >
-                  <Copy size={12} />
-                </button>
-
-                <button
-                  type="button"
-                  title={b.visible ? "Hide scene" : "Show scene"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleVisible(i);
-                  }}
-                >
-                  {b.visible ? <Eye size={13} /> : <EyeOff size={13} />}
-                </button>
-
-                <button
-                  type="button"
-                  title="Remove scene"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeBlock(i);
-                  }}
-                >
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <button
-            type="button"
-            className="addAnything"
-            onClick={() => setAddOpen(true)}
-          >
-            <Plus size={15} /> Add new section
-          </button>
-        </aside>
-
-        {/* Center Column: Live Interactive Canvas Preview */}
-        <div className="previewWrap">
-          <div className="previewToolbar" style={{ marginBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ fontSize: "12px", color: "var(--muted)" }}>
-              Editing: <b style={{ color: "#fff" }}>{current.title}</b> ({selected + 1} / {blocks.length})
-            </div>
-            <div className="deviceToggle">
-              <button
-                type="button"
-                className={previewDevice === "desktop" ? "active" : ""}
-                onClick={() => setPreviewDevice("desktop")}
-              >
-                Desktop
-              </button>
-              <button
-                type="button"
-                className={previewDevice === "mobile" ? "active" : ""}
-                onClick={() => setPreviewDevice("mobile")}
-              >
-                Mobile
-              </button>
-            </div>
-          </div>
-
-          <GreetingView
-            project={projectData()}
-            sceneIndex={scene}
-            onSceneChange={setScene}
-            isEditable={true}
-            onEditSection={(blockId) => {
-              const idx = blocks.findIndex((b) => b.id === blockId);
-              if (idx >= 0) selectBlock(idx);
-            }}
-            onEditReason={(blockId, reasonIdx) => {
-              const idx = blocks.findIndex((b) => b.id === blockId);
-              if (idx >= 0) {
-                setSelected(idx);
-                setSelectedReason(reasonIdx);
-              }
-            }}
-            onAddReason={addReason}
-            onEditIncident={(blockId, incIdx) => {
-              const idx = blocks.findIndex((b) => b.id === blockId);
-              if (idx >= 0) {
-                setSelected(idx);
-                setSelectedIncident(incIdx);
-              }
-            }}
-            onAddIncident={addIncident}
-            previewDevice={previewDevice}
-            title={publishTitle}
-            memoryVideoPreviews={memoryVideoPreview}
-            customBgPreviews={customBgPreviews}
-          />
-        </div>
-
-        {/* Right Column: Customization Studio (Tabs: Card Inspector vs Design & Theme) */}
-        {/* Right Column: Customization Studio (3 Primary Categories: Design, Story, Edit) */}
+        {/* Left Column Studio Inspector (Desktop) */}
         <aside className="sidePanel editor">
           {/* Studio Tab Switcher with 3 Primary Categories */}
           <div
@@ -1367,1468 +2547,75 @@ export default function CreatePage() {
             </button>
           </div>
 
-          {/* ================================================================
-              TAB 3: STORY FLOW CARDS
-              ================================================================ */}
-          {activeTab === "story" && (
-            <div>
-              <div className="editorHead">
-                <div>
-                  <h2 style={{ fontSize: "16px", margin: 0 }}>Story Flow Deck</h2>
-                  <small style={{ color: "var(--accent)" }}>{blocks.length} cards in greeting sequence</small>
-                </div>
-                <button
-                  type="button"
-                  className="btn small primary"
-                  onClick={() => setAddOpen(true)}
-                >
-                  <Plus size={12} /> Add Card
-                </button>
-              </div>
-              <div className="storyList" style={{ marginTop: "12px" }}>
-                {blocks.map((b, i) => (
-                  <div
-                    className={`storyItem ${i === selected ? "selected" : ""}`}
-                    key={b.id}
-                    onClick={() => {
-                      selectBlock(i);
-                      setActiveTab("card");
-                    }}
-                  >
-                    <button
-                      type="button"
-                      title="Move up"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        moveBlock(i, i - 1);
-                      }}
-                      disabled={i === 0}
-                    >
-                      <ArrowUp size={13} />
-                    </button>
-                    <button
-                      type="button"
-                      title="Move down"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        moveBlock(i, i + 1);
-                      }}
-                      disabled={i === blocks.length - 1}
-                    >
-                      <ArrowDown size={13} />
-                    </button>
+          {activeTab === "theme" && renderThemeTab()}
+          {activeTab === "story" && renderStoryTab()}
+          {activeTab === "card" && renderCardTab()}
+        </aside>
 
-                    <div className="storyMain">
-                      <b>{b.emoji ? `${b.emoji} ` : ""}{b.title}</b>
-                      <small>{b.type}</small>
-                    </div>
-
-                    <button
-                      type="button"
-                      title="Duplicate card"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        duplicateBlock(i);
-                      }}
-                    >
-                      <Copy size={12} />
-                    </button>
-
-                    <button
-                      type="button"
-                      title={b.visible ? "Hide scene" : "Show scene"}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleVisible(i);
-                      }}
-                    >
-                      {b.visible ? <Eye size={13} /> : <EyeOff size={13} />}
-                    </button>
-
-                    <button
-                      type="button"
-                      title="Remove scene"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeBlock(i);
-                      }}
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ))}
-              </div>
+        {/* Center / Right Column: Live Interactive Canvas Preview */}
+        <div className={`previewWrap ${mobileDrawerOpen ? "drawerOpen" : ""}`}>
+          <div className="previewToolbar" style={{ marginBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: "12px", color: "var(--muted)" }}>
+              Editing: <b style={{ color: "#fff" }}>{current.title}</b> ({selected + 1} / {blocks.length})
+            </div>
+            <div className="deviceToggle">
               <button
                 type="button"
-                className="addAnything"
-                style={{ marginTop: "14px" }}
-                onClick={() => setAddOpen(true)}
+                className={previewDevice === "desktop" ? "active" : ""}
+                onClick={() => setPreviewDevice("desktop")}
               >
-                <Plus size={15} /> Add new card template
+                Desktop
+              </button>
+              <button
+                type="button"
+                className={previewDevice === "mobile" ? "active" : ""}
+                onClick={() => setPreviewDevice("mobile")}
+              >
+                Mobile
               </button>
             </div>
-          )}
+          </div>
 
-          {/* ================================================================
-              TAB 1: CARD INSPECTOR
-              ================================================================ */}
-          {activeTab === "card" && (
-            <div>
-              <div className="editorHead">
-                <div>
-                  <h2 style={{ fontSize: "16px", margin: 0 }}>
-                    Section {selected + 1}: {current.title}
-                  </h2>
-                  <small style={{ color: "var(--accent)" }}>Type: {current.type}</small>
-                </div>
-                <div style={{ display: "flex", gap: "6px" }}>
-                  <button
-                    type="button"
-                    className="btn small"
-                    disabled={selected === 0}
-                    onClick={() => selectBlock(selected - 1)}
-                    title="Previous Section"
-                  >
-                    ◀
-                  </button>
-                  <button
-                    type="button"
-                    className="btn small"
-                    disabled={selected === blocks.length - 1}
-                    onClick={() => selectBlock(selected + 1)}
-                    title="Next Section"
-                  >
-                    ▶
-                  </button>
-                </div>
-              </div>
-
-              {mediaUploading && <div className="mediaUploadStatus">Uploading media…</div>}
-
-              <label>
-                Section title
-                <input
-                  value={current.title ?? "Untitled section"}
-                  onChange={(e) => updateCurrent({ title: e.target.value })}
-                />
-              </label>
-              <label>
-                Subtitle
-                <input
-                  value={current.subtitle ?? "A little moment"}
-                  onChange={(e) => updateCurrent({ subtitle: e.target.value })}
-                />
-              </label>
-              <label>
-                Heading
-                <input
-                  value={current.heading ?? "Your moment"}
-                  onChange={(e) => updateCurrent({ heading: e.target.value })}
-                />
-              </label>
-              <label>
-                Message
-                <textarea
-                  value={current.text ?? "Write something beautiful."}
-                  onChange={(e) => updateCurrent({ text: e.target.value })}
-                />
-              </label>
-
-              {/* Typography & Sizes for This Section */}
-              <div className="divider">🔤 Typography & Font Sizes</div>
-              <div className="typographyControlGroup">
-                <div className="typoItem">
-                  <div className="typoHeader">
-                    <span>Title Size</span>
-                    <span className="typoSizeVal">{current.titleSize ?? 12}px</span>
-                  </div>
-                  <div className="typoRow" style={{ display: "flex", gap: "8px" }}>
-                    <select
-                      value={current.titleFont ?? globalFont}
-                      onChange={(e) => updateCurrent({ titleFont: e.target.value as FontName })}
-                    >
-                      {fontOptions}
-                    </select>
-                    <input
-                      type="range"
-                      min="9"
-                      max="30"
-                      value={current.titleSize ?? 12}
-                      onChange={(e) => updateCurrent({ titleSize: Number(e.target.value) })}
-                    />
-                  </div>
-                </div>
-
-                <div className="typoItem">
-                  <div className="typoHeader">
-                    <span>Subtitle Size</span>
-                    <span className="typoSizeVal">{current.subtitleSize ?? 13}px</span>
-                  </div>
-                  <div className="typoRow" style={{ display: "flex", gap: "8px" }}>
-                    <select
-                      value={current.subtitleFont ?? globalFont}
-                      onChange={(e) => updateCurrent({ subtitleFont: e.target.value as FontName })}
-                    >
-                      {fontOptions}
-                    </select>
-                    <input
-                      type="range"
-                      min="10"
-                      max="36"
-                      value={current.subtitleSize ?? 13}
-                      onChange={(e) => updateCurrent({ subtitleSize: Number(e.target.value) })}
-                    />
-                  </div>
-                </div>
-
-                <div className="typoItem">
-                  <div className="typoHeader">
-                    <span>Heading Size</span>
-                    <span className="typoSizeVal">{current.headingSize ?? 70}px</span>
-                  </div>
-                  <div className="typoRow" style={{ display: "flex", gap: "8px" }}>
-                    <select
-                      value={current.headingFont ?? current.font ?? globalFont}
-                      onChange={(e) =>
-                        updateCurrent({
-                          headingFont: e.target.value as FontName,
-                          font: e.target.value as FontName
-                        })
-                      }
-                    >
-                      {fontOptions}
-                    </select>
-                    <input
-                      type="range"
-                      min="24"
-                      max="110"
-                      value={current.headingSize ?? 70}
-                      onChange={(e) => updateCurrent({ headingSize: Number(e.target.value) })}
-                    />
-                  </div>
-                </div>
-
-                <div className="typoItem">
-                  <div className="typoHeader">
-                    <span>Message Size</span>
-                    <span className="typoSizeVal">{current.bodySize ?? 17}px</span>
-                  </div>
-                  <div className="typoRow" style={{ display: "flex", gap: "8px" }}>
-                    <select
-                      value={current.bodyFont ?? globalFont}
-                      onChange={(e) => updateCurrent({ bodyFont: e.target.value as FontName })}
-                    >
-                      {fontOptions}
-                    </select>
-                    <input
-                      type="range"
-                      min="11"
-                      max="36"
-                      value={current.bodySize ?? 17}
-                      onChange={(e) => updateCurrent({ bodySize: Number(e.target.value) })}
-                    />
-                  </div>
-                </div>
-
-                <div className="typoItem">
-                  <div className="typoHeader">
-                    <span>Emoji / Icon Size</span>
-                    <span className="typoSizeVal">{current.emojiSize ?? 48}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="20"
-                    max="120"
-                    value={current.emojiSize ?? 48}
-                    onChange={(e) => updateCurrent({ emojiSize: Number(e.target.value) })}
-                  />
-                </div>
-              </div>
-
-              {/* Emoji & Animation */}
-              <div className="two">
-                <label>
-                  Emoji
-                  <input
-                    value={current.emoji ?? "✨"}
-                    onChange={(e) => updateCurrent({ emoji: e.target.value })}
-                  />
-                </label>
-                <label>
-                  Emoji Animation
-                  <select
-                    value={current.emojiAnimation ?? emojiAnimation}
-                    onChange={(e) => updateCurrent({ emojiAnimation: e.target.value })}
-                  >
-                    {emojiAnimationOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              {/* Colors for this Card */}
-              <div className="two">
-                <label>
-                  Accent
-                  <input
-                    className="color"
-                    type="color"
-                    value={current.accent ?? "#ff4f8b"}
-                    onChange={(e) => updateCurrent({ accent: e.target.value })}
-                  />
-                </label>
-                <label>
-                  Heading colour
-                  <input
-                    className="color"
-                    type="color"
-                    value={current.headingColor || globalTextColor}
-                    onChange={(e) => updateCurrent({ headingColor: e.target.value })}
-                  />
-                </label>
-              </div>
-              <div className="two">
-                <label>
-                  Subtitle colour
-                  <input
-                    className="color"
-                    type="color"
-                    value={current.subtitleColor || (theme === "light" ? "#be185d" : "#ff9fc2")}
-                    onChange={(e) => updateCurrent({ subtitleColor: e.target.value })}
-                  />
-                </label>
-                <label>
-                  Message colour
-                  <input
-                    className="color"
-                    type="color"
-                    value={current.bodyColor || globalTextColor}
-                    onChange={(e) => updateCurrent({ bodyColor: e.target.value })}
-                  />
-                </label>
-              </div>
-
-              {/* SECTION-SPECIFIC BACKGROUND */}
-              <div className="sectionBackgroundEditor" style={{ marginTop: "14px", padding: "14px", border: "1px solid var(--line)", borderRadius: "14px", background: "rgba(255,255,255,0.02)" }}>
-                <div className="divider" style={{ marginTop: 0 }}>🎨 Section Background Override</div>
-                <p className="helperText">Customize background preset or wallpaper for this card.</p>
-                <label style={{ marginTop: "8px" }}>
-                  Background Preset
-                  <select
-                    value={current.background ?? background}
-                    onChange={(e) => {
-                      updateCurrent({ background: e.target.value });
-                      setCardBackgroundMode("different");
-                    }}
-                  >
-                    <option value="aurora">🌌 Aurora</option>
-                    <option value="mesh">🫧 Liquid mesh</option>
-                    <option value="stars">✨ Starfield</option>
-                    <option value="petals">🌸 Floating petals</option>
-                    <option value="gradient">🎨 Gradient</option>
-                    <option value="minimal">◌ Minimal glow</option>
-                  </select>
-                </label>
-
-                <input
-                  ref={sectionBgFileInputRef}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={uploadSectionBackground}
-                />
-
-                {!current.customBg ? (
-                  <button
-                    type="button"
-                    className="btn full small"
-                    style={{ marginTop: "8px" }}
-                    onClick={() => sectionBgFileInputRef.current?.click()}
-                  >
-                    📷 Upload wallpaper photo for this card
-                  </button>
-                ) : (
-                  <div style={{ marginTop: "8px", padding: "10px", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "10px", background: "rgba(0,0,0,0.25)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                      <span style={{ fontSize: "11px", color: "#fff" }}>
-                        🖼️ {current.customBgName || "section-bg.jpg"}
-                      </span>
-                      <div style={{ display: "flex", gap: "4px" }}>
-                        <button
-                          type="button"
-                          className="btn small"
-                          style={{ padding: "3px 8px", fontSize: "11px" }}
-                          onClick={() => sectionBgFileInputRef.current?.click()}
-                        >
-                          Replace
-                        </button>
-                        <button
-                          type="button"
-                          className="btn danger small"
-                          style={{ padding: "3px 8px", fontSize: "11px" }}
-                          onClick={() => {
-                            updateCurrent({ customBg: "", customBgName: "" });
-                            setCardBackgroundMode("different");
-                          }}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-
-                    <label>
-                      Zoom / Scale <strong>{current.customBgScale ?? 100}%</strong>
-                      <input
-                        type="range"
-                        min="100"
-                        max="250"
-                        value={current.customBgScale ?? 100}
-                        onChange={(e) => {
-                          updateCurrent({ customBgScale: Number(e.target.value) });
-                          setCardBackgroundMode("different");
-                        }}
-                      />
-                    </label>
-                    <label>
-                      Position X <strong>{current.customBgPositionX ?? 50}%</strong>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={current.customBgPositionX ?? 50}
-                        onChange={(e) => {
-                          updateCurrent({ customBgPositionX: Number(e.target.value) });
-                          setCardBackgroundMode("different");
-                        }}
-                      />
-                    </label>
-                    <label>
-                      Position Y <strong>{current.customBgPositionY ?? 50}%</strong>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={current.customBgPositionY ?? 50}
-                        onChange={(e) => {
-                          updateCurrent({ customBgPositionY: Number(e.target.value) });
-                          setCardBackgroundMode("different");
-                        }}
-                      />
-                    </label>
-                  </div>
-                )}
-              </div>
-
-              {/* HERO PHOTO EDITOR (For Welcome / Standard Cards) */}
-              {current.type !== "gallery" && current.type !== "memories" && current.type !== "letter" && current.type !== "incidents" && (
-                <div className="heroPhotoEditor">
-                  <div className="divider">🖼️ Hero Photo & Framing</div>
-                  <p className="helperText">Upload a main hero image for this card with custom zoom & position.</p>
-                  <label>
-                    Choose hero photo
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => pickImage(e, (url) => updateCurrent({ image: url }))}
-                    />
-                  </label>
-                  {current.image && (
-                    <>
-                      <div className="selectedMediaRow" style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "8px" }}>
-                        <img src={current.image} alt="Hero" style={{ width: "60px", height: "60px", objectFit: "cover", borderRadius: "8px" }} />
-                        <button
-                          type="button"
-                          className="btn danger small"
-                          onClick={() => updateCurrent({ image: "" })}
-                        >
-                          Remove photo
-                        </button>
-                      </div>
-                      <label>
-                        Hero Zoom <strong>{heroAdjustment.scale}%</strong>
-                        <input
-                          type="range"
-                          min="100"
-                          max="240"
-                          value={heroAdjustment.scale}
-                          onChange={(e) => {
-                            updateCurrent({
-                              imageAdjustments: {
-                                ...(current.imageAdjustments ?? {}),
-                                hero: { ...heroAdjustment, scale: Number(e.target.value) },
-                                "0": { ...heroAdjustment, scale: Number(e.target.value) }
-                              }
-                            });
-                          }}
-                        />
-                      </label>
-                      <label>
-                        Horizontal position <strong>{heroAdjustment.x}%</strong>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={heroAdjustment.x}
-                          onChange={(e) => {
-                            updateCurrent({
-                              imageAdjustments: {
-                                ...(current.imageAdjustments ?? {}),
-                                hero: { ...heroAdjustment, x: Number(e.target.value) },
-                                "0": { ...heroAdjustment, x: Number(e.target.value) }
-                              }
-                            });
-                          }}
-                        />
-                      </label>
-                      <label>
-                        Vertical position <strong>{heroAdjustment.y}%</strong>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={heroAdjustment.y}
-                          onChange={(e) => {
-                            updateCurrent({
-                              imageAdjustments: {
-                                ...(current.imageAdjustments ?? {}),
-                                hero: { ...heroAdjustment, y: Number(e.target.value) },
-                                "0": { ...heroAdjustment, y: Number(e.target.value) }
-                              }
-                            });
-                          }}
-                        />
-                      </label>
-                      <label>
-                        Photo Opacity <strong>{current.imageOpacity ?? 100}%</strong>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={current.imageOpacity ?? 100}
-                          onChange={(e) => updateCurrent({ imageOpacity: Number(e.target.value) })}
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        className="btn small full"
-                        onClick={() => {
-                          updateCurrent({
-                            imageOpacity: 100,
-                            imageAdjustments: {
-                              ...(current.imageAdjustments ?? {}),
-                              hero: { scale: 100, x: 50, y: 50 },
-                              "0": { scale: 100, x: 50, y: 50 }
-                            }
-                          });
-                        }}
-                      >
-                        Reset photo framing
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* PHOTO GALLERY MANAGER */}
-              {(current.type === "gallery" || current.type === "memories") && (
-                <div className="photoGalleryEditor">
-                  <div className="divider">🖼️ Memory Photo Gallery</div>
-                  <label>
-                    Photo layout
-                    <select
-                      value={current.galleryLayout ?? "collage"}
-                      onChange={(e) => updateCurrent({ galleryLayout: e.target.value })}
-                    >
-                      <option value="collage">✨ Auto collage</option>
-                      <option value="grid">▦ Clean grid</option>
-                      <option value="masonry">▥ Masonry wall</option>
-                      <option value="polaroid">▱ Polaroid pile</option>
-                      <option value="filmstrip">▤ Film strip</option>
-                      <option value="scattered">✦ Scattered memories</option>
-                      <option value="hero">🖼️ Hero photo</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    Frame Background
-                    <select
-                      value={current.galleryBackground ?? "transparent"}
-                      onChange={(e) => updateCurrent({ galleryBackground: e.target.value })}
-                    >
-                      <option value="transparent">◌ Transparent / None</option>
-                      <option value="black">◼ Black</option>
-                      <option value="white">◻ White</option>
-                    </select>
-                  </label>
-
-                  <div className="photoManager" style={{ marginTop: "12px" }}>
-                    <div className="photoManagerTop" style={{ display: "flex", justifyContent: "space-between" }}>
-                      <b>Memory photos</b>
-                      <span>
-                        {(current.images ?? (current.image ? [current.image] : [])).length}/20
-                      </span>
-                    </div>
-                    <p className="helperText">Add up to 20 photos. The collage arranges them automatically.</p>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={pickGalleryImages}
-                      disabled={(current.images ?? (current.image ? [current.image] : [])).length >= 20}
-                    />
-
-                    {(current.images ?? (current.image ? [current.image] : [])).length > 0 && (
-                      <div className="thumbGrid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px", marginTop: "10px" }}>
-                        {(current.images ?? (current.image ? [current.image] : [])).map((src, i) => (
-                          <div className="thumbItem" key={`${i}-${src.slice(-12)}`} style={{ position: "relative" }}>
-                            <img src={src} alt={`Memory ${i + 1}`} style={{ width: "100%", height: "60px", objectFit: "cover", borderRadius: "6px" }} />
-                            <button
-                              type="button"
-                              title="Remove photo"
-                              onClick={() => removeGalleryImage(i)}
-                              style={{ position: "absolute", top: "2px", right: "2px", background: "rgba(0,0,0,0.6)", border: "none", color: "#fff", borderRadius: "4px", padding: "2px" }}
-                            >
-                              <Trash2 size={11} />
-                            </button>
-                            <small style={{ position: "absolute", bottom: "2px", left: "4px", color: "#fff", fontSize: "9px" }}>{i + 1}</small>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {(current.images?.length ?? 0) > 0 && (
-                    <div className="imageAdjustmentEditor" style={{ marginTop: "12px" }}>
-                      <div className="divider">Photo Zoom & Framing</div>
-                      <label>
-                        Select Photo
-                        <select
-                          value={selectedGalleryImage}
-                          onChange={(e) => setSelectedGalleryImage(Number(e.target.value))}
-                        >
-                          {(current.images ?? []).map((_, i) => (
-                            <option key={i} value={i}>
-                              Photo {i + 1}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        Zoom <strong>{imageAdjustment(selectedGalleryImage).scale}%</strong>
-                        <input
-                          type="range"
-                          min="100"
-                          max="220"
-                          value={imageAdjustment(selectedGalleryImage).scale}
-                          onChange={(e) =>
-                            updateImageAdjustment(selectedGalleryImage, {
-                              scale: Number(e.target.value)
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        Position X <strong>{imageAdjustment(selectedGalleryImage).x}%</strong>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={imageAdjustment(selectedGalleryImage).x}
-                          onChange={(e) =>
-                            updateImageAdjustment(selectedGalleryImage, {
-                              x: Number(e.target.value)
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        Position Y <strong>{imageAdjustment(selectedGalleryImage).y}%</strong>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={imageAdjustment(selectedGalleryImage).y}
-                          onChange={(e) =>
-                            updateImageAdjustment(selectedGalleryImage, {
-                              y: Number(e.target.value)
-                            })
-                          }
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        className="btn small full"
-                        onClick={() => resetImageAdjustment(selectedGalleryImage)}
-                      >
-                        Reset photo framing
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* MEMORABLE INCIDENTS / OUR STORY MANAGER */}
-              {current.type === "incidents" && (
-                <div className="incidentsEditor">
-                  <div className="divider">😂 Memorable Incidents & Stories</div>
-                  <p className="helperText">Share funny stories, inside jokes, and core memories with dates and tags.</p>
-
-                  <div className="incidentsEditList">
-                    {(current.incidents ?? incidentDefaults).map((inc, i) => (
-                      <div
-                        className={`incidentEditCard ${i === selectedIncident ? "active" : ""}`}
-                        key={inc.id}
-                        onClick={() => setSelectedIncident(i)}
-                      >
-                        <div className="incidentEditHeader">
-                          <span>{inc.emoji} <b>{inc.title}</b></span>
-                          <div style={{ display: "flex", gap: "4px" }}>
-                            <button
-                              type="button"
-                              className="iconBtn danger"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteIncident(i);
-                              }}
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button type="button" className="btn small full" style={{ marginTop: "8px" }} onClick={addIncident}>
-                    <Plus size={13} /> Add Story Incident
-                  </button>
-
-                  {incident && (
-                    <div className="incidentEditFields" style={{ marginTop: "12px", padding: "12px", background: "rgba(255,255,255,0.03)", borderRadius: "12px" }}>
-                      <label>
-                        Story Title
-                        <input
-                          value={incident.title}
-                          onChange={(e) => updateIncident(selectedIncident, { title: e.target.value })}
-                        />
-                      </label>
-                      <div className="two">
-                        <label>
-                          Tag / Category
-                          <input
-                            value={incident.tag}
-                            placeholder="e.g. Core Memory, Funny"
-                            onChange={(e) => updateIncident(selectedIncident, { tag: e.target.value })}
-                          />
-                        </label>
-                        <label>
-                          Date / When
-                          <input
-                            value={incident.date}
-                            placeholder="e.g. Summer '23"
-                            onChange={(e) => updateIncident(selectedIncident, { date: e.target.value })}
-                          />
-                        </label>
-                      </div>
-                      <label>
-                        Story Description
-                        <textarea
-                          value={incident.text}
-                          onChange={(e) => updateIncident(selectedIncident, { text: e.target.value })}
-                        />
-                      </label>
-                      <label>
-                        Emoji
-                        <input
-                          value={incident.emoji}
-                          onChange={(e) => updateIncident(selectedIncident, { emoji: e.target.value })}
-                        />
-                      </label>
-                      <label>
-                        Attach Incident Photo
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) =>
-                            pickImage(e, (url) => updateIncident(selectedIncident, { image: url }))
-                          }
-                        />
-                      </label>
-                      {incident.image && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "6px" }}>
-                          <img src={incident.image} alt="Incident" style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "6px" }} />
-                          <button
-                            type="button"
-                            className="btn danger small"
-                            onClick={() => updateIncident(selectedIncident, { image: undefined })}
-                          >
-                            Remove photo
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* REASONS DECK */}
-              {current.type === "reasons" && (
-                <div className="reasonEditor">
-                  <div className="divider">💗 Reasons Deck</div>
-                  {(current.items ?? []).map((r, i) => (
-                    <div
-                      className={`reasonRow ${i === selectedReason ? "active" : ""}`}
-                      key={r.id}
-                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px", background: "rgba(255,255,255,0.03)", borderRadius: "8px", margin: "4px 0" }}
-                    >
-                      <button
-                        type="button"
-                        className="reasonRowMain"
-                        onClick={() => setSelectedReason(i)}
-                        style={{ background: "transparent", border: "none", color: "#fff", textAlign: "left" }}
-                      >
-                        <span>{r.emoji} <b>{r.title}</b></span>
-                      </button>
-                      <button
-                        type="button"
-                        className="iconBtn danger"
-                        onClick={() => deleteReason(i)}
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  ))}
-                  <button type="button" className="btn small full" style={{ marginTop: "6px" }} onClick={addReason}>
-                    <Plus size={13} /> Add reason
-                  </button>
-                  {reason && (
-                    <div className="reasonFields" style={{ marginTop: "10px" }}>
-                      <label>
-                        Reason title
-                        <input
-                          value={reason.title}
-                          onChange={(e) => updateReason(selectedReason, { title: e.target.value })}
-                        />
-                      </label>
-                      <label>
-                        Reason text
-                        <textarea
-                          value={reason.text}
-                          onChange={(e) => updateReason(selectedReason, { text: e.target.value })}
-                        />
-                      </label>
-                      <label>
-                        Reason emoji
-                        <input
-                          value={reason.emoji}
-                          onChange={(e) => updateReason(selectedReason, { emoji: e.target.value })}
-                        />
-                      </label>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* LETTER STYLING */}
-              {current.type === "letter" && (
-                <div className="letterControls">
-                  <div className="divider">💌 Letter Customization</div>
-                  <div className="two">
-                    <label>
-                      Letter text colour
-                      <input
-                        className="color"
-                        type="color"
-                        value={current.letterColor ?? "#2d2024"}
-                        onChange={(e) => updateCurrent({ letterColor: e.target.value })}
-                      />
-                    </label>
-                    <label>
-                      Letter background colour
-                      <input
-                        className="color"
-                        type="color"
-                        value={current.cardColor ?? "#fff8ea"}
-                        onChange={(e) => updateCurrent({ cardColor: e.target.value })}
-                      />
-                    </label>
-                  </div>
-                  <div className="two">
-                    <label>
-                      Title font
-                      <select
-                        value={current.headingFont ?? "great-vibes"}
-                        onChange={(e) => updateCurrent({ headingFont: e.target.value as FontName })}
-                      >
-                        {fontOptions}
-                      </select>
-                    </label>
-                    <label>
-                      Body font
-                      <select
-                        value={current.bodyFont ?? "serif"}
-                        onChange={(e) => updateCurrent({ bodyFont: e.target.value as FontName })}
-                      >
-                        {fontOptions}
-                      </select>
-                    </label>
-                  </div>
-                  <div className="two">
-                    <label>
-                      Letter size <strong>{current.letterSize ?? 17}px</strong>
-                      <input
-                        type="range"
-                        min="12"
-                        max="36"
-                        value={current.letterSize ?? 17}
-                        onChange={(e) => updateCurrent({ letterSize: Number(e.target.value) })}
-                      />
-                    </label>
-                    <label>
-                      Line spacing <strong>{Number(current.letterLineHeight ?? 1.8).toFixed(2)}</strong>
-                      <input
-                        type="range"
-                        min="1"
-                        max="2.5"
-                        step=".05"
-                        value={current.letterLineHeight ?? 1.8}
-                        onChange={(e) => updateCurrent({ letterLineHeight: Number(e.target.value) })}
-                      />
-                    </label>
-                  </div>
-                  <label>
-                    Letter alignment
-                    <select
-                      value={current.letterAlign ?? "left"}
-                      onChange={(e) => updateCurrent({ letterAlign: e.target.value as Block["letterAlign"] })}
-                    >
-                      <option value="left">Left</option>
-                      <option value="center">Center</option>
-                      <option value="right">Right</option>
-                    </select>
-                  </label>
-
-                  {allMemoryPhotos.length > 0 && (
-                    <div className="memoryPicker" style={{ marginTop: "10px" }}>
-                      <label style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "6px", display: "block" }}>
-                        Pick from uploaded memory photos:
-                      </label>
-                      <div className="thumbGrid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px" }}>
-                        {allMemoryPhotos.map((src, i) => (
-                          <button
-                            type="button"
-                            key={i}
-                            className="thumbItem"
-                            style={{
-                              border: current.image === src ? "2px solid var(--accent)" : "1px solid var(--line)",
-                              borderRadius: "6px",
-                              overflow: "hidden",
-                              padding: 0,
-                              height: "50px"
-                            }}
-                            onClick={() => updateCurrent({ image: current.image === src ? "" : src })}
-                          >
-                            <img src={src} alt={`Memory ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* SECRET / TAP-TO-REVEAL MANAGER */}
-              {current.type === "secret" && (
-                <div className="secretRevealManager">
-                  <div className="divider">🎁 Tap-to-Reveal Hidden Media</div>
-                  <p className="helperText">Add hidden text, a hidden memory photo, and a secret video message revealed upon heart tap.</p>
-                  <label>
-                    Secret Message
-                    <textarea
-                      value={current.text}
-                      onChange={(e) => updateCurrent({ text: e.target.value })}
-                      placeholder="The secret revealed message..."
-                    />
-                  </label>
-                  <label>
-                    Upload Secret Hidden Photo
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => pickImage(e, (url) => updateCurrent({ secretImage: url }))}
-                    />
-                  </label>
-                  {current.secretImage && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "6px" }}>
-                      <img src={current.secretImage} alt="Secret" style={{ width: "60px", height: "60px", objectFit: "cover", borderRadius: "8px" }} />
-                      <button
-                        type="button"
-                        className="btn danger small"
-                        onClick={() => updateCurrent({ secretImage: undefined })}
-                      >
-                        Remove secret photo
-                      </button>
-                    </div>
-                  )}
-
-                  <label style={{ marginTop: "10px" }}>
-                    Upload Secret Hidden Video (MP4/WebM/MOV)
-                    <input
-                      type="file"
-                      accept="video/mp4,video/webm,video/quicktime"
-                      onChange={uploadSecretVideo}
-                      disabled={mediaUploading}
-                    />
-                  </label>
-                </div>
-              )}
-
-              {/* MEMORY VIDEO FOR THIS PAGE */}
-              <div className="memoryVideoEditor">
-                <div className="divider">🎬 Memory Video (Optional)</div>
-                <p className="helperText">Attach a personal video message (up to 50MB).</p>
-                <label>
-                  Upload video
-                  <input
-                    type="file"
-                    accept="video/mp4,video/webm,video/quicktime"
-                    onChange={uploadMemoryVideo}
-                    disabled={mediaUploading}
-                  />
-                </label>
-                {current.memoryVideo && (
-                  <div style={{ marginTop: "8px" }}>
-                    <button
-                      type="button"
-                      className="btn danger small full"
-                      onClick={() => {
-                        updateCurrent({ memoryVideo: undefined });
-                        setMemoryVideoPreview((prev) => {
-                          const copy = { ...prev };
-                          delete copy[current.id];
-                          return copy;
-                        });
-                      }}
-                    >
-                      Remove video
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ================================================================
-              TAB 2: GLOBAL DESIGN & THEME
-              ================================================================ */}
-          {activeTab === "theme" && (
-            <div>
-              <div className="editorHead">
-                <h2 style={{ fontSize: "16px", margin: 0 }}>🎨 Global Design & Theme</h2>
-              </div>
-
-              {/* Theme Presets */}
-              <div className="divider" style={{ marginTop: 0 }}>Theme Presets</div>
-              <div className="themeGrid">
-                {[
-                  ["dark", "Dark"],
-                  ["light", "Light"],
-                  ["system", "System"],
-                  ["romantic", "Romantic"],
-                  ["dreamy", "Dreamy"]
-                ].map(([v, l]) => (
-                  <button
-                    type="button"
-                    key={v}
-                    className={`themeOption ${theme === v ? "active" : ""}`}
-                    onClick={() => {
-                      setTheme(v);
-                      setThemeOverride(false);
-                    }}
-                  >
-                    <span className={`themeSwatch sw-${v}`} />
-                    {l}
-                  </button>
-                ))}
-              </div>
-
-              {/* Background Preset */}
-              <div className="divider">🌈 Dynamic Background</div>
-              <div className="backgroundOptions">
-                {Object.entries({
-                  aurora: "🌌 Aurora",
-                  mesh: "🫧 Liquid mesh",
-                  stars: "✨ Starfield",
-                  petals: "🌸 Floating petals",
-                  gradient: "🎨 Gradient",
-                  minimal: "◌ Minimal glow"
-                }).map(([v, l]) => (
-                  <button
-                    type="button"
-                    key={v}
-                    className={`bgOption ${background === v ? "active" : ""}`}
-                    onClick={() => setBackground(v)}
-                  >
-                    {l}
-                  </button>
-                ))}
-              </div>
-
-              {/* Gradient Palette Colors */}
-              <div className="divider">🎨 Gradient Palette</div>
-              <div className="colorPanel">
-                <label>
-                  Base colour
-                  <input
-                    className="color"
-                    type="color"
-                    value={backgroundBaseColor}
-                    onChange={(e) => {
-                      setThemeOverride(true);
-                      setBackgroundBaseColor(e.target.value);
-                    }}
-                  />
-                </label>
-                <label>
-                  Colour 1
-                  <input
-                    className="color"
-                    type="color"
-                    value={bgColor1}
-                    onChange={(e) => {
-                      setThemeOverride(true);
-                      setBgColor1(e.target.value);
-                    }}
-                  />
-                </label>
-                <label>
-                  Colour 2
-                  <input
-                    className="color"
-                    type="color"
-                    value={bgColor2}
-                    onChange={(e) => {
-                      setThemeOverride(true);
-                      setBgColor2(e.target.value);
-                    }}
-                  />
-                </label>
-                <label>
-                  Colour 3
-                  <input
-                    className="color"
-                    type="color"
-                    value={bgColor3}
-                    onChange={(e) => {
-                      setThemeOverride(true);
-                      setBgColor3(e.target.value);
-                    }}
-                  />
-                </label>
-                <label>
-                  Colour 4
-                  <input
-                    className="color"
-                    type="color"
-                    value={bgColor4}
-                    onChange={(e) => {
-                      setThemeOverride(true);
-                      setBgColor4(e.target.value);
-                    }}
-                  />
-                </label>
-              </div>
-
-              <label>
-                Background overlay <strong>{backgroundOverlay}%</strong>
-                <input
-                  type="range"
-                  min="0"
-                  max="60"
-                  value={backgroundOverlay}
-                  onChange={(e) => setBackgroundOverlay(Number(e.target.value))}
-                />
-              </label>
-
-              {/* CUSTOM WALLPAPER BACKGROUND */}
-              <div className="divider">🖼️ Custom Wallpaper Photo</div>
-              <p className="helperText">Upload a wallpaper image applied across your greeting with full zoom & rotation control.</p>
-
-              <input
-                ref={bgFileInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={uploadGlobalBackground}
-              />
-
-              {!customBg ? (
-                <button
-                  type="button"
-                  className="btn full"
-                  style={{ marginTop: "6px" }}
-                  onClick={() => bgFileInputRef.current?.click()}
-                >
-                  📷 Choose background wallpaper
-                </button>
-              ) : (
-                <div className="customBgManager" style={{ marginTop: "8px", padding: "12px", border: "1px solid var(--line)", borderRadius: "14px", background: "rgba(255,255,255,0.03)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                    <div style={{ fontSize: "12px", fontWeight: 600, color: "#fff" }}>
-                      🖼️ {customBgName || "wallpaper.jpg"}
-                    </div>
-                    <div style={{ display: "flex", gap: "6px" }}>
-                      <button
-                        type="button"
-                        className="btn small"
-                        onClick={() => bgFileInputRef.current?.click()}
-                      >
-                        Replace
-                      </button>
-                      <button
-                        type="button"
-                        className="btn danger small"
-                        onClick={() => {
-                          setCustomBg("");
-                          setCustomBgName("");
-                        }}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-
-                  <label>
-                    Zoom / Scale <strong>{customBgScale}%</strong>
-                    <input
-                      type="range"
-                      min="100"
-                      max="250"
-                      value={customBgScale}
-                      onChange={(e) => setCustomBgScale(Number(e.target.value))}
-                    />
-                  </label>
-                  <label>
-                    Horizontal position X <strong>{customBgPositionX}%</strong>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={customBgPositionX}
-                      onChange={(e) => setCustomBgPositionX(Number(e.target.value))}
-                    />
-                  </label>
-                  <label>
-                    Vertical position Y <strong>{customBgPositionY}%</strong>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={customBgPositionY}
-                      onChange={(e) => setCustomBgPositionY(Number(e.target.value))}
-                    />
-                  </label>
-                  <label>
-                    Rotation <strong>{customBgRotation}°</strong>
-                    <input
-                      type="range"
-                      min="-180"
-                      max="180"
-                      value={customBgRotation}
-                      onChange={(e) => setCustomBgRotation(Number(e.target.value))}
-                    />
-                  </label>
-                  <label>
-                    Photo opacity <strong>{customBgOpacity}%</strong>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={customBgOpacity}
-                      onChange={(e) => setCustomBgOpacity(Number(e.target.value))}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    className="btn small full"
-                    style={{ marginTop: "6px" }}
-                    onClick={() => {
-                      setCustomBgScale(100);
-                      setCustomBgPositionX(50);
-                      setCustomBgPositionY(50);
-                      setCustomBgRotation(0);
-                      setCustomBgOpacity(100);
-                    }}
-                  >
-                    Reset wallpaper framing
-                  </button>
-                </div>
-              )}
-
-              {/* Card Background Mode */}
-              <div className="divider">🖼️ Card Background Mode</div>
-              <div style={{ display: "flex", gap: "12px", margin: "8px 0 14px" }}>
-                <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "13px" }}>
-                  <input
-                    type="radio"
-                    name="cardBgMode"
-                    checked={cardBackgroundMode === "same"}
-                    onChange={() => setCardBackgroundMode("same")}
-                  />
-                  Same background for all sections
-                </label>
-                <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "13px" }}>
-                  <input
-                    type="radio"
-                    name="cardBgMode"
-                    checked={cardBackgroundMode === "different"}
-                    onChange={() => setCardBackgroundMode("different")}
-                  />
-                  Different background per section
-                </label>
-              </div>
-
-              {/* Global Typography & Text */}
-              <div className="divider">🔤 Global Typography</div>
-              <label>
-                Global Font
-                <select
-                  value={globalFont}
-                  onChange={(e) => setGlobalFont(e.target.value as FontName)}
-                >
-                  {fontOptions}
-                </select>
-              </label>
-              <label>
-                Greeting Text Colour
-                <input
-                  className="color"
-                  type="color"
-                  value={globalTextColor}
-                  onChange={(e) => setGlobalTextColor(e.target.value)}
-                />
-              </label>
-
-              {/* Card Transparency & Spacing */}
-              <div className="divider">🧱 Card Transparency & Radius</div>
-              <label>
-                Card Transparency (Global) <strong>{globalCardOpacity}%</strong>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={globalCardOpacity}
-                  onChange={(e) => setGlobalCardOpacity(Number(e.target.value))}
-                />
-              </label>
-              <label>
-                Card Corner Radius <strong>{globalRadius}px</strong>
-                <input
-                  type="range"
-                  min="0"
-                  max="48"
-                  value={globalRadius}
-                  onChange={(e) => setGlobalRadius(Number(e.target.value))}
-                />
-              </label>
-              <label>
-                Section spacing <strong>{globalSpacing}px</strong>
-                <input
-                  type="range"
-                  min="6"
-                  max="50"
-                  value={globalSpacing}
-                  onChange={(e) => setGlobalSpacing(Number(e.target.value))}
-                />
-              </label>
-
-              {/* Emoji Motion & Style */}
-              <div className="divider">🎭 Global Emoji Motion</div>
-              <select
-                value={emojiAnimation}
-                onChange={(e) => setEmojiAnimation(e.target.value)}
-              >
-                {emojiAnimationOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-
-              <div className="divider">🎬 Global Motion Style</div>
-              <select
-                value={globalMotion}
-                onChange={(e) => setGlobalMotion(e.target.value)}
-              >
-                <option value="cinematic">Cinematic</option>
-                <option value="soft">Soft</option>
-                <option value="snappy">Snappy</option>
-                <option value="none">None</option>
-              </select>
-
-              {/* Background Music */}
-              <div className="divider">🎵 Background Music</div>
-              <p className="helperText">Upload an MP3 song to play softly with the greeting.</p>
-              <label>
-                Upload MP3
-                <input
-                  type="file"
-                  accept="audio/mpeg,.mp3"
-                  onChange={uploadAudio}
-                  disabled={mediaUploading}
-                />
-              </label>
-              {(audioUrl || audioPreviewUrl) && (
-                <div className="audioControlCard">
-                  <div style={{ display: "flex", flexDirection: "column", gap: "2px", overflow: "hidden", flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
-                      <Volume2 size={16} style={{ flexShrink: 0, color: "var(--accent)" }} />
-                      <b style={{ fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {audioName || "Selected music"}
-                      </b>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
-                    <button
-                      type="button"
-                      className={`btn small ${audioPreviewPlaying ? "primary" : ""}`}
-                      onClick={toggleAudioPreview}
-                      title={audioPreviewPlaying ? "Pause preview" : "Play preview"}
-                    >
-                      {audioPreviewPlaying ? <Pause size={13} /> : <Play size={13} />}
-                      {audioPreviewPlaying ? "Pause" : "Preview"}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn danger small"
-                      onClick={() => {
-                        stopAudioPreview();
-                        setAudioName("");
-                        setAudioUrl("");
-                        setAudioPreviewUrl("");
-                      }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Action buttons */}
-              <div className="draftActions" style={{ marginTop: "24px" }}>
-                <button type="button" className="btn" onClick={save}>
-                  <Save size={14} /> Save changes
-                </button>
-                <button type="button" className="btn danger" onClick={deleteCurrentDraft}>
-                  <Trash2 size={14} /> Clear draft
-                </button>
-              </div>
-            </div>
-          )}
-        </aside>
+          <GreetingView
+            project={projectData()}
+            sceneIndex={scene}
+            onSceneChange={setScene}
+            isEditable={true}
+            selectedBlockId={current.id}
+            onEditSection={(blockId) => {
+              const idx = blocks.findIndex((b) => b.id === blockId);
+              if (idx >= 0) {
+                selectBlock(idx);
+                setActiveTab("card");
+                setMobileDrawerOpen(true);
+              }
+            }}
+            onEditReason={(blockId, reasonIdx) => {
+              const idx = blocks.findIndex((b) => b.id === blockId);
+              if (idx >= 0) {
+                setSelected(idx);
+                setSelectedReason(reasonIdx);
+                setActiveTab("card");
+                setMobileDrawerOpen(true);
+              }
+            }}
+            onAddReason={addReason}
+            onEditIncident={(blockId, incIdx) => {
+              const idx = blocks.findIndex((b) => b.id === blockId);
+              if (idx >= 0) {
+                setSelected(idx);
+                setSelectedIncident(incIdx);
+                setActiveTab("card");
+                setMobileDrawerOpen(true);
+              }
+            }}
+            onAddIncident={addIncident}
+            previewDevice={previewDevice}
+            title={publishTitle}
+            memoryVideoPreviews={memoryVideoPreview}
+            customBgPreviews={customBgPreviews}
+          />
+        </div>
       </div>
 
       {/* Mobile Creative Studio Bottom Bar (3 Primary Tools) */}
@@ -2837,8 +2624,12 @@ export default function CreatePage() {
           type="button"
           className={`mobileStudioToolBtn ${activeTab === "theme" && mobileDrawerOpen ? "active" : ""}`}
           onClick={() => {
-            setActiveTab("theme");
-            setMobileDrawerOpen(true);
+            if (activeTab === "theme" && mobileDrawerOpen) {
+              setMobileDrawerOpen(false);
+            } else {
+              setActiveTab("theme");
+              setMobileDrawerOpen(true);
+            }
           }}
         >
           <Sparkles size={18} />
@@ -2848,8 +2639,12 @@ export default function CreatePage() {
           type="button"
           className={`mobileStudioToolBtn ${activeTab === "story" && mobileDrawerOpen ? "active" : ""}`}
           onClick={() => {
-            setActiveTab("story");
-            setMobileDrawerOpen(true);
+            if (activeTab === "story" && mobileDrawerOpen) {
+              setMobileDrawerOpen(false);
+            } else {
+              setActiveTab("story");
+              setMobileDrawerOpen(true);
+            }
           }}
         >
           <Copy size={18} />
@@ -2859,8 +2654,12 @@ export default function CreatePage() {
           type="button"
           className={`mobileStudioToolBtn ${activeTab === "card" && mobileDrawerOpen ? "active" : ""}`}
           onClick={() => {
-            setActiveTab("card");
-            setMobileDrawerOpen(true);
+            if (activeTab === "card" && mobileDrawerOpen) {
+              setMobileDrawerOpen(false);
+            } else {
+              setActiveTab("card");
+              setMobileDrawerOpen(true);
+            }
           }}
         >
           <Pencil size={18} />
@@ -2868,14 +2667,14 @@ export default function CreatePage() {
         </button>
       </nav>
 
-      {/* Mobile Contextual Drawer */}
+      {/* Mobile Contextual Compact Bottom Sheet (Contains FULL suite, ~44vh max height) */}
       {mobileDrawerOpen && (
         <div className="mobileStudioDrawer">
           <div className="mobileStudioDrawerHead">
-            <h3 style={{ margin: 0, fontSize: "15px", color: "#fff", display: "flex", alignItems: "center", gap: "6px" }}>
-              {activeTab === "theme" && <><Sparkles size={16} /> Design & Theme</>}
-              {activeTab === "story" && <><Copy size={16} /> Story Cards ({blocks.length})</>}
-              {activeTab === "card" && <><Pencil size={16} /> Edit Section: {current.title}</>}
+            <h3 style={{ margin: 0, fontSize: "14px", color: "#fff", display: "flex", alignItems: "center", gap: "6px" }}>
+              {activeTab === "theme" && <><Sparkles size={15} /> Design & Theme</>}
+              {activeTab === "story" && <><Copy size={15} /> Story Cards ({blocks.length})</>}
+              {activeTab === "card" && <><Pencil size={15} /> Edit: {current.title}</>}
             </h3>
             <button
               type="button"
@@ -2885,113 +2684,94 @@ export default function CreatePage() {
               Done / Close
             </button>
           </div>
-          {activeTab === "story" && (
-            <div className="storyList">
-              {blocks.map((b, i) => (
-                <div
-                  className={`storyItem ${i === selected ? "selected" : ""}`}
-                  key={b.id}
-                  onClick={() => {
-                    selectBlock(i);
-                    setActiveTab("card");
-                  }}
-                >
-                  <div className="storyMain">
-                    <b>{b.emoji ? `${b.emoji} ` : ""}{b.title}</b>
-                    <small>{b.type}</small>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      duplicateBlock(i);
-                    }}
-                  >
-                    <Copy size={12} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleVisible(i);
-                    }}
-                  >
-                    {b.visible ? <Eye size={13} /> : <EyeOff size={13} />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeBlock(i);
-                    }}
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                className="addAnything"
-                style={{ marginTop: "10px" }}
-                onClick={() => {
-                  setMobileDrawerOpen(false);
-                  setAddOpen(true);
-                }}
-              >
-                <Plus size={15} /> Add Section
+          <div className="mobileStudioDrawerScroll customScrollbar">
+            {activeTab === "theme" && renderThemeTab()}
+            {activeTab === "story" && renderStoryTab()}
+            {activeTab === "card" && renderCardTab()}
+          </div>
+        </div>
+      )}
+
+      {/* Event Reminder Modal */}
+      {reminderModalOpen && (
+        <div className="modal" onClick={() => setReminderModalOpen(false)}>
+          <div className="modalCard" onClick={(e) => e.stopPropagation()}>
+            <div className="modalTop">
+              <div>
+                <h2>🎂 Birthday & Event Reminder</h2>
+                <p>Configure your target celebration date and automated 1-day reminder.</p>
+              </div>
+              <button type="button" onClick={() => setReminderModalOpen(false)}>
+                <X size={18} />
               </button>
             </div>
-          )}
-          {activeTab === "card" && (
-            <div>
-              {/* Quick card select row */}
-              <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "8px", marginBottom: "12px" }}>
-                {blocks.map((b, i) => (
-                  <button
-                    key={b.id}
-                    type="button"
-                    className={`btn small ${i === selected ? "primary" : "ghost"}`}
-                    style={{ whiteSpace: "nowrap", flexShrink: 0 }}
-                    onClick={() => selectBlock(i)}
-                  >
-                    {b.emoji} {i + 1}. {b.title}
-                  </button>
-                ))}
-              </div>
-              <div className="formGroup">
-                <label>Card Title</label>
-                <input value={current.title} onChange={(e) => updateCurrent({ title: e.target.value })} />
-              </div>
-              <div className="formGroup" style={{ marginTop: "8px" }}>
-                <label>Heading</label>
-                <input value={current.heading} onChange={(e) => updateCurrent({ heading: e.target.value })} />
-              </div>
-              <div className="formGroup" style={{ marginTop: "8px" }}>
-                <label>Message</label>
-                <textarea rows={3} value={current.text} onChange={(e) => updateCurrent({ text: e.target.value })} />
-              </div>
+            <div style={{ marginTop: "14px" }}>
+              <label>
+                Event Name / Person
+                <input
+                  value={targetEventTitle}
+                  onChange={(e) => setTargetEventTitle(e.target.value)}
+                  placeholder="e.g. Maya's 25th Birthday"
+                />
+              </label>
+              <label style={{ marginTop: "10px" }}>
+                Celebration Date
+                <input
+                  type="date"
+                  value={targetEventDate}
+                  onChange={(e) => {
+                    const d = e.target.value;
+                    setTargetEventDate(d);
+                    if (d) {
+                      const dt = new Date(d);
+                      dt.setDate(dt.getDate() - 1);
+                      setReminderDate(dt.toISOString().split("T")[0]);
+                    } else {
+                      setReminderDate("");
+                    }
+                  }}
+                />
+              </label>
+              {reminderDate && (
+                <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--accent)" }}>
+                  🔔 Reminder Date: <strong>{reminderDate}</strong> (1 day before event)
+                </div>
+              )}
+              {daysUntilEvent !== null && (
+                <div
+                  style={{
+                    marginTop: "12px",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    background: "rgba(255, 79, 139, 0.15)",
+                    fontSize: "13px",
+                    fontWeight: 500
+                  }}
+                >
+                  {daysUntilEvent === 0
+                    ? "🎂 Today is the big day! Generate and share your link now!"
+                    : daysUntilEvent === 1
+                    ? `🎂 Tomorrow is ${targetEventTitle || "the birthday"}! Finish your draft now.`
+                    : `⏳ ${daysUntilEvent} days remaining until ${targetEventTitle || "the celebration"}!`}
+                </div>
+              )}
             </div>
-          )}
-          {activeTab === "theme" && (
-            <div>
-              <label>Theme Preset</label>
-              <select value={theme} onChange={(e) => setTheme(e.target.value)}>
-                <option value="dark">Dark Theme</option>
-                <option value="light">Light Theme</option>
-                <option value="romantic">Romantic Theme</option>
-                <option value="dreamy">Dreamy Theme</option>
-              </select>
-              <label style={{ marginTop: "10px" }}>Background Texture</label>
-              <select value={background} onChange={(e) => setBackground(e.target.value)}>
-                <option value="aurora">🌌 Aurora</option>
-                <option value="mesh">🫧 Liquid mesh</option>
-                <option value="stars">✨ Starfield</option>
-                <option value="petals">🌸 Floating petals</option>
-                <option value="gradient">🎨 Gradient</option>
-                <option value="minimal">◌ Minimal glow</option>
-              </select>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "18px" }}>
+              <button type="button" className="btn small" onClick={() => setReminderModalOpen(false)}>
+                Close
+              </button>
+              <button
+                type="button"
+                className="btn small primary"
+                onClick={() => {
+                  setReminderModalOpen(false);
+                  save();
+                }}
+              >
+                Save Event
+              </button>
             </div>
-          )}
+          </div>
         </div>
       )}
 
@@ -3001,8 +2781,8 @@ export default function CreatePage() {
           <div className="modalCard" onClick={(e) => e.stopPropagation()}>
             <div className="modalTop">
               <div>
-                <h2>Add a section</h2>
-                <p>Choose the type of memory or moment you want to create.</p>
+                <h2>✨ Add a Section Template</h2>
+                <p>Select a card type to enrich your greeting story.</p>
               </div>
               <button type="button" onClick={() => setAddOpen(false)}>
                 <X size={18} />
@@ -3010,21 +2790,24 @@ export default function CreatePage() {
             </div>
             <div className="addGrid">
               {[
-                ["welcome", "🌸 Welcome / Hero", "The opening scene for your greeting."],
-                ["reasons", "💗 What I Love", "A list of reasons why someone is special."],
-                ["memories", "📸 Memories Collage", "Multiple photos in artful collages."],
-                ["incidents", "😂 Our Story / Incidents", "Memorable moments and funny stories with date tags."],
-                ["letter", "💌 A Little Letter", "A personal note with optional memory photo."],
-                ["secret", "🎁 Secret Reveal", "A tap-to-reveal surprise message, photo & video."],
-                ["cake", "🎂 Cake & Candles", "Interactive birthday cake with blowable candles."]
-              ].map(([t, l, d]) => (
+                { type: "welcome" as BlockType, label: "Welcome / Hero", icon: "✨", desc: "Opening hero title and photo" },
+                { type: "reasons" as BlockType, label: "What I Love", icon: "❤️", desc: "Cards list of heartfelt reasons" },
+                { type: "memories" as BlockType, label: "Photo Gallery", icon: "🖼️", desc: "Interactive memory photos & layouts" },
+                { type: "incidents" as BlockType, label: "Memorable Incidents", icon: "😂", desc: "Funny stories and dated incidents" },
+                { type: "letter" as BlockType, label: "A Little Letter", icon: "💌", desc: "Longform personal letter with photo" },
+                { type: "secret" as BlockType, label: "Secret Reveal", icon: "🎁", desc: "Tap-to-reveal secret message & video" },
+                { type: "cake" as BlockType, label: "Birthday Cake", icon: "🎂", desc: "Interactive candles to blow & wish finale" },
+                { type: "text" as BlockType, label: "A Little Note", icon: "📝", desc: "Simple message with clean styling" },
+                { type: "image" as BlockType, label: "Memory Snapshot", icon: "📸", desc: "Dedicated full-frame photo slide" }
+              ].map((item) => (
                 <button
                   type="button"
-                  key={t}
-                  onClick={() => addBlock(t as BlockType)}
+                  key={item.type}
+                  onClick={() => addBlock(item.type)}
                 >
-                  <b>{l}</b>
-                  <p>{d}</p>
+                  <div style={{ fontSize: "20px", marginBottom: "4px" }}>{item.icon}</div>
+                  <b style={{ display: "block", color: "#fff" }}>{item.label}</b>
+                  <span style={{ fontSize: "11px", color: "var(--muted)" }}>{item.desc}</span>
                 </button>
               ))}
             </div>
@@ -3032,76 +2815,19 @@ export default function CreatePage() {
         </div>
       )}
 
-      {/* Target Event Date & Reminder Modal */}
-      {reminderModalOpen && (
-        <div className="modalOverlay" onClick={() => setReminderModalOpen(false)}>
-          <div className="modalContent" onClick={(e) => e.stopPropagation()}>
-            <div className="modalHeader">
-              <h2>⏰ Event Date & Reminders</h2>
-              <button type="button" className="iconBtn" onClick={() => setReminderModalOpen(false)}>
-                <X size={18} />
-              </button>
-            </div>
-            <p className="helperText">
-              Set the date of the event (e.g. Birthday on Sep 26) and get reminded on Sep 25 to finish and share your greeting.
-            </p>
-            <div className="formGroup" style={{ marginTop: "14px" }}>
-              <label>Event Name</label>
-              <input
-                className="canvaSelect"
-                value={targetEventTitle}
-                onChange={(e) => setTargetEventTitle(e.target.value)}
-                placeholder="e.g. Maya's 25th Birthday"
-              />
-            </div>
-            <div className="formGroup" style={{ marginTop: "10px" }}>
-              <label>Event Date</label>
-              <input
-                type="date"
-                className="canvaSelect"
-                value={targetEventDate}
-                onChange={(e) => setTargetEventDate(e.target.value)}
-              />
-            </div>
-            <div className="formGroup" style={{ marginTop: "10px" }}>
-              <label>Reminder Date (e.g. 1 day before)</label>
-              <input
-                type="date"
-                className="canvaSelect"
-                value={reminderDate}
-                onChange={(e) => setReminderDate(e.target.value)}
-              />
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "20px" }}>
-              <button
-                type="button"
-                className="btn primary"
-                onClick={() => {
-                  save();
-                  setReminderModalOpen(false);
-                  notify("Event reminder saved ✨");
-                }}
-              >
-                Save Reminder
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Drafts Manager Modal */}
+      {/* Cloud Drafts Manager Modal */}
       {draftsOpen && (
-        <div className="modalOverlay" onClick={() => setDraftsOpen(false)}>
-          <div className="modalContent" onClick={(e) => e.stopPropagation()}>
-            <div className="modalHeader">
-              <h2>💾 Cloud Drafts & Storage</h2>
-              <button type="button" className="iconBtn" onClick={() => setDraftsOpen(false)}>
+        <div className="modal" onClick={() => setDraftsOpen(false)}>
+          <div className="modalCard" onClick={(e) => e.stopPropagation()}>
+            <div className="modalTop">
+              <div>
+                <h2>📁 Saved Drafts</h2>
+                <p>Manage saved greeting drafts. Deleting drafts automatically purges media from Supabase storage.</p>
+              </div>
+              <button type="button" onClick={() => setDraftsOpen(false)}>
                 <X size={18} />
               </button>
             </div>
-            <p className="helperText">
-              Manage saved greeting drafts. Deleting drafts automatically purges media from Supabase storage.
-            </p>
             <div className="draftsList" style={{ marginTop: "14px" }}>
               {savedDraftsList.length === 0 ? (
                 <p style={{ color: "#888", textAlign: "center", padding: "20px" }}>No saved cloud drafts found.</p>
@@ -3142,11 +2868,14 @@ export default function CreatePage() {
 
       {/* Google Login / Account Modal */}
       {authModalOpen && (
-        <div className="modalOverlay" onClick={() => setAuthModalOpen(false)}>
-          <div className="modalContent" onClick={(e) => e.stopPropagation()}>
-            <div className="modalHeader">
-              <h2>👤 Account & Sync</h2>
-              <button type="button" className="iconBtn" onClick={() => setAuthModalOpen(false)}>
+        <div className="modal" onClick={() => setAuthModalOpen(false)}>
+          <div className="modalCard" onClick={(e) => e.stopPropagation()}>
+            <div className="modalTop">
+              <div>
+                <h2>👤 Account & Sync</h2>
+                <p>Sign in with Google to sync your drafts and reminders across devices.</p>
+              </div>
+              <button type="button" onClick={() => setAuthModalOpen(false)}>
                 <X size={18} />
               </button>
             </div>
@@ -3175,7 +2904,7 @@ export default function CreatePage() {
             ) : (
               <div style={{ padding: "10px 0" }}>
                 <p className="helperText">
-                  Sign in with Google to sync your drafts, personalized moments, and birthday reminders across all devices.
+                  Sign in with Google to access your own personal workspace and drafts.
                 </p>
                 <button
                   type="button"

@@ -21,6 +21,7 @@ export type GreetingViewProps = {
   sceneIndex?: number;
   onSceneChange?: (newIndex: number) => void;
   isEditable?: boolean;
+  selectedBlockId?: string;
   onEditSection?: (blockId: string) => void;
   onEditReason?: (blockId: string, reasonIndex: number) => void;
   onAddReason?: () => void;
@@ -51,6 +52,7 @@ export default function GreetingView({
   sceneIndex = 0,
   onSceneChange,
   isEditable = false,
+  selectedBlockId,
   onEditSection,
   onEditReason,
   onAddReason,
@@ -435,12 +437,15 @@ export default function GreetingView({
             preload="metadata"
           />
         )}
-        <div className="actions">
+        <div className="actions" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             className="btn"
             disabled={currentSceneIndex === 0}
-            onClick={() => setScene(currentSceneIndex - 1)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setScene(currentSceneIndex - 1);
+            }}
           >
             <ArrowLeft size={16} /> Back
           </button>
@@ -448,7 +453,10 @@ export default function GreetingView({
             <button
               type="button"
               className="btn primary"
-              onClick={() => setScene(currentSceneIndex + 1)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setScene(currentSceneIndex + 1);
+              }}
             >
               Keep going <ArrowRight size={16} />
             </button>
@@ -458,7 +466,10 @@ export default function GreetingView({
                 <button
                   type="button"
                   className="btn primary replyBtn"
-                  onClick={onOpenResponseModal}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenResponseModal();
+                  }}
                   style={{ background: "linear-gradient(135deg, #ff4f8b 0%, #7c5cff 100%)", color: "#fff", fontWeight: 600 }}
                 >
                   💌 Reply to Greeting
@@ -467,7 +478,8 @@ export default function GreetingView({
               <button
                 type="button"
                 className="btn primary"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setScene(0);
                   setSecretRevealed(false);
                   setCandles([false, false, false]);
@@ -485,33 +497,40 @@ export default function GreetingView({
     const editBadge = isEditable ? (
       <button
         type="button"
-        className="previewEdit"
-        onClick={() => onEditSection?.(b.id)}
+        className={`previewEdit ${selectedBlockId === b.id ? "activeEditing" : ""}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onEditSection?.(b.id);
+        }}
       >
-        <Pencil size={13} /> Edit this section
+        <Pencil size={12} /> {selectedBlockId === b.id ? "Editing this section" : "Edit section"}
       </button>
     ) : null;
 
     if (b.type === "reasons") {
       return (
-        <div className="sceneInner" style={style}>
+        <div
+          className={`sceneInner ${isEditable && selectedBlockId === b.id ? "selectedBlockIndicator" : ""}`}
+          style={{ ...style, cursor: isEditable ? "pointer" : "default" }}
+          onClick={() => isEditable && onEditSection?.(b.id)}
+        >
           {editBadge}
           {isEditable ? (
             <>
-              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.emoji}
               </button>
-              <button type="button" className="editableText sectionKicker" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText sectionKicker" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.title}
               </button>
-              <button type="button" className="editableText eyebrow" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText eyebrow" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.subtitle}
               </button>
-              <button type="button" className="editableText heroTitle" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText heroTitle" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.heading}
               </button>
               <div className="heroTextWrap customScrollbar">
-                <button type="button" className="editableText heroText" onClick={() => onEditSection?.(b.id)}>
+                <button type="button" className="editableText heroText" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                   {b.text}
                 </button>
               </div>
@@ -563,24 +582,28 @@ export default function GreetingView({
 
     if (b.type === "incidents") {
       return (
-        <div className="sceneInner incidentsScene" style={style}>
+        <div
+          className={`sceneInner incidentsScene ${isEditable && selectedBlockId === b.id ? "selectedBlockIndicator" : ""}`}
+          style={{ ...style, cursor: isEditable ? "pointer" : "default" }}
+          onClick={() => isEditable && onEditSection?.(b.id)}
+        >
           {editBadge}
           {isEditable ? (
             <>
-              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.emoji}
               </button>
-              <button type="button" className="editableText sectionKicker" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText sectionKicker" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.title}
               </button>
-              <button type="button" className="editableText eyebrow" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText eyebrow" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.subtitle}
               </button>
-              <button type="button" className="editableText heroTitle" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText heroTitle" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.heading}
               </button>
               <div className="heroTextWrap customScrollbar">
-                <button type="button" className="editableText heroText" onClick={() => onEditSection?.(b.id)}>
+                <button type="button" className="editableText heroText" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                   {b.text}
                 </button>
               </div>
@@ -602,7 +625,12 @@ export default function GreetingView({
               <article
                 className="incidentCard"
                 key={inc.id || i}
-                onClick={() => (isEditable ? onEditIncident?.(b.id, i) : undefined)}
+                onClick={(e) => {
+                  if (isEditable) {
+                    e.stopPropagation();
+                    onEditIncident?.(b.id, i);
+                  }
+                }}
                 style={{ cursor: isEditable ? "pointer" : "default" }}
               >
                 {isEditable && (
@@ -624,11 +652,15 @@ export default function GreetingView({
                     className="incidentPhoto"
                     onClick={(e) => {
                       e.stopPropagation();
-                      openGalleryPhoto([inc.image!], 0, false);
+                      if (isEditable) {
+                        onEditIncident?.(b.id, i);
+                      } else {
+                        openGalleryPhoto([inc.image!], 0, false);
+                      }
                     }}
-                    title="Click to zoom photo"
+                    title={isEditable ? "Edit incident photo" : "Click to zoom photo"}
                   >
-                    <img src={inc.image} alt={inc.title} />
+                    <img src={inc.image} alt={inc.title} style={{ opacity: (b.imageOpacity ?? 100) / 100 }} />
                   </div>
                 )}
               </article>
@@ -636,7 +668,14 @@ export default function GreetingView({
           </div>
 
           {isEditable && (
-            <button type="button" className="addReasonPreview" onClick={onAddIncident}>
+            <button
+              type="button"
+              className="addReasonPreview"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddIncident?.();
+              }}
+            >
               <span>+ Add another incident</span>
             </button>
           )}
@@ -652,24 +691,28 @@ export default function GreetingView({
       const isScattered = layout === "scattered";
 
       return (
-        <div className={`sceneInner galleryPage layout-${layout}`} style={style}>
+        <div
+          className={`sceneInner galleryPage layout-${layout} ${isEditable && selectedBlockId === b.id ? "selectedBlockIndicator" : ""}`}
+          style={{ ...style, cursor: isEditable ? "pointer" : "default" }}
+          onClick={() => isEditable && onEditSection?.(b.id)}
+        >
           {editBadge}
           {isEditable ? (
             <>
-              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.emoji}
               </button>
-              <button type="button" className="editableText sectionKicker" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText sectionKicker" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.title}
               </button>
-              <button type="button" className="editableText eyebrow" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText eyebrow" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.subtitle}
               </button>
-              <button type="button" className="editableText heroTitle" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText heroTitle" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.heading}
               </button>
               <div className="heroTextWrap customScrollbar">
-                <button type="button" className="editableText heroText" onClick={() => onEditSection?.(b.id)}>
+                <button type="button" className="editableText heroText" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                   {b.text}
                 </button>
               </div>
@@ -697,6 +740,12 @@ export default function GreetingView({
               className={`galleryStage gallery-count-${Math.min(images.length, 20)} gallery-bg-${
                 b.galleryBackground || "transparent"
               } ${galleryScatter && isScattered ? "scatter-active" : ""}`}
+              onClick={(e) => {
+                if (isEditable) {
+                  e.stopPropagation();
+                  onEditSection?.(b.id);
+                }
+              }}
             >
               {/* Canvas Dust Disintegration Overlay */}
               {isScattered && <canvas ref={dustCanvasRef} className="galleryDustCanvas" />}
@@ -725,7 +774,11 @@ export default function GreetingView({
                     }
                     onClick={(e) => {
                       e.stopPropagation();
-                      openGalleryPhoto(images, i, isScattered, e.currentTarget);
+                      if (isEditable) {
+                        onEditSection?.(b.id);
+                      } else {
+                        openGalleryPhoto(images, i, isScattered, e.currentTarget);
+                      }
                     }}
                   >
                     <img
@@ -738,16 +791,24 @@ export default function GreetingView({
                       }}
                     />
                     <span className="galleryPhotoHint">
-                      {isScattered ? "✦ Disintegrate" : "🔍 Zoom"}
+                      {isEditable ? "✏️ Edit" : isScattered ? "✦ Disintegrate" : "🔍 Zoom"}
                     </span>
                   </button>
                 );
               })}
             </div>
           ) : (
-            <div className="photoFrame">
+            <div
+              className="photoFrame"
+              onClick={(e) => {
+                if (isEditable) {
+                  e.stopPropagation();
+                  onEditSection?.(b.id);
+                }
+              }}
+            >
               <p style={{ padding: "30px 20px", color: "var(--muted)" }}>
-                No memory photos added yet. Use the sidebar to add photos.
+                No memory photos added yet. Tap here to add photos in the editor.
               </p>
             </div>
           )}
@@ -756,7 +817,10 @@ export default function GreetingView({
             <button
               type="button"
               className="btn ghost small restoreMemories"
-              onClick={resetDustedPhotos}
+              onClick={(e) => {
+                e.stopPropagation();
+                resetDustedPhotos();
+              }}
             >
               ↻ Restore memories
             </button>
@@ -768,23 +832,27 @@ export default function GreetingView({
 
     if (b.type === "letter") {
       return (
-        <div className="sceneInner letterScene" style={style}>
+        <div
+          className={`sceneInner letterScene ${isEditable && selectedBlockId === b.id ? "selectedBlockIndicator" : ""}`}
+          style={{ ...style, cursor: isEditable ? "pointer" : "default" }}
+          onClick={() => isEditable && onEditSection?.(b.id)}
+        >
           {editBadge}
           {isEditable ? (
             <>
-              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.emoji}
               </button>
-              <button type="button" className="editableText sectionKicker" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText sectionKicker" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.title}
               </button>
-              <button type="button" className="editableText eyebrow" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText eyebrow" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.subtitle}
               </button>
-              <button type="button" className="editableText heroTitle" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText heroTitle" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.heading}
               </button>
-              <button type="button" className="letter editableLetter" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="letter editableLetter" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.image && (
                   <div className="letterPhotoMount">
                     <img
@@ -792,7 +860,8 @@ export default function GreetingView({
                       alt="Letter memory"
                       style={{
                         transform: `scale(${(heroAdj.scale ?? 100) / 100})`,
-                        objectPosition: `${heroAdj.x ?? 50}% ${heroAdj.y ?? 50}%`
+                        objectPosition: `${heroAdj.x ?? 50}% ${heroAdj.y ?? 50}%`,
+                        opacity: (b.imageOpacity ?? 100) / 100
                       }}
                     />
                   </div>
@@ -817,7 +886,8 @@ export default function GreetingView({
                       alt="Letter memory"
                       style={{
                         transform: `scale(${(heroAdj.scale ?? 100) / 100})`,
-                        objectPosition: `${heroAdj.x ?? 50}% ${heroAdj.y ?? 50}%`
+                        objectPosition: `${heroAdj.x ?? 50}% ${heroAdj.y ?? 50}%`,
+                        opacity: (b.imageOpacity ?? 100) / 100
                       }}
                     />
                   </div>
@@ -844,20 +914,24 @@ export default function GreetingView({
           : memoryVideoPreviews[b.id] || "";
 
       return (
-        <div className="sceneInner secretScene" style={style}>
+        <div
+          className={`sceneInner secretScene ${isEditable && selectedBlockId === b.id ? "selectedBlockIndicator" : ""}`}
+          style={{ ...style, cursor: isEditable ? "pointer" : "default" }}
+          onClick={() => isEditable && onEditSection?.(b.id)}
+        >
           {editBadge}
           {isEditable ? (
             <>
-              <button type="button" className={`editableDecor secretHeart emoji-anim-${emojiAnim}`} onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className={`editableDecor secretHeart emoji-anim-${emojiAnim}`} onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.emoji}
               </button>
-              <button type="button" className="editableText sectionKicker" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText sectionKicker" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.title}
               </button>
-              <button type="button" className="editableText eyebrow" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText eyebrow" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.subtitle}
               </button>
-              <button type="button" className="editableText heroTitle" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText heroTitle" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.heading}
               </button>
             </>
@@ -878,22 +952,44 @@ export default function GreetingView({
               <button
                 type="button"
                 className="btn primary revealBtn"
-                onClick={() => handleSecretToggle(true)}
+                onClick={(e) => {
+                  if (isEditable) {
+                    e.stopPropagation();
+                    onEditSection?.(b.id);
+                  } else {
+                    handleSecretToggle(true);
+                  }
+                }}
               >
-                Tap to reveal <span>♥</span>
+                {isEditable ? "✏️ Edit Tap-to-Reveal" : "Tap to reveal ♥"}
               </button>
             </>
           ) : (
-            <div className="secretReveal">
+            <div
+              className="secretReveal"
+              onClick={(e) => {
+                if (isEditable) {
+                  e.stopPropagation();
+                  onEditSection?.(b.id);
+                }
+              }}
+            >
               <span>✦</span>
               <h2>{b.text}</h2>
               {secretImg && (
                 <div
                   className="secretPhotoMount"
-                  onClick={() => openGalleryPhoto([secretImg], 0, false)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isEditable) {
+                      onEditSection?.(b.id);
+                    } else {
+                      openGalleryPhoto([secretImg], 0, false);
+                    }
+                  }}
                   style={{ cursor: "pointer", marginTop: "14px" }}
                 >
-                  <img src={secretImg} alt="Secret memory" />
+                  <img src={secretImg} alt="Secret memory" style={{ opacity: (b.imageOpacity ?? 100) / 100 }} />
                 </div>
               )}
               {resolvedSecretVideo && (
@@ -912,7 +1008,10 @@ export default function GreetingView({
                 type="button"
                 className="btn"
                 style={{ marginTop: "16px" }}
-                onClick={() => handleSecretToggle(false)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSecretToggle(false);
+                }}
               >
                 Hide again
               </button>
@@ -925,17 +1024,21 @@ export default function GreetingView({
 
     if (b.type === "cake") {
       return (
-        <div className="sceneInner cakeScene" style={style}>
+        <div
+          className={`sceneInner cakeScene ${isEditable && selectedBlockId === b.id ? "selectedBlockIndicator" : ""}`}
+          style={{ ...style, cursor: isEditable ? "pointer" : "default" }}
+          onClick={() => isEditable && onEditSection?.(b.id)}
+        >
           {editBadge}
           {isEditable ? (
             <>
-              <button type="button" className="editableText sectionKicker" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText sectionKicker" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.title}
               </button>
-              <button type="button" className="editableText eyebrow" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText eyebrow" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.subtitle}
               </button>
-              <button type="button" className="editableText heroTitle" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText heroTitle" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.heading}
               </button>
             </>
@@ -949,7 +1052,15 @@ export default function GreetingView({
 
           {!candleFinale ? (
             <>
-              <div className="cakeGraphic">
+              <div
+                className="cakeGraphic"
+                onClick={(e) => {
+                  if (isEditable) {
+                    e.stopPropagation();
+                    onEditSection?.(b.id);
+                  }
+                }}
+              >
                 <div className="cakePlate" />
                 <div className="cakeBody">
                   <div className="cakeTop" />
@@ -964,7 +1075,10 @@ export default function GreetingView({
                         type="button"
                         aria-label={`Candle ${i + 1}`}
                         className={`candleStick ${off ? "off" : ""}`}
-                        onClick={blowCandle}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          blowCandle();
+                        }}
                       />
                     </span>
                   ))}
@@ -975,7 +1089,15 @@ export default function GreetingView({
                   {b.text || "Tap a candle to blow it out. Make a special wish for the year ahead ✨"}
                 </p>
               </div>
-              <button type="button" className="btn primary" onClick={blowCandle} style={{ marginTop: "12px" }}>
+              <button
+                type="button"
+                className="btn primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  blowCandle();
+                }}
+                style={{ marginTop: "12px" }}
+              >
                 🎂 Blow a candle
               </button>
             </>
@@ -993,11 +1115,25 @@ export default function GreetingView({
                 May your special day be filled with endless joy, magic, and sweet memories. May all your dreams come true!
               </p>
               <div className="candleFinaleActions">
-                <button type="button" className="btn ghost small" onClick={relightCandles}>
+                <button
+                  type="button"
+                  className="btn ghost small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    relightCandles();
+                  }}
+                >
                   🕯️ Relight candles
                 </button>
                 {onOpenResponseModal && (
-                  <button type="button" className="btn primary small" onClick={onOpenResponseModal}>
+                  <button
+                    type="button"
+                    className="btn primary small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenResponseModal();
+                    }}
+                  >
                     💌 Send a Response
                   </button>
                 )}
@@ -1012,24 +1148,28 @@ export default function GreetingView({
 
     // Default / welcome / text / image / music / custom
     return (
-      <div className="sceneInner" style={style}>
+      <div
+        className={`sceneInner ${isEditable && selectedBlockId === b.id ? "selectedBlockIndicator" : ""}`}
+        style={{ ...style, cursor: isEditable ? "pointer" : "default" }}
+        onClick={() => isEditable && onEditSection?.(b.id)}
+      >
         {editBadge}
         {isEditable ? (
           <>
-            <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => onEditSection?.(b.id)}>
+            <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
               {b.emoji}
             </button>
-            <button type="button" className="editableText sectionKicker" onClick={() => onEditSection?.(b.id)}>
+            <button type="button" className="editableText sectionKicker" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
               {b.title}
             </button>
-            <button type="button" className="editableText eyebrow" onClick={() => onEditSection?.(b.id)}>
+            <button type="button" className="editableText eyebrow" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
               {b.subtitle}
             </button>
-            <button type="button" className="editableText heroTitle" onClick={() => onEditSection?.(b.id)}>
+            <button type="button" className="editableText heroTitle" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
               {b.heading}
             </button>
             <div className="heroTextWrap customScrollbar">
-              <button type="button" className="editableText heroText" onClick={() => onEditSection?.(b.id)}>
+              <button type="button" className="editableText heroText" onClick={(e) => { e.stopPropagation(); onEditSection?.(b.id); }}>
                 {b.text}
               </button>
             </div>
@@ -1046,7 +1186,16 @@ export default function GreetingView({
           </>
         )}
         {b.image && (
-          <div className="photoFrame">
+          <div
+            className="photoFrame"
+            onClick={(e) => {
+              if (isEditable) {
+                e.stopPropagation();
+                onEditSection?.(b.id);
+              }
+            }}
+            style={{ cursor: isEditable ? "pointer" : "default" }}
+          >
             <img
               className="photo"
               src={b.image}
