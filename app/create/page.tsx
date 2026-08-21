@@ -474,7 +474,10 @@ export default function CreatePage() {
   function restoreDraft(draft: GreetingDraft) {
     if (!draft.project) return;
     const proj = normalizeProject(draft.project);
-    if (proj.blocks) setBlocks(proj.blocks);
+    if (proj.blocks && proj.blocks.length > 0) {
+      setBlocks(proj.blocks);
+      setSelectedId(proj.blocks[0].id);
+    }
     if (proj.theme && themes[proj.theme]) setTheme(proj.theme);
     if (proj.background) setBackground(proj.background);
     if (proj.cardBackgroundMode) setCardBackgroundMode(proj.cardBackgroundMode);
