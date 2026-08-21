@@ -36,6 +36,8 @@ export default function CreatePage() {
 
   const [mediaUploading, setMediaUploading] = useState(false);
   const [memoryVideoPreview, setMemoryVideoPreview] = useState<Record<string, string>>({});
+  const [pendingMediaSizes, setPendingMediaSizes] = useState<Record<string, number>>({});
+  const [customBgPreviews, setCustomBgPreviews] = useState<Record<string, string>>({});
   const [customBg, setCustomBg] = useState("");
   const [customBgName, setCustomBgName] = useState("");
   const [customBgOpacity, setCustomBgOpacity] = useState(100);
@@ -103,18 +105,62 @@ export default function CreatePage() {
 
   // Project size calculation in bytes
   const projectBytes = useMemo(() => {
+    let configSize = 0;
     try {
       const data = projectData();
-      return new Blob([JSON.stringify(data)]).size;
-    } catch {
-      return 0;
-    }
+      // create a clean copy without base64 strings to avoid double counting
+      const cleanData = JSON.parse(JSON.stringify(data));
+      if (typeof cleanData.audioUrl === "string" && cleanData.audioUrl.startsWith("data:")) cleanData.audioUrl = "";
+      if (typeof cleanData.customBg === "string" && cleanData.customBg.startsWith("data:")) cleanData.customBg = "";
+      if (Array.isArray(cleanData.blocks)) {
+        cleanData.blocks.forEach((b: any) => {
+          if (typeof b.audioUrl === "string" && b.audioUrl.startsWith("data:")) b.audioUrl = "";
+          if (typeof b.memoryVideo === "string" && b.memoryVideo.startsWith("data:")) b.memoryVideo = "";
+          if (typeof b.customBg === "string" && b.customBg.startsWith("data:")) b.customBg = "";
+          if (Array.isArray(b.images)) {
+            b.images = b.images.map((img: any) => (typeof img === "string" && img.startsWith("data:") ? "" : img));
+          }
+        });
+      }
+      configSize = new Blob([JSON.stringify(cleanData)]).size;
+    } catch {}
+
+    let mediaSize = 0;
+    const countSize = (val: any) => {
+      if (!val) return;
+      if (typeof val === "string" && val.startsWith("data:")) {
+        const comma = val.indexOf(",");
+        if (comma >= 0) {
+          mediaSize += Math.round((val.length - comma - 1) * 3 / 4);
+        }
+      } else if (typeof val === "object" && val !== null && "size" in val && typeof val.size === "number") {
+        mediaSize += val.size;
+      }
+    };
+
+    countSize(audioUrl);
+    countSize(customBg);
+    blocks.forEach((b) => {
+      countSize(b.audioUrl);
+      countSize(b.memoryVideo);
+      countSize(b.customBg);
+      if (Array.isArray(b.images)) {
+        b.images.forEach((img) => countSize(img));
+      }
+    });
+
+    Object.values(pendingMediaSizes).forEach((sz) => {
+      mediaSize += sz;
+    });
+
+    return configSize + mediaSize;
   }, [
     blocks, theme, background, cardBackgroundMode, emojiAnimation,
     globalFont, globalTextColor, globalCardOpacity, globalRadius, globalSpacing,
     globalMotion, audioName, audioUrl, customBg, customBgName, customBgOpacity,
     customBgScale, customBgPositionX, customBgPositionY, customBgRotation,
-    backgroundBaseColor, bgColor1, bgColor2, bgColor3, bgColor4, backgroundOverlay
+    backgroundBaseColor, bgColor1, bgColor2, bgColor3, bgColor4, backgroundOverlay,
+    pendingMediaSizes
   ]);
 
   useEffect(() => {
@@ -152,6 +198,8 @@ export default function CreatePage() {
         if (proj.bgColor4) setBgColor4(proj.bgColor4);
       }
       if (proj.backgroundOverlay !== undefined) setBackgroundOverlay(proj.backgroundOverlay);
+      // Resolve any Supabase storage media paths to preview URLs
+      resolveMediaOnMount(proj);
     } catch {}
   }, []);
 
@@ -347,6 +395,121 @@ export default function CreatePage() {
     }
   }
 
+  async function uploadMediaFile(file: File, kind: "audio" | "memory-video" | "image") {
+    const body = new FormData();
+    body.append("file", file);
+    body.append("kind", kind);
+
+    const response = await fetch("/api/media", { method: "POST", body });
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || `Upload failed with status code ${response.status}`);
+      }
+      return data;
+    } else {
+      const text = await response.text();
+      throw new Error(text || `Server returned status ${response.status}`);
+    }
+  }
+
+  async function uploadGlobalBackground(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 20_000_000) {
+      notify("Image is too large. Please choose an image under 20 MB.");
+      e.target.value = "";
+      return;
+    }
+    setMediaUploading(true);
+    setPendingMediaSizes(prev => ({ ...prev, globalBg: file.size }));
+    try {
+      const data = await uploadMediaFile(file, "image");
+      setCustomBg(data.media);
+      setCustomBgName(file.name);
+      setCustomBgPreviews((prev) => ({ ...prev, [data.media.path || "globalBg"]: data.previewUrl || "" }));
+      notify("Background photo uploaded ✨");
+    } catch (error: any) {
+      notify(error?.message || "Background upload failed");
+    } finally {
+      setPendingMediaSizes(prev => { const copy = { ...prev }; delete copy.globalBg; return copy; });
+      setMediaUploading(false);
+      e.target.value = "";
+    }
+  }
+
+  async function uploadSectionBackground(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 20_000_000) {
+      notify("Image is too large. Please choose an image under 20 MB.");
+      e.target.value = "";
+      return;
+    }
+    setMediaUploading(true);
+    const blockId = current.id;
+    setPendingMediaSizes(prev => ({ ...prev, [blockId]: file.size }));
+    try {
+      const data = await uploadMediaFile(file, "image");
+      updateCurrent({
+        customBg: data.media,
+        customBgName: file.name
+      });
+      setCustomBgPreviews((prev) => ({ ...prev, [data.media.path || blockId]: data.previewUrl || "" }));
+      setCardBackgroundMode("different");
+      notify("Section background photo uploaded ✨");
+    } catch (error: any) {
+      notify(error?.message || "Section background upload failed");
+    } finally {
+      setPendingMediaSizes(prev => { const copy = { ...prev }; delete copy[blockId]; return copy; });
+      setMediaUploading(false);
+      e.target.value = "";
+    }
+  }
+
+  async function resolveMediaOnMount(proj: GreetingProject) {
+    const resolvePath = async (val: any) => {
+      if (val && typeof val === "object" && val.storage === "supabase" && val.path) {
+        try {
+          const res = await fetch(`/api/media?path=${encodeURIComponent(val.path)}&kind=${val.kind}`);
+          if (res.ok) {
+            const data = await res.json();
+            return data.previewUrl || "";
+          }
+        } catch {}
+      }
+      return "";
+    };
+
+    if (proj.audioUrl) {
+      const url = await resolvePath(proj.audioUrl);
+      if (url) setAudioPreviewUrl(url);
+    }
+    if (proj.customBg) {
+      const url = await resolvePath(proj.customBg);
+      if (url) {
+        setCustomBgPreviews((prev) => ({ ...prev, [(proj.customBg as any).path]: url }));
+      }
+    }
+    if (proj.blocks) {
+      for (const b of proj.blocks) {
+        if (b.customBg) {
+          const url = await resolvePath(b.customBg);
+          if (url) {
+            setCustomBgPreviews((prev) => ({ ...prev, [(b.customBg as any).path]: url }));
+          }
+        }
+        if (b.memoryVideo) {
+          const url = await resolvePath(b.memoryVideo);
+          if (url) {
+            setMemoryVideoPreview((prev) => ({ ...prev, [b.id]: url }));
+          }
+        }
+      }
+    }
+  }
+
   async function uploadAudio(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -367,21 +530,18 @@ export default function CreatePage() {
 
     stopAudioPreview();
     setMediaUploading(true);
+    setPendingMediaSizes(prev => ({ ...prev, audio: file.size }));
     try {
-      const body = new FormData();
-      body.append("file", file);
-      body.append("kind", "audio");
-      const response = await fetch("/api/media", { method: "POST", body });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Media upload failed");
+      const data = await uploadMediaFile(file, "audio");
       setAudioUrl(data.media);
       setAudioPreviewUrl(data.previewUrl || "");
       setAudioError("");
       setAudioName(file.name);
       notify("Music added ✨");
-    } catch (error) {
-      notify(error instanceof Error ? error.message : "Media upload failed");
+    } catch (error: any) {
+      notify(error?.message || "Media upload failed");
     } finally {
+      setPendingMediaSizes(prev => { const copy = { ...prev }; delete copy.audio; return copy; });
       setMediaUploading(false);
       e.target.value = "";
     }
@@ -402,19 +562,17 @@ export default function CreatePage() {
       return;
     }
     setMediaUploading(true);
+    const blockId = current.id;
+    setPendingMediaSizes(prev => ({ ...prev, [`video-${blockId}`]: file.size }));
     try {
-      const body = new FormData();
-      body.append("file", file);
-      body.append("kind", "memory-video");
-      const response = await fetch("/api/media", { method: "POST", body });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Memory video upload failed");
+      const data = await uploadMediaFile(file, "memory-video");
       updateCurrent({ memoryVideo: data.media });
       setMemoryVideoPreview((prev) => ({ ...prev, [current.id]: data.previewUrl || "" }));
       notify("Memory video added ✨");
-    } catch (error) {
-      notify(error instanceof Error ? error.message : "Memory video upload failed");
+    } catch (error: any) {
+      notify(error?.message || "Memory video upload failed");
     } finally {
+      setPendingMediaSizes(prev => { const copy = { ...prev }; delete copy[`video-${blockId}`]; return copy; });
       setMediaUploading(false);
       e.target.value = "";
     }
@@ -739,19 +897,48 @@ export default function CreatePage() {
             previewDevice={previewDevice}
             title={publishTitle}
             memoryVideoPreviews={memoryVideoPreview}
+            customBgPreviews={customBgPreviews}
           />
         </div>
 
         {!previewOnly && (
           <aside className="sidePanel editor">
-            <div className="editorHead">
+            <div className="editorHead" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <h2>Edit anything</h2>
-                <small>Selected: {current.title}</small>
+                <h2 style={{ fontSize: "16px", margin: 0 }}>Editing {selected + 1} / {blocks.length}</h2>
+                <strong style={{ fontSize: "14px", color: "var(--accent)" }}>{current.title}</strong>
               </div>
-              <span>
-                {selected + 1}/{blocks.length}
-              </span>
+              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                <button
+                  type="button"
+                  className="btn small"
+                  style={{ padding: "4px 8px", fontSize: "12px" }}
+                  disabled={selected === 0}
+                  onClick={() => selectBlock(selected - 1)}
+                  title="Previous Section"
+                >
+                  ◀
+                </button>
+                <button
+                  type="button"
+                  className="btn small"
+                  style={{ padding: "4px 8px", fontSize: "12px" }}
+                  disabled={selected === blocks.length - 1}
+                  onClick={() => selectBlock(selected + 1)}
+                  title="Next Section"
+                >
+                  ▶
+                </button>
+                <button
+                  type="button"
+                  className="btn small active"
+                  style={{ padding: "4px 8px", fontSize: "12px", background: "var(--accent)", color: "#fff" }}
+                  onClick={() => setAddOpen(true)}
+                  title="Add Section"
+                >
+                  ➕ Add
+                </button>
+              </div>
             </div>
             <div className="editNotice">
               <Pencil size={14} />
@@ -801,7 +988,7 @@ export default function CreatePage() {
                 </div>
                 <div className="typoRow">
                   <select
-                    value={current.titleFont ?? "sans"}
+                    value={current.titleFont ?? globalFont}
                     onChange={(e) => updateCurrent({ titleFont: e.target.value as FontName })}
                   >
                     {fontOptions}
@@ -824,7 +1011,7 @@ export default function CreatePage() {
                 </div>
                 <div className="typoRow">
                   <select
-                    value={current.subtitleFont ?? "sans"}
+                    value={current.subtitleFont ?? globalFont}
                     onChange={(e) => updateCurrent({ subtitleFont: e.target.value as FontName })}
                   >
                     {fontOptions}
@@ -875,7 +1062,7 @@ export default function CreatePage() {
                 </div>
                 <div className="typoRow">
                   <select
-                    value={current.bodyFont ?? "sans"}
+                    value={current.bodyFont ?? globalFont}
                     onChange={(e) => updateCurrent({ bodyFont: e.target.value as FontName })}
                   >
                     {fontOptions}
@@ -930,166 +1117,185 @@ export default function CreatePage() {
               </label>
             </div>
 
-            {/* Section-specific Background if Different Mode is active */}
-            {cardBackgroundMode === "different" && (
-              <div className="sectionBackgroundEditor" style={{ marginTop: "14px", padding: "14px", border: "1px solid var(--line)", borderRadius: "14px", background: "rgba(255,255,255,0.02)" }}>
-                <div className="divider" style={{ marginTop: 0 }}>🎨 Section Background</div>
-                <p className="helperText">Choose a distinct background preset or photo for this specific section.</p>
+            {/* Section-specific Background */}
+            <div className="sectionBackgroundEditor" style={{ marginTop: "14px", padding: "14px", border: "1px solid var(--line)", borderRadius: "14px", background: "rgba(255,255,255,0.02)" }}>
+              <div className="divider" style={{ marginTop: 0 }}>🎨 Background for this section</div>
+              {cardBackgroundMode === "same" && (
+                <div style={{ margin: "8px 0 12px", padding: "8px 10px", background: "rgba(245,158,11,0.1)", borderRadius: "8px", border: "1px solid rgba(245,158,11,0.2)", fontSize: "11px", color: "#fbbf24" }}>
+                  Currently sharing the global background. Modifying these settings will switch you to "Different background for each section" mode.
+                </div>
+              )}
+              <p className="helperText">Choose a distinct background preset or photo for this specific section.</p>
 
-                <label style={{ marginTop: "8px" }}>
-                  Background Preset
-                  <select
-                    value={current.background ?? background}
-                    onChange={(e) => updateCurrent({ background: e.target.value })}
+              <label style={{ marginTop: "8px" }}>
+                Background Preset
+                <select
+                  value={current.background ?? background}
+                  onChange={(e) => {
+                    updateCurrent({ background: e.target.value });
+                    setCardBackgroundMode("different");
+                  }}
+                >
+                  <option value="aurora">🌌 Aurora</option>
+                  <option value="mesh">🫧 Liquid mesh</option>
+                  <option value="stars">✨ Starfield</option>
+                  <option value="petals">🌸 Floating petals</option>
+                  <option value="gradient">🎨 Gradient</option>
+                  <option value="minimal">◌ Minimal glow</option>
+                </select>
+              </label>
+
+              <div style={{ marginTop: "12px" }}>
+                <label style={{ fontSize: "12px", color: "var(--muted)", fontWeight: 600 }}>Section Background Photo</label>
+                <input
+                  ref={sectionBgFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={uploadSectionBackground}
+                />
+
+                {!current.customBg ? (
+                  <button
+                    type="button"
+                    className="btn full small"
+                    style={{ marginTop: "6px" }}
+                    onClick={() => sectionBgFileInputRef.current?.click()}
                   >
-                    <option value="aurora">🌌 Aurora</option>
-                    <option value="mesh">🫧 Liquid mesh</option>
-                    <option value="stars">✨ Starfield</option>
-                    <option value="petals">🌸 Floating petals</option>
-                    <option value="gradient">🎨 Gradient</option>
-                    <option value="minimal">◌ Minimal glow</option>
-                  </select>
-                </label>
+                    📷 Choose background photo for this section
+                  </button>
+                ) : (
+                  <div style={{ marginTop: "8px", padding: "10px", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "10px", background: "rgba(0,0,0,0.25)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <span style={{ fontSize: "11px", color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        🖼️ {current.customBgName || "section-bg.jpg"}
+                      </span>
+                      <div style={{ display: "flex", gap: "4px" }}>
+                        <button
+                          type="button"
+                          className="btn small"
+                          style={{ padding: "3px 8px", fontSize: "11px" }}
+                          onClick={() => sectionBgFileInputRef.current?.click()}
+                        >
+                          Replace
+                        </button>
+                        <button
+                          type="button"
+                          className="btn danger small"
+                          style={{ padding: "3px 8px", fontSize: "11px" }}
+                          onClick={() => {
+                            updateCurrent({
+                              customBg: "",
+                              customBgName: ""
+                            });
+                            setCardBackgroundMode("different");
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
 
-                <div style={{ marginTop: "12px" }}>
-                  <label style={{ fontSize: "12px", color: "var(--muted)", fontWeight: 600 }}>Section Background Photo</label>
-                  <input
-                    ref={sectionBgFileInputRef}
-                    type="file"
-                    accept="image/*"
-                    style={{ display: "none" }}
-                    onChange={(e) =>
-                      pickImage(
-                        e,
-                        (url) => updateCurrent({ customBg: url }),
-                        (name) => updateCurrent({ customBgName: name }),
-                        20_000_000
-                      )
-                    }
-                  />
-
-                  {!current.customBg ? (
+                    <label>
+                      Zoom / Scale <strong>{current.customBgScale ?? 100}%</strong>
+                      <input
+                        type="range"
+                        min="100"
+                        max="250"
+                        value={current.customBgScale ?? 100}
+                        onChange={(e) => {
+                          updateCurrent({ customBgScale: Number(e.target.value) });
+                          setCardBackgroundMode("different");
+                        }}
+                      />
+                    </label>
+                    <label>
+                      Horizontal position X <strong>{current.customBgPositionX ?? 50}%</strong>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={current.customBgPositionX ?? 50}
+                        onChange={(e) => {
+                          updateCurrent({ customBgPositionX: Number(e.target.value) });
+                          setCardBackgroundMode("different");
+                        }}
+                      />
+                    </label>
+                    <label>
+                      Vertical position Y <strong>{current.customBgPositionY ?? 50}%</strong>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={current.customBgPositionY ?? 50}
+                        onChange={(e) => {
+                          updateCurrent({ customBgPositionY: Number(e.target.value) });
+                          setCardBackgroundMode("different");
+                        }}
+                      />
+                    </label>
+                    <label>
+                      Rotation <strong>{current.customBgRotation ?? 0}°</strong>
+                      <input
+                        type="range"
+                        min="-180"
+                        max="180"
+                        value={current.customBgRotation ?? 0}
+                        onChange={(e) => {
+                          updateCurrent({ customBgRotation: Number(e.target.value) });
+                          setCardBackgroundMode("different");
+                        }}
+                      />
+                    </label>
+                    <label>
+                      Photo opacity <strong>{current.customBgOpacity ?? 100}%</strong>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={current.customBgOpacity ?? 100}
+                        onChange={(e) => {
+                          updateCurrent({ customBgOpacity: Number(e.target.value) });
+                          setCardBackgroundMode("different");
+                        }}
+                      />
+                    </label>
+                    <label>
+                      Background overlay <strong>{current.backgroundOverlay ?? 18}%</strong>
+                      <input
+                        type="range"
+                        min="0"
+                        max="60"
+                        value={current.backgroundOverlay ?? 18}
+                        onChange={(e) => {
+                          updateCurrent({ backgroundOverlay: Number(e.target.value) });
+                          setCardBackgroundMode("different");
+                        }}
+                      />
+                    </label>
                     <button
                       type="button"
-                      className="btn full small"
+                      className="btn small full"
                       style={{ marginTop: "6px" }}
-                      onClick={() => sectionBgFileInputRef.current?.click()}
+                      onClick={() => {
+                        updateCurrent({
+                          customBgScale: 100,
+                          customBgPositionX: 50,
+                          customBgPositionY: 50,
+                          customBgRotation: 0,
+                          customBgOpacity: 100,
+                          backgroundOverlay: 18
+                        });
+                        setCardBackgroundMode("different");
+                      }}
                     >
-                      📷 Choose background photo for this section
+                      Reset section background framing
                     </button>
-                  ) : (
-                    <div style={{ marginTop: "8px", padding: "10px", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "10px", background: "rgba(0,0,0,0.25)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                        <span style={{ fontSize: "11px", color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          🖼️ {current.customBgName || "section-bg.jpg"}
-                        </span>
-                        <div style={{ display: "flex", gap: "4px" }}>
-                          <button
-                            type="button"
-                            className="btn small"
-                            style={{ padding: "3px 8px", fontSize: "11px" }}
-                            onClick={() => sectionBgFileInputRef.current?.click()}
-                          >
-                            Replace
-                          </button>
-                          <button
-                            type="button"
-                            className="btn danger small"
-                            style={{ padding: "3px 8px", fontSize: "11px" }}
-                            onClick={() =>
-                              updateCurrent({
-                                customBg: "",
-                                customBgName: ""
-                              })
-                            }
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-
-                      <label>
-                        Zoom / Scale <strong>{current.customBgScale ?? 100}%</strong>
-                        <input
-                          type="range"
-                          min="100"
-                          max="250"
-                          value={current.customBgScale ?? 100}
-                          onChange={(e) => updateCurrent({ customBgScale: Number(e.target.value) })}
-                        />
-                      </label>
-                      <label>
-                        Horizontal position X <strong>{current.customBgPositionX ?? 50}%</strong>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={current.customBgPositionX ?? 50}
-                          onChange={(e) => updateCurrent({ customBgPositionX: Number(e.target.value) })}
-                        />
-                      </label>
-                      <label>
-                        Vertical position Y <strong>{current.customBgPositionY ?? 50}%</strong>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={current.customBgPositionY ?? 50}
-                          onChange={(e) => updateCurrent({ customBgPositionY: Number(e.target.value) })}
-                        />
-                      </label>
-                      <label>
-                        Rotation <strong>{current.customBgRotation ?? 0}°</strong>
-                        <input
-                          type="range"
-                          min="-180"
-                          max="180"
-                          value={current.customBgRotation ?? 0}
-                          onChange={(e) => updateCurrent({ customBgRotation: Number(e.target.value) })}
-                        />
-                      </label>
-                      <label>
-                        Photo opacity <strong>{current.customBgOpacity ?? 100}%</strong>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={current.customBgOpacity ?? 100}
-                          onChange={(e) => updateCurrent({ customBgOpacity: Number(e.target.value) })}
-                        />
-                      </label>
-                      <label>
-                        Background overlay <strong>{current.backgroundOverlay ?? 18}%</strong>
-                        <input
-                          type="range"
-                          min="0"
-                          max="60"
-                          value={current.backgroundOverlay ?? 18}
-                          onChange={(e) => updateCurrent({ backgroundOverlay: Number(e.target.value) })}
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        className="btn small full"
-                        style={{ marginTop: "6px" }}
-                        onClick={() =>
-                          updateCurrent({
-                            customBgScale: 100,
-                            customBgPositionX: 50,
-                            customBgPositionY: 50,
-                            customBgRotation: 0,
-                            customBgOpacity: 100,
-                            backgroundOverlay: 18
-                          })
-                        }
-                      >
-                        Reset section background framing
-                      </button>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
 
             {(current.type === "gallery" || current.type === "memories") && (
               <div className="divider">🖼️ Photo page</div>
@@ -1922,7 +2128,7 @@ export default function CreatePage() {
               type="file"
               accept="image/*"
               style={{ display: "none" }}
-              onChange={(e) => pickImage(e, setCustomBg, setCustomBgName, 20_000_000)}
+              onChange={uploadGlobalBackground}
             />
 
             {!customBg ? (

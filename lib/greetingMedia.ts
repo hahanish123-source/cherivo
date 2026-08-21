@@ -24,6 +24,7 @@ export type StoredMedia = {
   storage: "supabase";
   path: string;
   kind: "audio" | "memory-video" | "image";
+  size?: number;
 };
 
 export type UploadedMedia = {
@@ -131,7 +132,7 @@ export async function uploadGreetingMedia(file: File, kind: StoredMedia["kind"])
     throw new Error(`Media upload failed: ${uploadResult.error.message}. Ensure the Supabase Storage bucket '${GREETING_MEDIA_BUCKET}' exists.`);
   }
 
-  return { storage: "supabase", path, kind };
+  return { storage: "supabase", path, kind, size: file.size };
 }
 
 export async function getGreetingMediaUrl(value: unknown): Promise<string> {

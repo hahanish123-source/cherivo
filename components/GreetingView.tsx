@@ -27,6 +27,7 @@ export type GreetingViewProps = {
   previewDevice?: "desktop" | "mobile";
   title?: string;
   memoryVideoPreviews?: Record<string, string>;
+  customBgPreviews?: Record<string, string>;
 };
 
 type DustParticle = {
@@ -52,7 +53,8 @@ export default function GreetingView({
   onAddReason,
   previewDevice = "desktop",
   title = "A Hanora moment",
-  memoryVideoPreviews = {}
+  memoryVideoPreviews = {},
+  customBgPreviews = {}
 }: GreetingViewProps) {
   const visibleBlocks = useMemo(
     () => (project.blocks ?? []).filter((b) => b.visible !== false),
@@ -310,7 +312,13 @@ export default function GreetingView({
     ? currentBlock.background
     : (project.background || "aurora");
 
-  const activeCustomBg = isDifferentBg ? currentBlock?.customBg : project.customBg;
+  const rawCustomBg = isDifferentBg ? currentBlock?.customBg : project.customBg;
+  const activeCustomBg =
+    typeof rawCustomBg === "string"
+      ? rawCustomBg
+      : rawCustomBg && typeof rawCustomBg === "object"
+      ? customBgPreviews[(rawCustomBg as any).path] || ""
+      : "";
   const activeCustomBgOpacity = isDifferentBg ? (currentBlock?.customBgOpacity ?? 100) : project.customBgOpacity;
   const activeCustomBgScale = isDifferentBg ? (currentBlock?.customBgScale ?? 100) : project.customBgScale;
   const activeCustomBgPositionX = isDifferentBg ? (currentBlock?.customBgPositionX ?? 50) : project.customBgPositionX;
@@ -347,9 +355,9 @@ export default function GreetingView({
     const effectiveCardOpacity = typeof b.cardOpacity === "number" ? b.cardOpacity : (project.globalCardOpacity ?? 14);
     const headingFont = b.headingFont || b.font || project.globalFont || "serif";
     const bodyFont = b.bodyFont || project.globalFont || "sans";
-    const titleFont = b.titleFont || "sans";
-    const subtitleFont = b.subtitleFont || "sans";
-    const letterFont = b.letterFont || "serif";
+    const titleFont = b.titleFont || project.globalFont || "sans";
+    const subtitleFont = b.subtitleFont || project.globalFont || "sans";
+    const letterFont = b.letterFont || project.globalFont || "serif";
     const headingColor = b.headingColor || project.globalTextColor || themeColors[3];
     const bodyColor = b.bodyColor || project.globalTextColor || themeColors[3];
     const subtitleColor = b.subtitleColor || (project.theme === "light" ? "#be185d" : "#ff9fc2");
@@ -675,9 +683,9 @@ export default function GreetingView({
                     />
                   </div>
                 )}
-                <h2 style={{ fontFamily: getFont(b.headingFont) }}>{b.heading}</h2>
+                <h2>{b.heading}</h2>
                 <div className="letterBodyWrap customScrollbar">
-                  <p style={{ fontFamily: getFont(b.bodyFont) }}>{b.text}</p>
+                  <p>{b.text}</p>
                 </div>
               </button>
             </>
@@ -700,9 +708,9 @@ export default function GreetingView({
                     />
                   </div>
                 )}
-                <h2 style={{ fontFamily: getFont(b.headingFont) }}>{b.heading}</h2>
+                <h2>{b.heading}</h2>
                 <div className="letterBodyWrap customScrollbar">
-                  <p style={{ fontFamily: getFont(b.bodyFont) }}>{b.text}</p>
+                  <p>{b.text}</p>
                 </div>
               </article>
             </>

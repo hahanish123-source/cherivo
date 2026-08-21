@@ -33,3 +33,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const path = searchParams.get("path");
+    const kind = searchParams.get("kind") || "image";
+    if (!path) {
+      return NextResponse.json({ error: "Path parameter is required." }, { status: 400 });
+    }
+    const previewUrl = await getGreetingMediaUrl({ storage: "supabase", path, kind: kind as any });
+    return NextResponse.json({ previewUrl });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to resolve media." }, { status: 400 });
+  }
+}

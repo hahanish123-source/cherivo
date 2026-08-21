@@ -51,11 +51,11 @@ export type Block = {
   emoji: string;
   emojiAnimation?: string;
   emojiSize?: number;
-  font: FontName;
-  titleFont: FontName;
-  subtitleFont: FontName;
-  headingFont: FontName;
-  bodyFont: FontName;
+  font?: FontName;
+  titleFont?: FontName;
+  subtitleFont?: FontName;
+  headingFont?: FontName;
+  bodyFont?: FontName;
   letterFont?: FontName;
   accent: string;
   headingColor: string;

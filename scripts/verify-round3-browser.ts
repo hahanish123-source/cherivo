@@ -353,7 +353,8 @@ async function main() {
   await publicClient.send("Page.enable");
   await publicClient.send("Runtime.enable");
 
-  await sleep(1500);
+  // Wait for the dynamic route to fully compile and load
+  await waitForApp(publicClient);
 
   const publicCheck = await publicClient.eval(`(() => {
     const sceneInner = document.querySelector('.sceneInner');
