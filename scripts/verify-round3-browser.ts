@@ -133,7 +133,7 @@ async function main() {
       "--disable-gpu",
       "--no-first-run",
       "--no-default-browser-check",
-      `http://localhost:${appPort}/create`
+      `${process.env.TEST_SITE || `http://localhost:${appPort}`}/create`
     ],
     { stdio: "ignore" }
   );
