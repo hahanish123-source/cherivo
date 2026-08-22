@@ -6,11 +6,17 @@ export const GREETING_MEDIA_BUCKET =
   process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET?.trim() ||
   "hanora-media";
 export const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
-export const MAX_MEMORY_VIDEO_BYTES = 50_000_000;
+export const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
+export const MAX_MEMORY_VIDEO_BYTES = 50 * 1024 * 1024;
+export const MAX_TOTAL_GREETING_BYTES = 300 * 1024 * 1024;
+export const MAX_VIDEOS_PER_GREETING = 3;
+
 const MEMORY_VIDEO_TYPES = new Map([
   ["video/mp4", "mp4"],
   ["video/webm", "webm"],
   ["video/quicktime", "mov"],
+  ["video/x-m4v", "m4v"],
+  ["video/m4v", "m4v"]
 ]);
 
 const IMAGE_TYPES = new Map([
@@ -56,17 +62,17 @@ async function hasContainerSignature(file: File, kind: StoredMedia["kind"]) {
 export async function uploadGreetingMedia(file: File, kind: StoredMedia["kind"]): Promise<StoredMedia | string> {
   const isVideo = kind === "memory-video";
   const isImage = kind === "image";
-  const maxBytes = isVideo ? MAX_MEMORY_VIDEO_BYTES : 20 * 1024 * 1024;
+  const maxBytes = isVideo ? MAX_MEMORY_VIDEO_BYTES : isImage ? MAX_IMAGE_BYTES : MAX_AUDIO_BYTES;
   const expectedType = isVideo || isImage ? file.type : "audio/mpeg";
   const fileName = file.name.toLowerCase();
 
   if (file.size > maxBytes) {
     throw new Error(
       isVideo
-        ? "Video is too large. Please choose a video under 50 MB."
+        ? "Video is too large. Video must be 50 MB or smaller."
         : isImage
-        ? "Image is too large. Please choose an image under 20 MB."
-        : "Audio file is too large (must be under 20 MB)."
+        ? "Image is too large. Image must be 15 MB or smaller."
+        : "Audio is too large. Audio must be 20 MB or smaller."
     );
   }
 
@@ -211,6 +217,7 @@ export async function resolveGreetingMedia(project: Record<string, unknown>) {
       const block = { ...(raw as Record<string, unknown>) };
       block.audioUrl = await resolveMedia(block.audioUrl);
       block.memoryVideo = await resolveMedia(block.memoryVideo);
+      block.video = await resolveMedia(block.video);
       block.secretVideo = await resolveMedia(block.secretVideo);
       block.customBg = (await resolveMedia(block.customBg)) as string | undefined;
       return block;

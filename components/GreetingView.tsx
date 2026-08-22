@@ -1,25 +1,37 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef, type CSSProperties } from "react";
-import type { Block, BlockType, GreetingProject, ImageAdjustment } from "@/lib/types";
-import { defaultBlocks, getFont, themes, incidentDefaults, reasonDefaults } from "@/lib/greetingConfig";
-import Particles from "./Particles";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import type { CSSProperties } from "react";
 import {
   ArrowLeft,
   ArrowRight,
-  Eye,
-  Heart,
-  Music2,
-  Pause,
   Pencil,
-  Play,
   RotateCcw,
-  Sparkles,
   Volume2,
+  Play,
+  Pause,
   X
 } from "lucide-react";
+import type { Block, GreetingProject, ImageAdjustment } from "@/lib/types";
+import { getFont, backgrounds, themes } from "@/lib/greetingConfig";
+import Particles from "./Particles";
 
-interface DustParticle {
+export type GreetingViewProps = {
+  project: GreetingProject;
+  sceneIndex?: number;
+  onSceneChange?: (newIndex: number) => void;
+  isEditable?: boolean;
+  onEditSection?: (blockId: string) => void;
+  onEditReason?: (blockId: string, reasonIndex: number) => void;
+  onAddReason?: () => void;
+  onOpenResponseModal?: () => void;
+  previewDevice?: "desktop" | "mobile";
+  title?: string;
+  memoryVideoPreviews?: Record<string, string>;
+  customBgPreviews?: Record<string, string>;
+};
+
+type DustParticle = {
   x: number;
   y: number;
   vx: number;
@@ -30,60 +42,48 @@ interface DustParticle {
   color: string;
   rotation: number;
   vRot: number;
-}
+};
 
 export default function GreetingView({
   project,
+  sceneIndex = 0,
+  onSceneChange,
   isEditable = false,
-  selectedBlockId,
-  onSelectBlock,
   onEditSection,
   onEditReason,
   onAddReason,
-  onEditIncident,
-  onAddIncident,
   onOpenResponseModal,
   previewDevice = "desktop",
   title = "A Hanora moment",
   memoryVideoPreviews = {},
   customBgPreviews = {}
-}: {
-  project: GreetingProject;
-  sceneIndex?: number;
-  onSceneChange?: (scene: number) => void;
-  isEditable?: boolean;
-  selectedBlockId?: string;
-  onSelectBlock?: (blockId: string) => void;
-  onEditSection?: (blockId: string) => void;
-  onEditReason?: (blockId: string, reasonIndex: number) => void;
-  onAddReason?: () => void;
-  onEditIncident?: (blockId: string, incidentIndex: number) => void;
-  onAddIncident?: () => void;
-  onOpenResponseModal?: () => void;
-  previewDevice?: "mobile" | "desktop";
-  title?: string;
-  memoryVideoPreviews?: Record<string, string>;
-  customBgPreviews?: Record<string, string>;
-}) {
+}: GreetingViewProps) {
   const visibleBlocks = useMemo(
-    () => (project.blocks ?? defaultBlocks).filter((b) => b.visible),
+    () => (project.blocks ?? []).filter((b) => b.visible !== false),
     [project.blocks]
   );
 
-  // Active section scrolling sync
-  useEffect(() => {
-    if (selectedBlockId) {
-      const el = document.getElementById(`section-${selectedBlockId}`);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }
+  const [internalScene, setInternalScene] = useState(0);
+  const currentSceneIndex = onSceneChange !== undefined ? sceneIndex : internalScene;
+
+  const setScene = (newIndex: number) => {
+    const clamped = Math.max(0, Math.min(newIndex, Math.max(0, visibleBlocks.length - 1)));
+    if (onSceneChange) {
+      onSceneChange(clamped);
+    } else {
+      setInternalScene(clamped);
     }
-  }, [selectedBlockId]);
+  };
+
+  const currentBlock: Block | undefined =
+    visibleBlocks.length > 0
+      ? visibleBlocks[Math.min(currentSceneIndex, visibleBlocks.length - 1)]
+      : project.blocks[0];
 
   // Interactive states
   const [candles, setCandles] = useState<boolean[]>([false, false, false]);
   const [smoke, setSmoke] = useState<number[]>([]);
-  const [candleFinale, setCandleFinale] = useState(false);
+  const [cakeCelebrated, setCakeCelebrated] = useState(false);
   const [secretRevealed, setSecretRevealed] = useState(false);
   const [galleryViewer, setGalleryViewer] = useState<{ images: string[]; index: number } | null>(null);
   const [dustedPhotos, setDustedPhotos] = useState<number[]>([]);
@@ -99,7 +99,7 @@ export default function GreetingView({
   const dustParticlesRef = useRef<DustParticle[]>([]);
   const dustAnimRef = useRef<number | null>(null);
 
-  // Keyboard Escape listener to close photo lightbox
+  // Keyboard Escape listener for Lightbox
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && galleryViewer) {
@@ -111,11 +111,13 @@ export default function GreetingView({
   }, [galleryViewer]);
 
   const activeAudioUrl =
-    typeof project.audioUrl === "string"
+    typeof currentBlock?.audioUrl === "string"
+      ? currentBlock.audioUrl
+      : typeof project.audioUrl === "string"
       ? project.audioUrl
       : "";
 
-  const activeAudioName = project.audioName || "Your song";
+  const activeAudioName = currentBlock?.audioName || project.audioName || "Your song";
 
   const attemptAudioPlayback = () => {
     const audioElement = audioRef.current;
@@ -176,17 +178,11 @@ export default function GreetingView({
 
     if (next.every(Boolean)) {
       setConfettiActive(true);
-      setCandleFinale(true);
+      setCakeCelebrated(true);
       window.setTimeout(() => {
         setConfettiActive(false);
-      }, 3800);
+      }, 3500);
     }
-  };
-
-  const relightCandles = () => {
-    setCandles([false, false, false]);
-    setSmoke([]);
-    setCandleFinale(false);
   };
 
   const handleSecretToggle = (reveal: boolean) => {
@@ -218,7 +214,7 @@ export default function GreetingView({
     const w = targetRect.width;
     const h = targetRect.height;
 
-    const count = 55;
+    const count = 320;
     const colors = ["#ffb0c8", "#ff7aa7", "#ffd1dc", "#ffffff", "#e89bb5", "#fcd5e2", "#ff4f8b", "#ffe4e6", "#fbcfe8"];
 
     const newParticles: DustParticle[] = [];
@@ -258,8 +254,8 @@ export default function GreetingView({
           const p = particles[i];
           p.x += p.vx;
           p.y += p.vy;
-          p.vy += 0.068;
-          p.vx *= 0.985;
+          p.vy += 0.068; // gravity
+          p.vx *= 0.985; // air drag
           p.alpha -= p.decay;
           p.size = Math.max(0.2, p.size * 0.988);
           p.rotation += p.vRot;
@@ -295,11 +291,18 @@ export default function GreetingView({
     }
   };
 
+  // Gallery interactions
   const openGalleryPhoto = (images: string[], index: number, isScattered: boolean, targetElement?: HTMLElement) => {
-    if (isScattered && targetElement) {
-      triggerDustDisintegration(targetElement);
+    if (isScattered) {
+      if (targetElement) {
+        triggerDustDisintegration(targetElement);
+      }
+      setGalleryScatter(true);
+      setDustedPhotos((v) => (v.includes(index) ? v : [...v, index]));
+      window.setTimeout(() => setGalleryScatter(false), 1050);
+    } else {
+      setGalleryViewer({ images, index });
     }
-    setGalleryViewer({ images, index });
   };
 
   const closeGalleryPhoto = () => setGalleryViewer(null);
@@ -316,29 +319,60 @@ export default function GreetingView({
 
   const themeColors = themes[project.theme || "dark"] ?? themes.dark;
   const isDifferentBg = project.cardBackgroundMode === "different";
-  const activeBg = project.background || "aurora";
+  const activeBg = (isDifferentBg && currentBlock?.background)
+    ? currentBlock.background
+    : (project.background || "aurora");
 
-  const rawCustomBg = project.customBg;
-  let activeCustomBg = "";
-  if (typeof rawCustomBg === "string") {
-    activeCustomBg = customBgPreviews[rawCustomBg] || rawCustomBg;
-  } else if (rawCustomBg && typeof rawCustomBg === "object") {
-    const p = (rawCustomBg as any).path;
-    const u = (rawCustomBg as any).url;
-    activeCustomBg = (p && customBgPreviews[p]) || u || (typeof p === "string" && (p.startsWith("http") || p.startsWith("data:")) ? p : "");
-  }
-  const activeCustomBgOpacity = project.customBgOpacity;
-  const activeCustomBgScale = project.customBgScale;
-  const activeCustomBgPositionX = project.customBgPositionX;
-  const activeCustomBgPositionY = project.customBgPositionY;
-  const activeCustomBgRotation = project.customBgRotation;
-  const activeBgOverlay = project.backgroundOverlay;
+  const rawCustomBg = (currentBlock && typeof currentBlock.customBg === "string" && currentBlock.customBg)
+    ? currentBlock.customBg
+    : project.customBg;
+  const activeCustomBg =
+    typeof rawCustomBg === "string"
+      ? rawCustomBg
+      : rawCustomBg && typeof rawCustomBg === "object"
+      ? customBgPreviews[(rawCustomBg as any).path] || ""
+      : "";
+  const activeCustomBgOpacity = typeof currentBlock?.customBgOpacity === "number"
+    ? currentBlock.customBgOpacity
+    : (typeof project.customBgOpacity === "number" ? project.customBgOpacity : 100);
+  const activeCustomBgScale = typeof currentBlock?.customBgScale === "number"
+    ? currentBlock.customBgScale
+    : (typeof project.customBgScale === "number" ? project.customBgScale : 100);
+  const activeCustomBgPositionX = typeof currentBlock?.customBgPositionX === "number"
+    ? currentBlock.customBgPositionX
+    : (typeof project.customBgPositionX === "number" ? project.customBgPositionX : 50);
+  const activeCustomBgPositionY = typeof currentBlock?.customBgPositionY === "number"
+    ? currentBlock.customBgPositionY
+    : (typeof project.customBgPositionY === "number" ? project.customBgPositionY : 50);
+  const activeCustomBgRotation = typeof currentBlock?.customBgRotation === "number"
+    ? currentBlock.customBgRotation
+    : (typeof project.customBgRotation === "number" ? project.customBgRotation : 0);
+  const activeCustomBgFit = currentBlock?.customBgFit || project.customBgFit || "cover";
+  const activeBgOverlay = typeof currentBlock?.backgroundOverlay === "number"
+    ? currentBlock.backgroundOverlay
+    : (typeof project.backgroundOverlay === "number" ? project.backgroundOverlay : 18);
 
-  const activeBaseColor = project.backgroundBaseColor || themeColors[0];
-  const activeBg1 = project.bgColor1 || themeColors[1];
-  const activeBg2 = project.bgColor2 || themeColors[2];
-  const activeBg3 = project.bgColor3 || (project.theme === "light" ? "#e8f7ff" : "#38bdf8");
-  const activeBg4 = project.bgColor4 || (project.theme === "light" ? "#fff0f5" : "#f59e0b");
+  const activeBaseColor = (isDifferentBg && currentBlock?.backgroundBaseColor) ? currentBlock.backgroundBaseColor : (project.backgroundBaseColor || themeColors[0]);
+  const activeBg1 = (isDifferentBg && currentBlock?.bgColor1) ? currentBlock.bgColor1 : (project.bgColor1 || themeColors[1]);
+  const activeBg2 = (isDifferentBg && currentBlock?.bgColor2) ? currentBlock.bgColor2 : (project.bgColor2 || themeColors[2]);
+  const activeBg3 = (isDifferentBg && currentBlock?.bgColor3) ? currentBlock.bgColor3 : (project.bgColor3 || (project.theme === "light" ? "#e8f7ff" : "#38bdf8"));
+  const activeBg4 = (isDifferentBg && currentBlock?.bgColor4) ? currentBlock.bgColor4 : (project.bgColor4 || (project.theme === "light" ? "#fff0f5" : "#f59e0b"));
+
+  const activeVideo =
+    typeof currentBlock?.video === "string"
+      ? currentBlock.video
+      : typeof currentBlock?.memoryVideo === "string"
+      ? currentBlock.memoryVideo
+      : currentBlock?.id ? memoryVideoPreviews[currentBlock.id] || "" : "";
+
+  const activeVideoFit = currentBlock?.videoFit || "cover";
+  const activeVideoOpacity = typeof currentBlock?.videoOpacity === "number" ? currentBlock.videoOpacity : 100;
+  const activeVideoScale = typeof currentBlock?.videoScale === "number" ? currentBlock.videoScale : 100;
+  const activeVideoPositionX = typeof currentBlock?.videoPositionX === "number" ? currentBlock.videoPositionX : 50;
+  const activeVideoPositionY = typeof currentBlock?.videoPositionY === "number" ? currentBlock.videoPositionY : 50;
+  const activeVideoAutoplay = currentBlock?.videoAutoplay ?? true;
+  const activeVideoMuted = currentBlock?.videoMuted ?? true;
+  const activeVideoLoop = currentBlock?.videoLoop ?? true;
 
   const containerStyle: CSSProperties = {
     "--card-opacity": (project.globalCardOpacity ?? 14) / 100,
@@ -405,154 +439,122 @@ export default function GreetingView({
     } as CSSProperties;
   };
 
-  const handleSelect = (blockId: string) => {
-    if (!isEditable) return;
-    if (onSelectBlock) {
-      onSelectBlock(blockId);
-    } else if (onEditSection) {
-      onEditSection(blockId);
-    }
+  const getElementStyle = (b: Block, role: string, fallback: CSSProperties = {}): CSSProperties => {
+    const custom = b.textStyles?.[role];
+    if (!custom) return fallback;
+
+    return {
+      ...fallback,
+      ...(custom.font ? { fontFamily: getFont(custom.font) } : {}),
+      ...(typeof custom.size === "number" ? { fontSize: `${custom.size}px` } : {}),
+      ...(custom.weight ? { fontWeight: custom.weight } : {}),
+      ...(custom.color ? { color: custom.color } : {}),
+      ...(typeof custom.opacity === "number" ? { opacity: custom.opacity / 100 } : {}),
+      ...(typeof custom.letterSpacing === "number" ? { letterSpacing: `${custom.letterSpacing}px` } : {}),
+      ...(typeof custom.lineHeight === "number" ? { lineHeight: custom.lineHeight } : {}),
+      ...(custom.align ? { textAlign: custom.align } : {}),
+      ...(typeof custom.offsetX === "number" || typeof custom.offsetY === "number"
+        ? { transform: `translate(${custom.offsetX || 0}px, ${custom.offsetY || 0}px)` }
+        : {}),
+      ...(custom.visible === false ? { display: "none" } : {})
+    };
   };
 
-  const scrollToSection = (targetId: string) => {
-    const el = document.getElementById(`section-${targetId}`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  };
-
-  // Render individual section card
-  const renderSectionContent = (b: Block, index: number, total: number) => {
+  const renderSectionContent = (b: Block) => {
     const style = getSectionStyle(b);
     const resolvedVideo =
-      typeof b.memoryVideo === "string"
+      typeof b.video === "string"
+        ? b.video
+        : typeof b.memoryVideo === "string"
         ? b.memoryVideo
         : memoryVideoPreviews[b.id] || "";
 
     const heroAdj = b.imageAdjustments?.["hero"] ?? b.imageAdjustments?.["0"] ?? { scale: 100, x: 50, y: 50 };
     const emojiAnim = b.emojiAnimation || project.emojiAnimation || "floating";
-    const isSelected = selectedBlockId === b.id;
 
     const nav = (
-      <>
-        {resolvedVideo && (
-          <video
-            className="memoryVideoPreview"
-            src={resolvedVideo}
-            controls
-            playsInline
-            preload="metadata"
-          />
-        )}
-        <div className="actions" onClick={(e) => e.stopPropagation()}>
-          {index > 0 ? (
-            <button
-              type="button"
-              className="btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                const prevBlock = visibleBlocks[index - 1];
-                if (prevBlock) {
-                  scrollToSection(prevBlock.id);
-                  if (isEditable) handleSelect(prevBlock.id);
-                }
-              }}
-            >
-              <ArrowLeft size={16} /> Back
-            </button>
-          ) : (
-            <span />
-          )}
-
-          {index < total - 1 ? (
+      <div className="actions" style={{ position: "relative", zIndex: 10 }}>
+        <button
+          type="button"
+          className="btn"
+          disabled={currentSceneIndex === 0}
+          onClick={() => setScene(currentSceneIndex - 1)}
+          style={{ position: "relative", zIndex: 10, ...getElementStyle(b, "backButton") }}
+        >
+          <ArrowLeft size={16} /> {b.backButtonText || "Back"}
+        </button>
+        {currentSceneIndex < visibleBlocks.length - 1 ? (
+          <button
+            type="button"
+            className="btn primary"
+            onClick={() => setScene(currentSceneIndex + 1)}
+            style={{ position: "relative", zIndex: 10, ...getElementStyle(b, "keepGoingButton") }}
+          >
+            {b.keepGoingButtonText || "Keep going"} <ArrowRight size={16} />
+          </button>
+        ) : (
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center", position: "relative", zIndex: 10 }}>
+            {!isEditable && onOpenResponseModal && (
+              <button
+                type="button"
+                className="btn primary replyBtn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenResponseModal();
+                }}
+                style={{ background: "linear-gradient(135deg, #ff4f8b 0%, #7c5cff 100%)", color: "#fff", fontWeight: 600, position: "relative", zIndex: 10 }}
+              >
+                💌 Reply to Greeting
+              </button>
+            )}
             <button
               type="button"
               className="btn primary"
-              onClick={(e) => {
-                e.stopPropagation();
-                const nextBlock = visibleBlocks[index + 1];
-                if (nextBlock) {
-                  scrollToSection(nextBlock.id);
-                  if (isEditable) handleSelect(nextBlock.id);
-                }
+              onClick={() => {
+                setScene(0);
+                setSecretRevealed(false);
+                setCandles([false, false, false]);
+                setDustedPhotos([]);
               }}
+              style={{ position: "relative", zIndex: 10 }}
             >
-              Keep going <ArrowRight size={16} />
+              <RotateCcw size={16} /> {b.replayButtonText || "Replay"}
             </button>
-          ) : (
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
-              {!isEditable && onOpenResponseModal && (
-                <button
-                  type="button"
-                  className="btn primary replyBtn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenResponseModal();
-                  }}
-                  style={{ background: "linear-gradient(135deg, #ff4f8b 0%, #7c5cff 100%)", color: "#fff", fontWeight: 600 }}
-                >
-                  💌 Reply to Greeting
-                </button>
-              )}
-              <button
-                type="button"
-                className="btn primary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (visibleBlocks[0]) {
-                    scrollToSection(visibleBlocks[0].id);
-                    if (isEditable) handleSelect(visibleBlocks[0].id);
-                  }
-                  setSecretRevealed(false);
-                  setCandles([false, false, false]);
-                  setDustedPhotos([]);
-                }}
-              >
-                <RotateCcw size={16} /> Replay
-              </button>
-            </div>
-          )}
-        </div>
-      </>
+          </div>
+        )}
+      </div>
     );
 
     const editBadge = isEditable ? (
       <button
         type="button"
-        className={`previewEdit ${isSelected ? "activeEditing" : ""}`}
-        onClick={(e) => {
-          e.stopPropagation();
-          handleSelect(b.id);
-        }}
+        className="previewEdit"
+        onClick={() => onEditSection?.(b.id)}
       >
-        <Pencil size={12} /> {isSelected ? "Editing this section" : "Edit section"}
+        <Pencil size={13} /> Edit this section
       </button>
     ) : null;
 
     if (b.type === "reasons") {
       return (
-        <div
-          className={`sceneInner ${isEditable && isSelected ? "selectedBlockIndicator" : ""}`}
-          style={{ ...style, cursor: isEditable ? "pointer" : "default" }}
-          onClick={() => handleSelect(b.id)}
-        >
+        <div className="sceneInner" style={style}>
           {editBadge}
           {isEditable ? (
             <>
-              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => onEditSection?.(b.id)}>
                 {b.emoji}
               </button>
-              <button type="button" className="editableText sectionKicker" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText sectionKicker" style={getElementStyle(b, "title")} onClick={() => onEditSection?.(b.id)}>
                 {b.title}
               </button>
-              <button type="button" className="editableText eyebrow" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText eyebrow" style={getElementStyle(b, "eyebrow")} onClick={() => onEditSection?.(b.id)}>
                 {b.subtitle}
               </button>
-              <button type="button" className="editableText heroTitle" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText heroTitle" style={getElementStyle(b, "heading")} onClick={() => onEditSection?.(b.id)}>
                 {b.heading}
               </button>
               <div className="heroTextWrap customScrollbar">
-                <button type="button" className="editableText heroText" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+                <button type="button" className="editableText heroText" style={getElementStyle(b, "body")} onClick={() => onEditSection?.(b.id)}>
                   {b.text}
                 </button>
               </div>
@@ -560,11 +562,11 @@ export default function GreetingView({
           ) : (
             <>
               <div className={`publicEmoji emoji-anim-${emojiAnim}`}>{b.emoji}</div>
-              <div className="sectionKicker">{b.title}</div>
-              <div className="eyebrow">{b.subtitle}</div>
-              <h1 className="heroTitle">{b.heading}</h1>
+              <div className="sectionKicker" style={getElementStyle(b, "title")}>{b.title}</div>
+              <div className="eyebrow" style={getElementStyle(b, "eyebrow")}>{b.subtitle}</div>
+              <h1 className="heroTitle" style={getElementStyle(b, "heading")}>{b.heading}</h1>
               <div className="heroTextWrap customScrollbar">
-                <p className="heroText">{b.text}</p>
+                <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
               </div>
             </>
           )}
@@ -574,13 +576,7 @@ export default function GreetingView({
               <article
                 className="memoryCard"
                 key={r.id || i}
-                onClick={(e) => {
-                  if (isEditable) {
-                    e.stopPropagation();
-                    handleSelect(b.id);
-                    onEditReason?.(b.id, i);
-                  }
-                }}
+                onClick={() => (isEditable ? onEditReason?.(b.id, i) : undefined)}
                 style={{ cursor: isEditable ? "pointer" : "default" }}
               >
                 {isEditable && (
@@ -598,14 +594,7 @@ export default function GreetingView({
           </div>
 
           {isEditable && (
-            <button
-              type="button"
-              className="addReasonPreview"
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddReason?.();
-              }}
-            >
+            <button type="button" className="addReasonPreview" onClick={onAddReason}>
               <span>+ Add another reason</span>
             </button>
           )}
@@ -617,28 +606,24 @@ export default function GreetingView({
 
     if (b.type === "incidents") {
       return (
-        <div
-          className={`sceneInner incidentsScene ${isEditable && isSelected ? "selectedBlockIndicator" : ""}`}
-          style={{ ...style, cursor: isEditable ? "pointer" : "default" }}
-          onClick={() => handleSelect(b.id)}
-        >
+        <div className="sceneInner incidentsScene" style={style}>
           {editBadge}
           {isEditable ? (
             <>
-              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => onEditSection?.(b.id)}>
                 {b.emoji}
               </button>
-              <button type="button" className="editableText sectionKicker" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText sectionKicker" style={getElementStyle(b, "title")} onClick={() => onEditSection?.(b.id)}>
                 {b.title}
               </button>
-              <button type="button" className="editableText eyebrow" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText eyebrow" style={getElementStyle(b, "eyebrow")} onClick={() => onEditSection?.(b.id)}>
                 {b.subtitle}
               </button>
-              <button type="button" className="editableText heroTitle" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText heroTitle" style={getElementStyle(b, "heading")} onClick={() => onEditSection?.(b.id)}>
                 {b.heading}
               </button>
               <div className="heroTextWrap customScrollbar">
-                <button type="button" className="editableText heroText" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+                <button type="button" className="editableText heroText" style={getElementStyle(b, "body")} onClick={() => onEditSection?.(b.id)}>
                   {b.text}
                 </button>
               </div>
@@ -646,11 +631,11 @@ export default function GreetingView({
           ) : (
             <>
               <div className={`publicEmoji emoji-anim-${emojiAnim}`}>{b.emoji}</div>
-              <div className="sectionKicker">{b.title}</div>
-              <div className="eyebrow">{b.subtitle}</div>
-              <h1 className="heroTitle">{b.heading}</h1>
+              <div className="sectionKicker" style={getElementStyle(b, "title")}>{b.title}</div>
+              <div className="eyebrow" style={getElementStyle(b, "eyebrow")}>{b.subtitle}</div>
+              <h1 className="heroTitle" style={getElementStyle(b, "heading")}>{b.heading}</h1>
               <div className="heroTextWrap customScrollbar">
-                <p className="heroText">{b.text}</p>
+                <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
               </div>
             </>
           )}
@@ -660,13 +645,7 @@ export default function GreetingView({
               <article
                 className="incidentCard"
                 key={inc.id || i}
-                onClick={(e) => {
-                  if (isEditable) {
-                    e.stopPropagation();
-                    handleSelect(b.id);
-                    onEditIncident?.(b.id, i);
-                  }
-                }}
+                onClick={() => (isEditable ? onEditSection?.(b.id) : undefined)}
                 style={{ cursor: isEditable ? "pointer" : "default" }}
               >
                 {isEditable && (
@@ -684,38 +663,13 @@ export default function GreetingView({
                 </h3>
                 <p>{inc.text}</p>
                 {inc.image && (
-                  <div
-                    className="incidentPhoto"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (isEditable) {
-                        handleSelect(b.id);
-                        onEditIncident?.(b.id, i);
-                      } else {
-                        openGalleryPhoto([inc.image!], 0, false);
-                      }
-                    }}
-                    title={isEditable ? "Edit incident photo" : "Click to zoom photo"}
-                  >
+                  <div className="incidentPhoto">
                     <img src={inc.image} alt={inc.title} style={{ opacity: (b.imageOpacity ?? 100) / 100 }} />
                   </div>
                 )}
               </article>
             ))}
           </div>
-
-          {isEditable && (
-            <button
-              type="button"
-              className="addReasonPreview"
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddIncident?.();
-              }}
-            >
-              <span>+ Add another incident</span>
-            </button>
-          )}
 
           {nav}
         </div>
@@ -728,28 +682,24 @@ export default function GreetingView({
       const isScattered = layout === "scattered";
 
       return (
-        <div
-          className={`sceneInner galleryPage layout-${layout} ${isEditable && isSelected ? "selectedBlockIndicator" : ""}`}
-          style={{ ...style, cursor: isEditable ? "pointer" : "default" }}
-          onClick={() => handleSelect(b.id)}
-        >
+        <div className={`sceneInner galleryPage layout-${layout}`} style={style}>
           {editBadge}
           {isEditable ? (
             <>
-              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => onEditSection?.(b.id)}>
                 {b.emoji}
               </button>
-              <button type="button" className="editableText sectionKicker" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText sectionKicker" style={getElementStyle(b, "title")} onClick={() => onEditSection?.(b.id)}>
                 {b.title}
               </button>
-              <button type="button" className="editableText eyebrow" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText eyebrow" style={getElementStyle(b, "eyebrow")} onClick={() => onEditSection?.(b.id)}>
                 {b.subtitle}
               </button>
-              <button type="button" className="editableText heroTitle" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText heroTitle" style={getElementStyle(b, "heading")} onClick={() => onEditSection?.(b.id)}>
                 {b.heading}
               </button>
               <div className="heroTextWrap customScrollbar">
-                <button type="button" className="editableText heroText" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+                <button type="button" className="editableText heroText" style={getElementStyle(b, "body")} onClick={() => onEditSection?.(b.id)}>
                   {b.text}
                 </button>
               </div>
@@ -757,18 +707,18 @@ export default function GreetingView({
           ) : (
             <>
               <div className={`publicEmoji emoji-anim-${emojiAnim}`}>{b.emoji}</div>
-              <div className="sectionKicker">{b.title}</div>
-              <div className="eyebrow">{b.subtitle}</div>
-              <h1 className="heroTitle">{b.heading}</h1>
+              <div className="sectionKicker" style={getElementStyle(b, "title")}>{b.title}</div>
+              <div className="eyebrow" style={getElementStyle(b, "eyebrow")}>{b.subtitle}</div>
+              <h1 className="heroTitle" style={getElementStyle(b, "heading")}>{b.heading}</h1>
               <div className="heroTextWrap customScrollbar">
-                <p className="heroText">{b.text}</p>
+                <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
               </div>
             </>
           )}
 
           {isScattered && images.length > 0 && (
             <p className="scatteredTapHint">
-              Tap a photo to explore our memories ❤️
+              Tap a photo to explore the memory 💗
             </p>
           )}
 
@@ -777,24 +727,37 @@ export default function GreetingView({
               className={`galleryStage gallery-count-${Math.min(images.length, 20)} gallery-bg-${
                 b.galleryBackground || "transparent"
               } ${galleryScatter && isScattered ? "scatter-active" : ""}`}
-              onClick={(e) => {
-                if (isEditable) {
-                  e.stopPropagation();
-                  handleSelect(b.id);
-                }
-              }}
             >
+              {/* Canvas Dust Disintegration Overlay */}
               {isScattered && <canvas ref={dustCanvasRef} className="galleryDustCanvas" />}
 
               <div className="galleryShape a" />
               <div className="galleryShape b" />
               {images.map((src, i) => {
-                const adjustment: ImageAdjustment = b.imageAdjustments?.[String(i)] ?? {
+                const adjustment: ImageAdjustment = b.imageAdjustments?.[String(i)] ?? b.imageAdjustments?.[`photo_${i}`] ?? {
                   scale: 100,
                   x: 50,
-                  y: 50
+                  y: 50,
+                  opacity: 100,
+                  rotation: 0
                 };
                 const isDusted = dustedPhotos.includes(i);
+                const scatteredPositions = [
+                  { left: "6%", top: "3%", rotate: "-6deg", width: "44%" },
+                  { left: "52%", top: "6%", rotate: "5deg", width: "42%" },
+                  { left: "10%", top: "34%", rotate: "4deg", width: "40%" },
+                  { left: "48%", top: "38%", rotate: "-5deg", width: "44%" },
+                  { left: "4%", top: "66%", rotate: "-3deg", width: "42%" },
+                  { left: "50%", top: "70%", rotate: "6deg", width: "44%" },
+                  { left: "16%", top: "18%", rotate: "-7deg", width: "38%" },
+                  { left: "46%", top: "52%", rotate: "5deg", width: "40%" },
+                  { left: "8%", top: "48%", rotate: "-4deg", width: "42%" },
+                  { left: "54%", top: "24%", rotate: "4deg", width: "38%" }
+                ];
+                const sPos = scatteredPositions[i % scatteredPositions.length];
+                const finalRotate = isScattered
+                  ? (adjustment.rotation ? `${parseInt(sPos.rotate) + adjustment.rotation}deg` : sPos.rotate)
+                  : `${adjustment.rotation ?? 0}deg`;
 
                 return (
                   <button
@@ -803,6 +766,18 @@ export default function GreetingView({
                       isScattered && isDusted ? "photo-dusted" : ""
                     }`}
                     key={`${i}-${src.slice(-10)}`}
+                    style={
+                      isScattered
+                        ? {
+                            position: "absolute",
+                            left: sPos.left,
+                            top: sPos.top,
+                            width: sPos.width,
+                            transform: `rotate(${finalRotate})`,
+                            zIndex: i + 1
+                          }
+                        : undefined
+                    }
                     aria-label={
                       isScattered
                         ? `Tap to dissolve memory ${i + 1}`
@@ -810,41 +785,30 @@ export default function GreetingView({
                     }
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (isEditable) {
-                        handleSelect(b.id);
-                      } else {
-                        openGalleryPhoto(images, i, isScattered, e.currentTarget);
-                      }
+                      openGalleryPhoto(images, i, isScattered, e.currentTarget);
                     }}
                   >
                     <img
                       src={src}
                       alt={`Memory ${i + 1}`}
                       style={{
-                        transform: `scale(${adjustment.scale / 100})`,
-                        objectPosition: `${adjustment.x}% ${adjustment.y}%`,
-                        opacity: (b.imageOpacity ?? 100) / 100
+                        transform: `scale(${(adjustment.scale ?? 100) / 100}) rotate(${adjustment.rotation ?? 0}deg)`,
+                        objectPosition: `${adjustment.x ?? 50}% ${adjustment.y ?? 50}%`,
+                        transformOrigin: `${adjustment.x ?? 50}% ${adjustment.y ?? 50}%`,
+                        opacity: (adjustment.opacity ?? b.imageOpacity ?? 100) / 100
                       }}
                     />
                     <span className="galleryPhotoHint">
-                      {isEditable ? "✏️ Edit" : isScattered ? "✦ Disintegrate" : "🔍 Zoom"}
+                      {isScattered ? "✦ Disintegrate" : "🔍 Zoom"}
                     </span>
                   </button>
                 );
               })}
             </div>
           ) : (
-            <div
-              className="photoFrame"
-              onClick={(e) => {
-                if (isEditable) {
-                  e.stopPropagation();
-                  handleSelect(b.id);
-                }
-              }}
-            >
+            <div className="photoFrame">
               <p style={{ padding: "30px 20px", color: "var(--muted)" }}>
-                No memory photos added yet. Tap here to add photos in the editor.
+                No memory photos added yet. Use the sidebar to add photos.
               </p>
             </div>
           )}
@@ -853,10 +817,7 @@ export default function GreetingView({
             <button
               type="button"
               className="btn ghost small restoreMemories"
-              onClick={(e) => {
-                e.stopPropagation();
-                resetDustedPhotos();
-              }}
+              onClick={resetDustedPhotos}
             >
               ↻ Restore memories
             </button>
@@ -868,27 +829,23 @@ export default function GreetingView({
 
     if (b.type === "letter") {
       return (
-        <div
-          className={`sceneInner letterScene ${isEditable && isSelected ? "selectedBlockIndicator" : ""}`}
-          style={{ ...style, cursor: isEditable ? "pointer" : "default" }}
-          onClick={() => handleSelect(b.id)}
-        >
+        <div className="sceneInner letterScene" style={style}>
           {editBadge}
           {isEditable ? (
             <>
-              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => onEditSection?.(b.id)}>
                 {b.emoji}
               </button>
-              <button type="button" className="editableText sectionKicker" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText sectionKicker" style={getElementStyle(b, "title")} onClick={() => onEditSection?.(b.id)}>
                 {b.title}
               </button>
-              <button type="button" className="editableText eyebrow" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText eyebrow" style={getElementStyle(b, "eyebrow")} onClick={() => onEditSection?.(b.id)}>
                 {b.subtitle}
               </button>
-              <button type="button" className="editableText heroTitle" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText heroTitle" style={getElementStyle(b, "heading")} onClick={() => onEditSection?.(b.id)}>
                 {b.heading}
               </button>
-              <button type="button" className="letter editableLetter" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="letter editableLetter" onClick={() => onEditSection?.(b.id)}>
                 {b.image && (
                   <div className="letterPhotoMount">
                     <img
@@ -896,24 +853,23 @@ export default function GreetingView({
                       alt="Letter memory"
                       style={{
                         transform: `scale(${(heroAdj.scale ?? 100) / 100})`,
-                        objectPosition: `${heroAdj.x ?? 50}% ${heroAdj.y ?? 50}%`,
-                        opacity: (b.imageOpacity ?? 100) / 100
+                        objectPosition: `${heroAdj.x ?? 50}% ${heroAdj.y ?? 50}%`
                       }}
                     />
                   </div>
                 )}
-                <h2>{b.heading}</h2>
+                <h2 style={getElementStyle(b, "letterHeading")}>{b.heading}</h2>
                 <div className="letterBodyWrap customScrollbar">
-                  <p>{b.text}</p>
+                  <p style={getElementStyle(b, "letterBody")}>{b.text}</p>
                 </div>
               </button>
             </>
           ) : (
             <>
               <div className={`publicEmoji emoji-anim-${emojiAnim}`}>{b.emoji}</div>
-              <div className="sectionKicker">{b.title}</div>
-              <div className="eyebrow">{b.subtitle}</div>
-              <h1 className="heroTitle">{b.heading}</h1>
+              <div className="sectionKicker" style={getElementStyle(b, "title")}>{b.title}</div>
+              <div className="eyebrow" style={getElementStyle(b, "eyebrow")}>{b.subtitle}</div>
+              <h1 className="heroTitle" style={getElementStyle(b, "heading")}>{b.heading}</h1>
               <article className="letter">
                 {b.image && (
                   <div className="letterPhotoMount">
@@ -922,15 +878,14 @@ export default function GreetingView({
                       alt="Letter memory"
                       style={{
                         transform: `scale(${(heroAdj.scale ?? 100) / 100})`,
-                        objectPosition: `${heroAdj.x ?? 50}% ${heroAdj.y ?? 50}%`,
-                        opacity: (b.imageOpacity ?? 100) / 100
+                        objectPosition: `${heroAdj.x ?? 50}% ${heroAdj.y ?? 50}%`
                       }}
                     />
                   </div>
                 )}
-                <h2>{b.heading}</h2>
+                <h2 style={getElementStyle(b, "letterHeading")}>{b.heading}</h2>
                 <div className="letterBodyWrap customScrollbar">
-                  <p>{b.text}</p>
+                  <p style={getElementStyle(b, "letterBody")}>{b.text}</p>
                 </div>
               </article>
             </>
@@ -941,113 +896,91 @@ export default function GreetingView({
     }
 
     if (b.type === "secret") {
-      const secretImg = b.secretImage || b.image;
-      const resolvedSecretVideo =
-        typeof b.secretVideo === "string"
-          ? b.secretVideo
-          : typeof b.memoryVideo === "string"
-          ? b.memoryVideo
-          : memoryVideoPreviews[b.id] || "";
-
       return (
-        <div
-          className={`sceneInner secretScene ${isEditable && isSelected ? "selectedBlockIndicator" : ""}`}
-          style={{ ...style, cursor: isEditable ? "pointer" : "default" }}
-          onClick={() => handleSelect(b.id)}
-        >
+        <div className="sceneInner secretScene" style={style}>
           {editBadge}
           {isEditable ? (
             <>
-              <button type="button" className={`editableDecor secretHeart emoji-anim-${emojiAnim}`} onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className={`editableDecor secretHeart emoji-anim-${emojiAnim}`} onClick={() => onEditSection?.(b.id)}>
                 {b.emoji}
               </button>
-              <button type="button" className="editableText sectionKicker" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText sectionKicker" style={getElementStyle(b, "title")} onClick={() => onEditSection?.(b.id)}>
                 {b.title}
               </button>
-              <button type="button" className="editableText eyebrow" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText eyebrow" style={getElementStyle(b, "eyebrow")} onClick={() => onEditSection?.(b.id)}>
                 {b.subtitle}
               </button>
-              <button type="button" className="editableText heroTitle" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText heroTitle" style={getElementStyle(b, "heading")} onClick={() => onEditSection?.(b.id)}>
                 {b.heading}
               </button>
             </>
           ) : (
             <>
               <div className={`publicEmoji secretHeart emoji-anim-${emojiAnim}`}>{b.emoji}</div>
-              <div className="sectionKicker">{b.title}</div>
-              <div className="eyebrow">{b.subtitle}</div>
-              <h1 className="heroTitle">{b.heading}</h1>
+              <div className="sectionKicker" style={getElementStyle(b, "title")}>{b.title}</div>
+              <div className="eyebrow" style={getElementStyle(b, "eyebrow")}>{b.subtitle}</div>
+              <h1 className="heroTitle" style={getElementStyle(b, "heading")}>{b.heading}</h1>
             </>
           )}
 
           {!secretRevealed ? (
             <>
               <div className="heroTextWrap customScrollbar">
-                <p className="heroText">{b.text}</p>
+                <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
               </div>
               <button
                 type="button"
                 className="btn primary revealBtn"
-                onClick={(e) => {
-                  if (isEditable) {
-                    e.stopPropagation();
-                    handleSelect(b.id);
-                  } else {
-                    handleSecretToggle(true);
-                  }
-                }}
+                style={getElementStyle(b, "revealButton")}
+                onClick={() => handleSecretToggle(true)}
               >
-                {isEditable ? "✏️ Edit Tap-to-Reveal" : "Tap to reveal ♥"}
+                {b.revealButtonText || "Tap to reveal"} <span>♥</span>
               </button>
             </>
           ) : (
-            <div
-              className="secretReveal"
-              onClick={(e) => {
-                if (isEditable) {
-                  e.stopPropagation();
-                  handleSelect(b.id);
-                }
-              }}
-            >
-              <span>✦</span>
-              <h2>{b.text}</h2>
-              {secretImg && (
-                <div
-                  className="secretPhotoMount"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isEditable) {
-                      handleSelect(b.id);
-                    } else {
-                      openGalleryPhoto([secretImg], 0, false);
-                    }
-                  }}
-                  style={{ cursor: "pointer", marginTop: "14px" }}
-                >
-                  <img src={secretImg} alt="Secret memory" style={{ opacity: (b.imageOpacity ?? 100) / 100 }} />
+            <div className="secretReveal">
+              <span className="secretSparkle">✦</span>
+              <h2 style={getElementStyle(b, "secretMessage")}>{b.text}</h2>
+              {b.secretImage && (
+                <div className="secretPhotoMount">
+                  <img src={b.secretImage} alt="Secret memory" style={{ opacity: (b.imageOpacity ?? 100) / 100 }} />
                 </div>
               )}
-              {resolvedSecretVideo && (
-                <div style={{ marginTop: "14px", width: "100%", maxWidth: "420px" }}>
-                  <video
-                    className="memoryVideoPreview"
-                    src={resolvedSecretVideo}
-                    controls
-                    autoPlay
-                    playsInline
-                    preload="metadata"
-                  />
-                </div>
+              {b.secretVideo && (
+                <video
+                  className="secretVideo"
+                  src={typeof b.secretVideo === "string" ? b.secretVideo : ""}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  autoPlay={b.videoAutoplay ?? false}
+                  muted={b.videoMuted ?? true}
+                  loop={b.videoLoop ?? false}
+                  style={{
+                    display: "block",
+                    margin: "16px auto",
+                    maxWidth: `${b.videoWidth ?? 100}%`,
+                    maxHeight: "360px",
+                    width: "auto",
+                    height: "auto",
+                    objectFit: b.videoFit === "contain" ? "contain" : b.videoFit === "fill" ? "fill" : "cover",
+                    objectPosition: `${b.videoPositionX ?? 50}% ${b.videoPositionY ?? 50}%`,
+                    transform: `scale(${(b.videoScale ?? 100) / 100}) translate(${((b.videoPositionX ?? 50) - 50)}%, ${((b.videoPositionY ?? 50) - 50)}%)`,
+                    transformOrigin: "center center",
+                    opacity: (b.videoOpacity ?? 100) / 100,
+                    borderRadius: `${b.videoRadius ?? 16}px`,
+                    background: "transparent",
+                    border: "none",
+                    boxShadow: "none",
+                    outline: "none"
+                  }}
+                />
               )}
               <button
                 type="button"
-                className="btn"
-                style={{ marginTop: "16px" }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSecretToggle(false);
-                }}
+                className="btn ghost small"
+                onClick={() => handleSecretToggle(false)}
+                style={{ marginTop: "12px" }}
               >
                 Hide again
               </button>
@@ -1060,121 +993,78 @@ export default function GreetingView({
 
     if (b.type === "cake") {
       return (
-        <div
-          className={`sceneInner cakeScene ${isEditable && isSelected ? "selectedBlockIndicator" : ""}`}
-          style={{ ...style, cursor: isEditable ? "pointer" : "default" }}
-          onClick={() => handleSelect(b.id)}
-        >
+        <div className="sceneInner cakeScene" style={style}>
           {editBadge}
           {isEditable ? (
             <>
-              <button type="button" className="editableText sectionKicker" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText sectionKicker" style={getElementStyle(b, "title")} onClick={() => onEditSection?.(b.id)}>
                 {b.title}
               </button>
-              <button type="button" className="editableText eyebrow" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText eyebrow" style={getElementStyle(b, "eyebrow")} onClick={() => onEditSection?.(b.id)}>
                 {b.subtitle}
               </button>
-              <button type="button" className="editableText heroTitle" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText heroTitle" style={getElementStyle(b, "heading")} onClick={() => onEditSection?.(b.id)}>
                 {b.heading}
               </button>
             </>
           ) : (
             <>
-              <div className="sectionKicker">{b.title}</div>
-              <div className="eyebrow">{b.subtitle}</div>
-              <h1 className="heroTitle">{b.heading}</h1>
+              <div className="sectionKicker" style={getElementStyle(b, "title")}>{b.title}</div>
+              <div className="eyebrow" style={getElementStyle(b, "eyebrow")}>{b.subtitle}</div>
+              <h1 className="heroTitle" style={getElementStyle(b, "heading")}>{b.heading}</h1>
             </>
           )}
 
-          {!candleFinale ? (
-            <>
-              <div
-                className="cakeGraphic"
-                onClick={(e) => {
-                  if (isEditable) {
-                    e.stopPropagation();
-                    handleSelect(b.id);
-                  }
-                }}
-              >
-                <div className="cakePlate" />
-                <div className="cakeBody">
-                  <div className="cakeTop" />
-                  <div className="cakeCream" />
-                </div>
-                <div className="candles">
-                  {candles.map((off, i) => (
-                    <span className="candleWrap" key={i}>
-                      <span className={`flame ${off ? "flameOff" : ""}`} />
-                      {smoke.includes(i) && <span className="smokePuff" />}
-                      <button
-                        type="button"
-                        aria-label={`Candle ${i + 1}`}
-                        className={`candleStick ${off ? "off" : ""}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          blowCandle();
-                        }}
-                      />
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="heroTextWrap customScrollbar">
-                <p className="heroText">
-                  {b.text || "Tap a candle to blow it out. Make a special wish for the year ahead ✨"}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="btn primary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  blowCandle();
-                }}
-                style={{ marginTop: "12px" }}
-              >
-                🎂 Blow a candle
-              </button>
-            </>
-          ) : (
-            <div className="candleFinaleWrap">
-              <div className="candleFinaleEmojis">
-                <span>🎂</span>
-                <span>✨</span>
-                <span>🎉</span>
-                <span>🎁</span>
-                <span>❤️</span>
-              </div>
-              <h2 className="candleFinaleTitle">Happy Birthday, once again! 🎂✨❤️</h2>
-              <p className="candleFinaleMessage">
-                May your special day be filled with endless joy, magic, and sweet memories. May all your dreams come true!
-              </p>
-              <div className="candleFinaleActions">
-                <button
-                  type="button"
-                  className="btn ghost small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    relightCandles();
-                  }}
-                >
-                  🕯️ Relight candles
-                </button>
-                {onOpenResponseModal && (
+          <div className="cakeGraphic">
+            <div className="cakePlate" />
+            <div className="cakeBody">
+              <div className="cakeTop" />
+              <div className="cakeCream" />
+            </div>
+            <div className="candles">
+              {candles.map((off, i) => (
+                <span className="candleWrap" key={i}>
+                  <span className={`flame ${off ? "flameOff" : ""}`} />
+                  {smoke.includes(i) && <span className="smokePuff" />}
                   <button
                     type="button"
-                    className="btn primary small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenResponseModal();
-                    }}
-                  >
-                    💌 Send a Response
-                  </button>
-                )}
-              </div>
+                    aria-label={`Candle ${i + 1}`}
+                    className={`candleStick ${off ? "off" : ""}`}
+                    onClick={blowCandle}
+                  />
+                </span>
+              ))}
             </div>
+          </div>
+
+          {cakeCelebrated ? (
+            <div className="cakeCelebrationCard">
+              <div className="cakeCelebrationEmoji">🎂✨❤️</div>
+              <h2 className="cakeCelebrationTitle">{b.subtitle || "Happy Birthday, once again!"}</h2>
+              <p className="cakeCelebrationSub">{b.text || "May your year be filled with immense joy, love, and all your heart desires!"}</p>
+              <button
+                type="button"
+                className="btn small ghost"
+                onClick={() => {
+                  setCandles([false, false, false]);
+                  setCakeCelebrated(false);
+                }}
+                style={{ marginTop: "10px" }}
+              >
+                🕯️ Light candles again
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="heroTextWrap customScrollbar">
+                <p className="heroText" style={getElementStyle(b, "body")}>
+                  {b.text || "Tap a candle to blow it out. Watch the flame flicker, fade and leave a soft trail of smoke."}
+                </p>
+              </div>
+              <button type="button" className="btn primary small" onClick={blowCandle}>
+                🌬️ Blow a candle
+              </button>
+            </>
           )}
 
           {nav}
@@ -1184,28 +1074,24 @@ export default function GreetingView({
 
     // Default / welcome / text / image / music / custom
     return (
-      <div
-        className={`sceneInner ${isEditable && isSelected ? "selectedBlockIndicator" : ""}`}
-        style={{ ...style, cursor: isEditable ? "pointer" : "default" }}
-        onClick={() => handleSelect(b.id)}
-      >
+      <div className="sceneInner" style={style}>
         {editBadge}
         {isEditable ? (
           <>
-            <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+            <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => onEditSection?.(b.id)}>
               {b.emoji}
             </button>
-            <button type="button" className="editableText sectionKicker" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+            <button type="button" className="editableText sectionKicker" style={getElementStyle(b, "title")} onClick={() => onEditSection?.(b.id)}>
               {b.title}
             </button>
-            <button type="button" className="editableText eyebrow" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+            <button type="button" className="editableText eyebrow" style={getElementStyle(b, "eyebrow")} onClick={() => onEditSection?.(b.id)}>
               {b.subtitle}
             </button>
-            <button type="button" className="editableText heroTitle" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+            <button type="button" className="editableText heroTitle" style={getElementStyle(b, "heading")} onClick={() => onEditSection?.(b.id)}>
               {b.heading}
             </button>
             <div className="heroTextWrap customScrollbar">
-              <button type="button" className="editableText heroText" onClick={(e) => { e.stopPropagation(); handleSelect(b.id); }}>
+              <button type="button" className="editableText heroText" style={getElementStyle(b, "body")} onClick={() => onEditSection?.(b.id)}>
                 {b.text}
               </button>
             </div>
@@ -1213,37 +1099,60 @@ export default function GreetingView({
         ) : (
           <>
             <div className={`publicEmoji emoji-anim-${emojiAnim}`}>{b.emoji}</div>
-            <div className="sectionKicker">{b.title}</div>
-            <div className="eyebrow">{b.subtitle}</div>
-            <h1 className="heroTitle">{b.heading}</h1>
+            <div className="sectionKicker" style={getElementStyle(b, "title")}>{b.title}</div>
+            <div className="eyebrow" style={getElementStyle(b, "eyebrow")}>{b.subtitle}</div>
+            <h1 className="heroTitle" style={getElementStyle(b, "heading")}>{b.heading}</h1>
             <div className="heroTextWrap customScrollbar">
-              <p className="heroText">{b.text}</p>
+              <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
             </div>
           </>
         )}
         {b.image && (
-          <div
-            className="photoFrame"
-            onClick={(e) => {
-              if (isEditable) {
-                e.stopPropagation();
-                handleSelect(b.id);
-              }
-            }}
-            style={{ cursor: isEditable ? "pointer" : "default" }}
-          >
+          <div className="photoFrame">
             <img
               className="photo"
               src={b.image}
               alt=""
               style={{
-                opacity: (b.imageOpacity ?? 100) / 100,
-                transform: `scale(${(heroAdj.scale ?? 100) / 100})`,
+                opacity: (heroAdj.opacity ?? b.imageOpacity ?? 100) / 100,
+                transform: `scale(${(heroAdj.scale ?? 100) / 100}) rotate(${heroAdj.rotation ?? 0}deg)`,
                 objectPosition: `${heroAdj.x ?? 50}% ${heroAdj.y ?? 50}%`,
                 transformOrigin: `${heroAdj.x ?? 50}% ${heroAdj.y ?? 50}%`
               }}
             />
           </div>
+        )}
+        {(b.memoryVideo || b.video || resolvedVideo) && (
+          <video
+            className="sectionVideo"
+            src={resolvedVideo || (typeof (b.video || b.memoryVideo) === "string" ? ((b.video || b.memoryVideo) as string) : "")}
+            controls
+            playsInline
+            preload="metadata"
+            autoPlay={b.videoAutoplay ?? false}
+            muted={b.videoMuted ?? true}
+            loop={b.videoLoop ?? false}
+            style={{
+              display: "block",
+              margin: "16px auto",
+              maxWidth: `${b.videoWidth ?? 100}%`,
+              maxHeight: "360px",
+              width: "auto",
+              height: "auto",
+              objectFit: b.videoFit === "contain" ? "contain" : b.videoFit === "fill" ? "fill" : "cover",
+              objectPosition: `${b.videoPositionX ?? 50}% ${b.videoPositionY ?? 50}%`,
+              transform: `scale(${(b.videoScale ?? 100) / 100}) translate(${((b.videoPositionX ?? 50) - 50)}%, ${((b.videoPositionY ?? 50) - 50)}%)`,
+              transformOrigin: "center center",
+              opacity: (b.videoOpacity ?? 100) / 100,
+              borderRadius: `${b.videoRadius ?? 16}px`,
+              background: "transparent",
+              border: "none",
+              boxShadow: "none",
+              outline: "none",
+              position: "relative",
+              zIndex: 2
+            }}
+          />
         )}
         {nav}
       </div>
@@ -1318,10 +1227,11 @@ export default function GreetingView({
               style={{
                 backgroundImage: `url("${activeCustomBg}")`,
                 opacity: (activeCustomBgOpacity ?? 100) / 100,
-                transform: `scale(${Math.max(1, (activeCustomBgScale ?? 100) / 100)}) rotate(${activeCustomBgRotation ?? 0}deg)`,
-                backgroundPosition: `${activeCustomBgPositionX ?? 50}% ${
-                  activeCustomBgPositionY ?? 50
-                }%`
+                backgroundSize: activeCustomBgFit === "contain" ? "contain" : activeCustomBgFit === "fill" ? "100% 100%" : "cover",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: `${activeCustomBgPositionX ?? 50}% ${activeCustomBgPositionY ?? 50}%`,
+                transform: `scale(${(activeCustomBgScale ?? 100) / 100}) rotate(${activeCustomBgRotation ?? 0}deg)`,
+                transformOrigin: `${activeCustomBgPositionX ?? 50}% ${activeCustomBgPositionY ?? 50}%`
               }}
             />
           </div>
@@ -1348,10 +1258,10 @@ export default function GreetingView({
         />
       )}
 
-      {/* Top Preview Controls */}
-      <div className="previewToolbar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+      {/* Interactive Controls Overlay */}
+      <div className="previewToolbar">
         {activeAudioUrl && (
-          <div className="previewAudio">
+          <div className="previewAudio" style={{ marginBottom: "8px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <button
                 type="button"
@@ -1377,37 +1287,22 @@ export default function GreetingView({
             </div>
           </div>
         )}
-
-        {/* Section Jump Quick Progress Dots */}
-        <div className="progress" style={{ marginLeft: "auto" }}>
-          {visibleBlocks.map((b, i) => (
-            <i
-              key={b.id || i}
-              className={selectedBlockId === b.id ? "on" : ""}
-              onClick={() => {
-                scrollToSection(b.id);
-                if (isEditable) handleSelect(b.id);
-              }}
-              title={`Jump to ${b.title}`}
-              style={{ cursor: "pointer" }}
-            />
-          ))}
-        </div>
       </div>
 
-      {/* COMPLETE GREETING: Render all sections in sequence with independent scroll */}
-      <div className="greetingSequenceContainer" style={{ display: "flex", flexDirection: "column", gap: "var(--section-spacing, 24px)", width: "100%" }}>
-        {visibleBlocks.map((b, i) => (
-          <section
-            key={b.id || i}
-            id={`section-${b.id}`}
-            className={`greetingSectionBlock ${selectedBlockId === b.id ? "activeSelectedBlock" : ""}`}
-            style={{ position: "relative", width: "100%", scrollMarginTop: "20px" }}
-          >
-            {renderSectionContent(b, i, visibleBlocks.length)}
-          </section>
+      {/* Progress Dots */}
+      <div className="progress">
+        {visibleBlocks.map((_, i) => (
+          <i
+            key={i}
+            className={i <= currentSceneIndex ? "on" : ""}
+            onClick={() => setScene(i)}
+            style={{ cursor: "pointer" }}
+          />
         ))}
       </div>
+
+      {/* Current Scene Content */}
+      {currentBlock && renderSectionContent(currentBlock)}
     </section>
   );
 }

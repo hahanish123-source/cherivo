@@ -18,8 +18,10 @@ export default function Demo() {
   return (
     <main className="demoPage">
       <div className="demoTop">
-        <Link href="/">
-          <ArrowLeft size={16} /> Hanora
+        <Link href="/" className="logo" style={{ textDecoration: "none", color: "inherit" }}>
+          <span>
+            HANORA<span>•</span>
+          </span>
         </Link>
         <button type="button" onClick={() => setSceneIndex(0)}>
           <RotateCcw size={15} /> Replay

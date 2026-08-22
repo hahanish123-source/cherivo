@@ -98,41 +98,29 @@ export async function POST(request: Request) {
 
     const message =
       error instanceof Error ? error.message : "Could not create greeting.";
-    const code = (error as { code?: string } | null)?.code ?? "unknown";
-
-    if (isMissingSupabaseConfigError(error)) {
-      return NextResponse.json(
-        {
-          ok: false,
-          code: "missing_supabase_config",
-          error:
-            "Hanora is missing its production database configuration. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables, then redeploy.",
-          diagnostics,
-        },
-        { status: 503 }
-      );
-    }
-
-    if (code === "supabase_client_init_failed") {
-      return NextResponse.json(
-        {
-          ok: false,
-          code: "supabase_client_init_failed",
-          error: "Supabase client initialization failed. Check the server environment and Supabase project configuration.",
-          diagnostics,
-        },
-        { status: 503 }
-      );
-    }
 
     return NextResponse.json(
       {
         ok: false,
-        code: "supabase_insert_failed",
         error: message,
         diagnostics,
       },
-      { status: 500 }
+      { status: isMissingSupabaseConfigError(error) ? 503 : 500 }
     );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { token, userId } = await request.json();
+    if (!token || typeof token !== "string") {
+      return NextResponse.json({ error: "Greeting token is required." }, { status: 400 });
+    }
+    const { deleteGreetingByToken } = await import("@/lib/greetingStore");
+    const result = await deleteGreetingByToken(token, typeof userId === "string" ? userId : undefined);
+    return NextResponse.json({ ok: true, ...result });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not delete greeting.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

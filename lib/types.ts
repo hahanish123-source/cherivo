@@ -48,6 +48,26 @@ export type ImageAdjustment = {
   scale: number;
   x: number;
   y: number;
+  opacity?: number;
+  rotation?: number;
+};
+
+export type ElementTextStyle = {
+  font?: FontName;
+  size?: number;
+  weight?: string;
+  color?: string;
+  opacity?: number;
+  letterSpacing?: number;
+  lineHeight?: number;
+  align?: "left" | "center" | "right" | "justify";
+  offsetX?: number;
+  offsetY?: number;
+  rotation?: number;
+  animation?: string;
+  delay?: number;
+  duration?: number;
+  visible?: boolean;
 };
 
 export type MediaValue = string | StoredMedia;
@@ -90,6 +110,7 @@ export type Block = {
   customBgPositionX?: number;
   customBgPositionY?: number;
   customBgRotation?: number;
+  customBgFit?: "cover" | "contain" | "fill";
   backgroundOverlay?: number;
   backgroundBaseColor?: string;
   bgColor1?: string;
@@ -107,10 +128,27 @@ export type Block = {
   audioName?: string;
   audioUrl?: MediaValue;
   memoryVideo?: MediaValue;
+  video?: MediaValue;
+  videoName?: string;
+  videoOpacity?: number;
+  videoScale?: number;
+  videoPositionX?: number;
+  videoPositionY?: number;
+  videoFit?: "cover" | "contain" | "fill";
+  videoRadius?: number;
+  videoWidth?: number;
+  videoAutoplay?: boolean;
+  videoMuted?: boolean;
+  videoLoop?: boolean;
   secretImage?: string;
   secretVideo?: MediaValue;
   galleryLayout?: string;
   galleryBackground?: "transparent" | "black" | "white" | string;
+  textStyles?: Record<string, ElementTextStyle>;
+  backButtonText?: string;
+  keepGoingButtonText?: string;
+  revealButtonText?: string;
+  replayButtonText?: string;
   visible: boolean;
   items?: ReasonItem[];
   incidents?: IncidentItem[];
@@ -137,6 +175,7 @@ export type GreetingProject = {
   customBgPositionX?: number;
   customBgPositionY?: number;
   customBgRotation?: number;
+  customBgFit?: "cover" | "contain" | "fill";
   backgroundBaseColor?: string;
   bgColor1?: string;
   bgColor2?: string;

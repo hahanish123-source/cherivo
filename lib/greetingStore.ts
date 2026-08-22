@@ -85,10 +85,16 @@ export function extractMediaPaths(project: Record<string, unknown>): string[] {
       if (!b || typeof b !== "object") continue;
       addPath(b.audioUrl);
       addPath(b.memoryVideo);
+      addPath(b.video);
       addPath(b.secretVideo);
+      addPath(b.image);
+      addPath(b.secretImage);
       addPath(b.customBg);
       if (Array.isArray(b.images)) {
         b.images.forEach(addPath);
+      }
+      if (Array.isArray(b.incidents)) {
+        b.incidents.forEach((inc: any) => addPath(inc.image));
       }
     }
   }
@@ -440,3 +446,63 @@ export async function deleteDraftRecord(
 
   return { deleted: true, deletedMediaCount };
 }
+
+export async function deleteGreetingByToken(
+  token: string,
+  userId?: string
+): Promise<{ deleted: boolean; deletedMediaCount: number }> {
+  let greetingToDelete: StoredGreeting | null = null;
+
+  // Check in-memory store
+  const memStore = getMemoryStore();
+  if (memStore.greetings.has(token)) {
+    greetingToDelete = memStore.greetings.get(token) || null;
+    memStore.greetings.delete(token);
+    memStore.responses.delete(token);
+  }
+
+  // Check file store
+  const rows = await safeLocalRead<StoredGreeting>(localGreetingsFile);
+  const foundIdx = rows.findIndex((r) => r.token === token);
+  if (foundIdx >= 0) {
+    if (!greetingToDelete) greetingToDelete = rows[foundIdx];
+    rows.splice(foundIdx, 1);
+    await safeLocalWrite(localGreetingsFile, rows);
+  }
+
+  // Check Supabase
+  if (isSupabaseAvailable()) {
+    try {
+      const supabase = supabaseAdmin();
+      const { data } = await supabase
+        .from("greetings")
+        .select("data,user_id")
+        .eq("token", token)
+        .maybeSingle();
+
+      if (data?.data && !greetingToDelete) {
+        greetingToDelete = { token, title: "", data: data.data, user_id: data.user_id };
+      }
+
+      let deleteQuery = supabase.from("greetings").delete().eq("token", token);
+      if (userId && userId !== "anonymous") {
+        deleteQuery = deleteQuery.eq("user_id", userId);
+      }
+      await deleteQuery;
+    } catch (err) {
+      console.warn("Supabase greeting delete warning:", err);
+    }
+  }
+
+  let deletedMediaCount = 0;
+  if (greetingToDelete?.data) {
+    const mediaPaths = extractMediaPaths(greetingToDelete.data);
+    if (mediaPaths.length > 0) {
+      await deleteGreetingMediaPaths(mediaPaths);
+      deletedMediaCount = mediaPaths.length;
+    }
+  }
+
+  return { deleted: true, deletedMediaCount };
+}
+
