@@ -593,6 +593,52 @@ export default function GreetingView({
       }
     };
 
+    const renderHeroPhoto = (targetBlock: Block) => {
+      if (!targetBlock.image) return null;
+      const bAdj = targetBlock.imageAdjustments?.["hero"] ?? targetBlock.imageAdjustments?.["0"] ?? { scale: 100, x: 50, y: 50, opacity: 100, rotation: 0 };
+      const fitMode = (targetBlock.imageFit === "contain" || (bAdj as any).fit === "contain") ? "contain" : (targetBlock.imageFit === "fill" || (bAdj as any).fit === "fill") ? "fill" : "cover";
+
+      return (
+        <div
+          className="heroPhotoLayer"
+          onClick={() => isEditable && triggerSelect("photo", 0)}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            overflow: "hidden",
+            pointerEvents: isEditable ? "auto" : "none",
+            zIndex: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: isEditable ? "pointer" : "default",
+            borderRadius: "inherit"
+          }}
+        >
+          <img
+            className="heroPhotoImage"
+            src={targetBlock.image}
+            alt=""
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: fitMode,
+              objectPosition: `${bAdj.x ?? 50}% ${bAdj.y ?? 50}%`,
+              transform: `scale(${(bAdj.scale ?? 100) / 100}) rotate(${bAdj.rotation ?? 0}deg)`,
+              transformOrigin: `${bAdj.x ?? 50}% ${bAdj.y ?? 50}%`,
+              opacity: (bAdj.opacity ?? targetBlock.imageOpacity ?? 100) / 100,
+              display: "block",
+              border: "none",
+              background: "transparent",
+              boxShadow: "none"
+            }}
+          />
+        </div>
+      );
+    };
+
     const nav = (
       <div className="actions" style={{ position: "relative", zIndex: 10 }}>
         <button
@@ -660,6 +706,7 @@ export default function GreetingView({
       return (
         <div className="sceneInner" style={style}>
           {editBadge}
+          {renderHeroPhoto(b)}
           {isEditable ? (
             <>
               <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => triggerSelect("emoji")}>
@@ -729,6 +776,7 @@ export default function GreetingView({
       return (
         <div className="sceneInner incidentsScene" style={style}>
           {editBadge}
+          {renderHeroPhoto(b)}
           {isEditable ? (
             <>
               <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => triggerSelect("emoji")}>
@@ -1127,6 +1175,7 @@ export default function GreetingView({
       return (
         <div className="sceneInner cakeScene" style={style}>
           {editBadge}
+          {renderHeroPhoto(b)}
           {isEditable ? (
             <>
               <button type="button" className="editableText sectionKicker" style={getElementStyle(b, "title")} onClick={() => triggerSelect("kicker")}>
@@ -1216,45 +1265,7 @@ export default function GreetingView({
         {editBadge}
 
         {/* Hero Photo as Direct Media Layer (behind text, above wallpaper) */}
-        {b.image && (
-          <div
-            className="heroPhotoLayer"
-            onClick={() => isEditable && triggerSelect("photo", 0)}
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              overflow: "hidden",
-              pointerEvents: isEditable ? "auto" : "none",
-              zIndex: 2,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: isEditable ? "pointer" : "default",
-              borderRadius: "inherit"
-            }}
-          >
-            <img
-              className="heroPhotoImage"
-              src={b.image}
-              alt=""
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: (b.imageFit === "contain" || (heroAdj as any).fit === "contain") ? "contain" : (b.imageFit === "fill" || (heroAdj as any).fit === "fill") ? "fill" : "cover",
-                objectPosition: `${heroAdj.x ?? 50}% ${heroAdj.y ?? 50}%`,
-                transform: `scale(${(heroAdj.scale ?? 100) / 100}) rotate(${heroAdj.rotation ?? 0}deg)`,
-                transformOrigin: `${heroAdj.x ?? 50}% ${heroAdj.y ?? 50}%`,
-                opacity: (heroAdj.opacity ?? b.imageOpacity ?? 100) / 100,
-                display: "block",
-                border: "none",
-                background: "transparent",
-                boxShadow: "none"
-              }}
-            />
-          </div>
-        )}
+        {renderHeroPhoto(b)}
 
         <div className="sectionContentLayer" style={{ position: "relative", zIndex: 5, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
           {isEditable ? (
