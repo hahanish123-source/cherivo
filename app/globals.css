@@ -1597,15 +1597,45 @@ button {
   margin-top: 8px;
 }
 
-/* Photo & Video */
+/* Photo & Video Layers */
+.heroPhotoLayer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  margin: 0;
+  padding: 0;
+}
+
+.heroPhotoImage {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  margin: 0;
+  padding: 0;
+  transition: opacity 0.25s ease, transform 0.1s ease;
+}
+
 .photoFrame {
   width: 100%;
   max-width: 720px;
   overflow: hidden;
   border-radius: var(--card-radius, 21px);
   margin: 20px auto 0;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: #0004;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  background: transparent;
 }
 
 .photoFrame .photo {
@@ -2930,7 +2960,7 @@ button {
 /* --- 3-COLUMN STUDIO GRID --- */
 .studioGrid {
   display: grid;
-  grid-template-columns: 280px 1fr 370px;
+  grid-template-columns: 360px 1fr 360px;
   height: calc(100vh - 56px - 54px);
   width: 100%;
   overflow: hidden;
@@ -2949,138 +2979,90 @@ button {
   max-width: 720px;
 }
 
-/* --- LEFT: STORY FLOW --- */
+/* --- LEFT: DETAILED ELEMENT INSPECTOR --- */
 .studioLeft {
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--line);
-  background: rgba(16, 10, 22, 0.88);
-  backdrop-filter: blur(10px);
+  background: rgba(16, 10, 22, 0.92);
+  backdrop-filter: blur(14px);
   overflow: hidden;
 }
 
 .studioLeftHeader {
-  height: 44px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 14px;
   border-bottom: 1px solid var(--line);
+  background: rgba(14, 8, 19, 0.7);
 }
 
-.storyFlowTitle {
+.elementInspectorTitle {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  font-weight: 600;
-  color: #fff;
-}
-
-.storyFlowList {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.storyFlowCard {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.storyFlowCard:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
-.storyFlowCard.active {
-  background: rgba(255, 61, 120, 0.12);
-  border-color: var(--accent);
-  box-shadow: 0 4px 16px rgba(255, 61, 120, 0.18);
-}
-
-.storyFlowCard.hiddenCard {
-  opacity: 0.45;
-}
-
-.cardSeqNum {
-  font-size: 11px;
   font-weight: 700;
-  color: var(--muted);
-  width: 16px;
-}
-
-.cardEmoji {
-  font-size: 16px;
-}
-
-.cardInfo {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.cardTitle {
-  font-size: 12px;
-  font-weight: 600;
   color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  letter-spacing: 0.3px;
 }
 
-.cardTypeBadge {
+.elementInspectorBadge {
   font-size: 10px;
-  color: var(--muted);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 61, 120, 0.2);
+  color: var(--accent2);
+  border: 1px solid rgba(255, 61, 120, 0.35);
   text-transform: capitalize;
 }
 
-.cardQuickActions {
+.elementSubNav {
+  display: flex;
+  overflow-x: auto;
+  padding: 6px 10px;
+  gap: 6px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(10, 5, 14, 0.5);
+}
+
+.elementSubNav button {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.cardQuickActions button {
-  background: none;
-  border: none;
-  color: var(--muted);
-  padding: 4px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cardQuickActions button:hover:not(:disabled) {
+.elementSubNav button:hover {
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
-  background: rgba(255, 255, 255, 0.1);
 }
 
-.cardQuickActions button.dangerBtn:hover {
-  color: #f87171;
+.elementSubNav button.active {
+  background: rgba(255, 61, 120, 0.2);
+  border-color: var(--accent);
+  color: #fff;
 }
 
-.cardQuickActions button:disabled {
-  opacity: 0.25;
-  cursor: not-allowed;
-}
-
-.storyFlowFooter {
-  padding: 10px;
-  border-top: 1px solid var(--line);
+.inspectorBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* --- CENTER: GREETING CANVAS --- */
@@ -3195,57 +3177,162 @@ button {
   box-sizing: border-box;
 }
 
-/* --- RIGHT: CONTEXTUAL INSPECTOR --- */
+/* --- RIGHT: GLOBAL DESIGN & STORY SIDEBAR --- */
 .studioRight {
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--line);
-  background: rgba(16, 10, 22, 0.88);
-  backdrop-filter: blur(10px);
+  background: rgba(16, 10, 22, 0.92);
+  backdrop-filter: blur(14px);
   overflow: hidden;
 }
 
 .studioRightHeader {
-  height: 44px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 10px;
   border-bottom: 1px solid var(--line);
+  background: rgba(14, 8, 19, 0.7);
 }
 
 .inspectorTabs {
   display: flex;
-  gap: 6px;
+  gap: 4px;
+  width: 100%;
 }
 
 .inspectorTabs button {
+  flex: 1;
   background: none;
   border: none;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  padding: 6px 10px;
+  padding: 6px 8px;
   border-radius: 8px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 5px;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .inspectorTabs button.active {
-  background: rgba(255, 61, 120, 0.15);
-  color: var(--accent2);
+  background: rgba(255, 61, 120, 0.18);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(255, 61, 120, 0.25);
 }
 
-.inspectorBody {
+.sidebarBody {
   flex: 1;
   overflow-y: auto;
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* --- STORY FLOW IN RIGHT SIDEBAR --- */
+.storyFlowList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.storyFlowCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.storyFlowCard:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.storyFlowCard.active {
+  background: rgba(255, 61, 120, 0.12);
+  border-color: var(--accent);
+  box-shadow: 0 4px 16px rgba(255, 61, 120, 0.18);
+}
+
+.storyFlowCard.hiddenCard {
+  opacity: 0.45;
+}
+
+.cardSeqNum {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  width: 16px;
+}
+
+.cardEmoji {
+  font-size: 16px;
+}
+
+.cardInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardTypeBadge {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: capitalize;
+}
+
+.cardQuickActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cardQuickActions button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardQuickActions button:hover:not(:disabled) {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.cardQuickActions button.dangerBtn:hover {
+  color: #f87171;
+}
+
+.cardQuickActions button:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
 }
 
 .sectionHeaderCard {
@@ -3324,6 +3411,83 @@ button {
   width: 100%;
 }
 
+.sliderHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.valueBadge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(255, 61, 120, 0.12);
+  padding: 1px 7px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 61, 120, 0.25);
+  font-family: monospace;
+}
+
+.photoSubTabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+}
+
+.photoSubTabBtn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.photoSubTabBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.photoSubTabBtn.active {
+  background: rgba(255, 61, 120, 0.2);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.fitModeToggleGroup {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 2px;
+  border-radius: 8px;
+}
+
+.fitModeToggleBtn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.fitModeToggleBtn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
 .fieldLabel input[type="text"],
 .fieldLabel input[type="date"],
 .fieldLabel textarea,
@@ -3343,6 +3507,7 @@ button {
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
+  accent-color: var(--accent);
 }
 
 .fieldRow {

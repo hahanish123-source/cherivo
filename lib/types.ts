@@ -50,6 +50,7 @@ export type ImageAdjustment = {
   y: number;
   opacity?: number;
   rotation?: number;
+  fit?: "cover" | "contain" | "fill";
 };
 
 export type ElementTextStyle = {
@@ -93,6 +94,16 @@ export type Block = {
   subtitleColor: string;
   bodyColor: string;
   emojiColor: string;
+  titleColor?: string;
+  kickerColor?: string;
+  buttonColor?: string;
+  reasonTitleColor?: string;
+  reasonTextColor?: string;
+  incidentTitleColor?: string;
+  incidentTextColor?: string;
+  secretTextColor?: string;
+  cakeSubtitleColor?: string;
+  cakeTextColor?: string;
   titleSize?: number;
   subtitleSize?: number;
   headingSize: number;
@@ -125,6 +136,7 @@ export type Block = {
   images?: string[];
   imageAdjustments?: Record<string, ImageAdjustment>;
   imageOpacity: number;
+  imageFit?: "cover" | "contain" | "fill";
   audioName?: string;
   audioUrl?: MediaValue;
   memoryVideo?: MediaValue;
