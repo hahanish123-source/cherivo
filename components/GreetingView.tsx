@@ -593,7 +593,7 @@ export default function GreetingView({
       }
     };
 
-    const renderHeroPhoto = (targetBlock: Block) => {
+    const renderForegroundPhoto = (targetBlock: Block) => {
       if (!targetBlock.image) return null;
       const bAdj = targetBlock.imageAdjustments?.["hero"] ?? targetBlock.imageAdjustments?.["0"] ?? { scale: 100, x: 50, y: 28, opacity: 100, rotation: 0 };
       const fitMode = (targetBlock.imageFit === "cover" || (bAdj as any).fit === "cover") ? "cover" : "contain";
@@ -601,7 +601,7 @@ export default function GreetingView({
 
       return (
         <div
-          className="sectionPhotoMediaWrap"
+          className="foregroundPhotoLayer sectionPhotoMediaWrap"
           onClick={() => isEditable && triggerSelect("photo", 0)}
           style={{
             position: "absolute",
@@ -631,7 +631,7 @@ export default function GreetingView({
           }}
         >
           <img
-            className="sectionPhoto heroPhotoImage"
+            className="foregroundPhotoImage sectionPhoto heroPhotoImage"
             src={targetBlock.image}
             alt=""
             style={{
@@ -723,7 +723,7 @@ export default function GreetingView({
       return (
         <div className="sceneInner" style={style}>
           {editBadge}
-          {renderHeroPhoto(b)}
+          {renderForegroundPhoto(b)}
           <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {isEditable ? (
               <>
@@ -795,7 +795,7 @@ export default function GreetingView({
       return (
         <div className="sceneInner incidentsScene" style={style}>
           {editBadge}
-          {renderHeroPhoto(b)}
+          {renderForegroundPhoto(b)}
           <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {isEditable ? (
               <>
@@ -1029,7 +1029,7 @@ export default function GreetingView({
       return (
         <div className="sceneInner letterScene" style={style}>
           {editBadge}
-          {renderHeroPhoto(b)}
+          {renderForegroundPhoto(b)}
           <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {isEditable ? (
               <>
@@ -1076,7 +1076,7 @@ export default function GreetingView({
       return (
         <div className="sceneInner secretScene" style={style}>
           {editBadge}
-          {renderHeroPhoto(b)}
+          {renderForegroundPhoto(b)}
           <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {isEditable ? (
               <>
@@ -1182,7 +1182,7 @@ export default function GreetingView({
       return (
         <div className="sceneInner cakeScene" style={style}>
           {editBadge}
-          {renderHeroPhoto(b)}
+          {renderForegroundPhoto(b)}
           <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {isEditable ? (
               <>
@@ -1273,8 +1273,8 @@ export default function GreetingView({
       <div className="sceneInner" style={style}>
         {editBadge}
 
-        {/* Hero Photo as Direct Media Layer (behind text, above wallpaper) */}
-        {renderHeroPhoto(b)}
+        {/* Foreground Photo Layer (behind text, above wallpaper) */}
+        {renderForegroundPhoto(b)}
 
         <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
           {isEditable ? (
