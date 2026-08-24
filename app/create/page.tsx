@@ -2141,7 +2141,7 @@ export default function CreatePage() {
                           <div className="fitModeToggleGroup">
                             <button
                               type="button"
-                              className={`fitModeToggleBtn ${(!current.imageFit || current.imageFit === "cover" || (heroAdj as any).fit === "cover") ? "active" : ""}`}
+                              className={`fitModeToggleBtn ${(current.imageFit === "cover" || (heroAdj as any).fit === "cover") ? "active" : ""}`}
                               onClick={() => {
                                 const adjustments = { ...(current.imageAdjustments || {}) };
                                 adjustments["hero"] = { ...heroAdj, fit: "cover" as any };
@@ -2152,7 +2152,7 @@ export default function CreatePage() {
                             </button>
                             <button
                               type="button"
-                              className={`fitModeToggleBtn ${(current.imageFit === "contain" || (heroAdj as any).fit === "contain") ? "active" : ""}`}
+                              className={`fitModeToggleBtn ${(!current.imageFit || current.imageFit === "contain" || (heroAdj as any).fit === "contain") ? "active" : ""}`}
                               onClick={() => {
                                 const adjustments = { ...(current.imageAdjustments || {}) };
                                 adjustments["hero"] = { ...heroAdj, fit: "contain" as any };

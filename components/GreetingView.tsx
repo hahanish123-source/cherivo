@@ -596,7 +596,7 @@ export default function GreetingView({
     const renderHeroPhoto = (targetBlock: Block) => {
       if (!targetBlock.image) return null;
       const bAdj = targetBlock.imageAdjustments?.["hero"] ?? targetBlock.imageAdjustments?.["0"] ?? { scale: 100, x: 50, y: 28, opacity: 100, rotation: 0 };
-      const fitMode = (targetBlock.imageFit === "contain" || (bAdj as any).fit === "contain") ? "contain" : "cover";
+      const fitMode = (targetBlock.imageFit === "cover" || (bAdj as any).fit === "cover") ? "cover" : "contain";
       const isCover = fitMode === "cover";
 
       return (
@@ -615,7 +615,7 @@ export default function GreetingView({
             maxWidth: "min(65%, 280px)",
             maxHeight: isCover ? "240px" : "260px",
             overflow: isCover ? "hidden" : "visible",
-            zIndex: 1,
+            zIndex: 5,
             opacity: (bAdj.opacity ?? targetBlock.imageOpacity ?? 100) / 100,
             background: "transparent",
             border: "none",

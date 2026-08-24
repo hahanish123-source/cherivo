@@ -349,7 +349,7 @@ export function normalizeBlock(raw: any, fallbackIndex = 0, fallbackFont: FontNa
         ? raw.imageAdjustments
         : {},
     imageOpacity: typeof raw.imageOpacity === "number" ? raw.imageOpacity : Number(raw.imageOpacity ?? 100),
-    imageFit: raw.imageFit === "contain" || raw.imageFit === "fill" ? raw.imageFit : "cover",
+    imageFit: raw.imageFit === "cover" || raw.imageFit === "fill" ? raw.imageFit : "contain",
     audioName: raw.audioName ? String(raw.audioName) : "",
     audioUrl: raw.audioUrl,
     memoryVideo: raw.memoryVideo || raw.video,
