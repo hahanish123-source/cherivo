@@ -809,7 +809,7 @@ export default function CreatePage() {
   }
 
   // Photo adjustment helper for current block
-  const heroAdj = current.imageAdjustments?.["hero"] ?? current.imageAdjustments?.["0"] ?? { scale: 100, x: 50, y: 50, opacity: 100, rotation: 0 };
+  const heroAdj = current.imageAdjustments?.["hero"] ?? current.imageAdjustments?.["0"] ?? { scale: 100, x: 50, y: 28, opacity: 100, rotation: 0 };
   const galleryImages = Array.isArray(current.images) && current.images.length > 0 ? current.images : current.image ? [current.image] : [];
   const selectedPhotoAdj: ImageAdjustment = current.imageAdjustments?.[String(selectedPhotoIdx)] ?? current.imageAdjustments?.[`photo_${selectedPhotoIdx}`] ?? { scale: 100, x: 50, y: 50, opacity: 100, rotation: 0 };
 

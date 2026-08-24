@@ -582,7 +582,7 @@ export default function GreetingView({
         ? b.memoryVideo
         : memoryVideoPreviews[b.id] || "";
 
-    const heroAdj = b.imageAdjustments?.["hero"] ?? b.imageAdjustments?.["0"] ?? { scale: 100, x: 50, y: 50 };
+    const heroAdj = b.imageAdjustments?.["hero"] ?? b.imageAdjustments?.["0"] ?? { scale: 100, x: 50, y: 28 };
     const emojiAnim = b.emojiAnimation || project.emojiAnimation || "floating";
 
     const triggerSelect = (role: string, extraIndex?: number) => {
@@ -595,7 +595,7 @@ export default function GreetingView({
 
     const renderHeroPhoto = (targetBlock: Block) => {
       if (!targetBlock.image) return null;
-      const bAdj = targetBlock.imageAdjustments?.["hero"] ?? targetBlock.imageAdjustments?.["0"] ?? { scale: 100, x: 50, y: 50, opacity: 100, rotation: 0 };
+      const bAdj = targetBlock.imageAdjustments?.["hero"] ?? targetBlock.imageAdjustments?.["0"] ?? { scale: 100, x: 50, y: 28, opacity: 100, rotation: 0 };
       const fitMode = (targetBlock.imageFit === "contain" || (bAdj as any).fit === "contain") ? "contain" : "cover";
       const isCover = fitMode === "cover";
 
@@ -606,7 +606,7 @@ export default function GreetingView({
           style={{
             position: "absolute",
             left: `${bAdj.x ?? 50}%`,
-            top: `${bAdj.y ?? 50}%`,
+            top: `${bAdj.y ?? 28}%`,
             transform: `translate(-50%, -50%) scale(${(bAdj.scale ?? 100) / 100}) rotate(${bAdj.rotation ?? 0}deg)`,
             transformOrigin: "center center",
             width: isCover ? "min(65%, 280px)" : "auto",
