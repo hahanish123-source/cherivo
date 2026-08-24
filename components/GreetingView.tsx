@@ -968,9 +968,24 @@ export default function GreetingView({
       };
 
       const scatteredPositions = getScatteredPositions(images.length, isMobile);
+      const scatteredMinHeight = isMobile
+        ? (images.length >= 5 ? "560px" : "500px")
+        : (images.length >= 5 ? "600px" : "540px");
 
       return (
-        <div className={`sceneInner galleryPage layout-${layout}`} style={{ ...style, position: "relative" }}>
+        <div
+          className={`sceneInner galleryPage layout-${layout}`}
+          style={{
+            ...style,
+            position: "relative",
+            minHeight: isScattered ? scatteredMinHeight : "auto",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: isScattered ? "space-between" : "center",
+            padding: isScattered ? (isMobile ? "24px 12px 16px" : "32px 20px 20px") : undefined,
+            boxSizing: "border-box"
+          }}
+        >
           {editBadge}
 
           {/* LAYER 1 / 5: Scattered Photos Layer (in absolute overlay behind text & nav) */}
@@ -1078,6 +1093,7 @@ export default function GreetingView({
               position: "relative",
               zIndex: 30,
               width: "100%",
+              margin: isScattered ? "auto 0" : "0",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
