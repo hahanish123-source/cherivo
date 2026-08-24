@@ -690,13 +690,13 @@ export default function GreetingView({
     };
 
     const nav = (
-      <div className="actions" style={{ position: "relative", zIndex: 40 }}>
+      <div className="actions" style={{ position: "relative", zIndex: 100, pointerEvents: "auto" }}>
         <button
           type="button"
           className="btn"
           disabled={currentSceneIndex === 0}
           onClick={() => setScene(currentSceneIndex - 1)}
-          style={{ position: "relative", zIndex: 40, ...getElementStyle(b, "backButton") }}
+          style={{ position: "relative", zIndex: 100, pointerEvents: "auto", ...getElementStyle(b, "backButton") }}
         >
           <ArrowLeft size={16} /> {b.backButtonText || "Back"}
         </button>
@@ -705,12 +705,12 @@ export default function GreetingView({
             type="button"
             className="btn primary"
             onClick={() => setScene(currentSceneIndex + 1)}
-            style={{ position: "relative", zIndex: 40, ...getElementStyle(b, "keepGoingButton") }}
+            style={{ position: "relative", zIndex: 100, pointerEvents: "auto", ...getElementStyle(b, "keepGoingButton") }}
           >
             {b.keepGoingButtonText || "Keep going"} <ArrowRight size={16} />
           </button>
         ) : (
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center", position: "relative", zIndex: 40 }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center", position: "relative", zIndex: 100, pointerEvents: "auto" }}>
             {!isEditable && onOpenResponseModal && (
               <button
                 type="button"
@@ -719,7 +719,7 @@ export default function GreetingView({
                   e.stopPropagation();
                   onOpenResponseModal();
                 }}
-                style={{ background: "linear-gradient(135deg, #ff4f8b 0%, #7c5cff 100%)", color: "#fff", fontWeight: 600, position: "relative", zIndex: 40 }}
+                style={{ background: "linear-gradient(135deg, #ff4f8b 0%, #7c5cff 100%)", color: "#fff", fontWeight: 600, position: "relative", zIndex: 100, pointerEvents: "auto" }}
               >
                 💌 Reply to Greeting
               </button>
@@ -733,7 +733,7 @@ export default function GreetingView({
                 setCandles([false, false, false]);
                 setDustedPhotos([]);
               }}
-              style={{ position: "relative", zIndex: 40 }}
+              style={{ position: "relative", zIndex: 100, pointerEvents: "auto" }}
             >
               <RotateCcw size={16} /> {b.replayButtonText || "Replay"}
             </button>
@@ -908,37 +908,197 @@ export default function GreetingView({
       const images = b.images && b.images.length > 0 ? b.images : b.image ? [b.image] : [];
       const layout = b.galleryLayout || "collage";
       const isScattered = layout === "scattered";
+      const isMobile = previewDevice === "mobile";
 
-      const defaultScatteredPositions = [
-        { x: 26, y: 22, rotate: -6, width: 44 },
-        { x: 74, y: 24, rotate: 5, width: 42 },
-        { x: 30, y: 56, rotate: 4, width: 40 },
-        { x: 70, y: 60, rotate: -5, width: 44 },
-        { x: 25, y: 84, rotate: -3, width: 42 },
-        { x: 72, y: 86, rotate: 6, width: 44 },
-        { x: 48, y: 38, rotate: -7, width: 38 },
-        { x: 50, y: 72, rotate: 5, width: 40 }
-      ];
+      const getScatteredPositions = (count: number, mobile: boolean) => {
+        if (count === 1) {
+          return [{ x: 50, y: 72, rotate: 0, width: mobile ? 58 : 44 }];
+        }
+        if (count === 2) {
+          return [
+            { x: 18, y: 22, rotate: -6, width: mobile ? 36 : 28 },
+            { x: 82, y: 72, rotate: 5, width: mobile ? 36 : 28 }
+          ];
+        }
+        if (count === 3) {
+          return [
+            { x: 18, y: 20, rotate: -6, width: mobile ? 34 : 26 },
+            { x: 82, y: 22, rotate: 5, width: mobile ? 34 : 26 },
+            { x: 50, y: 75, rotate: -3, width: mobile ? 38 : 30 }
+          ];
+        }
+        if (count === 4) {
+          return [
+            { x: 16, y: 18, rotate: -6, width: mobile ? 32 : 25 },
+            { x: 84, y: 20, rotate: 5, width: mobile ? 32 : 25 },
+            { x: 18, y: 74, rotate: 4, width: mobile ? 32 : 25 },
+            { x: 82, y: 76, rotate: -5, width: mobile ? 32 : 25 }
+          ];
+        }
+        if (count === 5) {
+          return [
+            { x: 16, y: 16, rotate: -6, width: mobile ? 30 : 24 },
+            { x: 84, y: 18, rotate: 5, width: mobile ? 30 : 24 },
+            { x: 14, y: 46, rotate: 4, width: mobile ? 28 : 22 },
+            { x: 86, y: 48, rotate: -5, width: mobile ? 28 : 22 },
+            { x: 50, y: 76, rotate: 3, width: mobile ? 34 : 26 }
+          ];
+        }
+        if (count === 6) {
+          return [
+            { x: 16, y: 16, rotate: -6, width: mobile ? 28 : 22 },
+            { x: 84, y: 18, rotate: 5, width: mobile ? 28 : 22 },
+            { x: 14, y: 46, rotate: 4, width: mobile ? 26 : 20 },
+            { x: 86, y: 48, rotate: -5, width: mobile ? 26 : 20 },
+            { x: 20, y: 75, rotate: -4, width: mobile ? 28 : 22 },
+            { x: 80, y: 76, rotate: 6, width: mobile ? 28 : 22 }
+          ];
+        }
+        // 7+ photos cyclic perimeter distribution around protected greeting zone
+        return [
+          { x: 16, y: 15, rotate: -6, width: mobile ? 26 : 20 },
+          { x: 84, y: 17, rotate: 5, width: mobile ? 26 : 20 },
+          { x: 14, y: 45, rotate: 4, width: mobile ? 24 : 18 },
+          { x: 86, y: 47, rotate: -5, width: mobile ? 24 : 18 },
+          { x: 20, y: 74, rotate: -4, width: mobile ? 26 : 20 },
+          { x: 80, y: 75, rotate: 6, width: mobile ? 26 : 20 },
+          { x: 50, y: 12, rotate: -2, width: mobile ? 24 : 18 },
+          { x: 50, y: 78, rotate: 3, width: mobile ? 26 : 20 }
+        ];
+      };
+
+      const scatteredPositions = getScatteredPositions(images.length, isMobile);
 
       return (
-        <div className={`sceneInner galleryPage layout-${layout}`} style={style}>
+        <div className={`sceneInner galleryPage layout-${layout}`} style={{ ...style, position: "relative" }}>
           {editBadge}
-          <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+
+          {/* LAYER 1 / 5: Scattered Photos Layer (in absolute overlay behind text & nav) */}
+          {isScattered && images.length > 0 && (
+            <div
+              className={`galleryStage gallery-count-${Math.min(images.length, 20)} gallery-bg-${
+                b.galleryBackground || "transparent"
+              } ${galleryScatter ? "scatter-active" : ""}`}
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                zIndex: 5,
+                pointerEvents: "none",
+                overflow: "hidden"
+              }}
+            >
+              {/* Canvas Dust Disintegration Overlay */}
+              <canvas ref={dustCanvasRef} className="galleryDustCanvas" style={{ zIndex: 6, pointerEvents: "none" }} />
+
+              {images.map((src, i) => {
+                const adjustment: ImageAdjustment = b.imageAdjustments?.[String(i)] ?? b.imageAdjustments?.[`photo_${i}`] ?? {
+                  scale: 100,
+                  x: 50,
+                  y: 50,
+                  opacity: 100,
+                  rotation: 0
+                };
+                const isDusted = dustedPhotos.includes(i);
+                const defPos = scatteredPositions[i % scatteredPositions.length];
+                const posX = typeof adjustment.x === "number" ? adjustment.x : defPos.x;
+                const posY = typeof adjustment.y === "number" ? adjustment.y : defPos.y;
+                const rotVal = typeof adjustment.rotation === "number" ? adjustment.rotation : defPos.rotate;
+                const widthPct = typeof adjustment.width === "number" ? adjustment.width : defPos.width;
+                const scaleVal = (adjustment.scale ?? 100) / 100;
+                const opacityVal = (adjustment.opacity ?? b.imageOpacity ?? 100) / 100;
+                const radiusPx = adjustment.cornerRadius ?? 14;
+                const fitMode = adjustment.fit || "cover";
+
+                return (
+                  <button
+                    type="button"
+                    className={`galleryPhoto galleryPhoto-${i + 1} ${
+                      isDusted ? "photo-dusted" : ""
+                    }`}
+                    key={`${i}-${src.slice(-10)}`}
+                    style={{
+                      position: "absolute",
+                      left: `${posX}%`,
+                      top: `${posY}%`,
+                      width: `min(${widthPct}%, 300px)`,
+                      aspectRatio: "4 / 3",
+                      height: "auto",
+                      transform: `translate(-50%, -50%) rotate(${rotVal}deg)`,
+                      transformOrigin: "center center",
+                      zIndex: (adjustment.zIndex ?? i) + 5,
+                      opacity: opacityVal,
+                      borderRadius: `${radiusPx}px`,
+                      overflow: "hidden",
+                      border: "2px solid rgba(255, 255, 255, 0.3)",
+                      boxShadow: "0 8px 24px rgba(0, 0, 0, 0.45)",
+                      padding: 0,
+                      background: "transparent",
+                      pointerEvents: "auto",
+                      cursor: "pointer"
+                    }}
+                    aria-label={`Tap to dissolve memory ${i + 1}`}
+                    onClick={(e) => {
+                      if (isEditable) {
+                        triggerSelect("photo", i);
+                      } else {
+                        e.stopPropagation();
+                        openGalleryPhoto(images, i, true, e.currentTarget);
+                      }
+                    }}
+                  >
+                    <img
+                      src={src}
+                      alt={`Memory ${i + 1}`}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: fitMode,
+                        borderRadius: `${radiusPx}px`,
+                        transform: `scale(${scaleVal}) translate(${((adjustment.x ?? 50) - 50)}%, ${((adjustment.y ?? 50) - 50)}%)`,
+                        transformOrigin: "center center",
+                        display: "block",
+                        pointerEvents: "none"
+                      }}
+                    />
+                    <span className="galleryPhotoHint">
+                      {isEditable ? `Photo ${i + 1}` : "✦ Disintegrate"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* LAYER 10 / 20 / 30: Protected Central Greeting Zone */}
+          <div
+            className="sectionContentLayer memoryGreetingLayer"
+            style={{
+              position: "relative",
+              zIndex: 30,
+              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              pointerEvents: "auto"
+            }}
+          >
             {isEditable ? (
               <>
-                <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} style={{ position: "relative", zIndex: 10 }} onClick={() => triggerSelect("emoji")}>
+                <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} style={{ position: "relative", zIndex: 30 }} onClick={() => triggerSelect("emoji")}>
                   {b.emoji}
                 </button>
-                <button type="button" className="editableText sectionKicker" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "title") }} onClick={() => triggerSelect("kicker")}>
+                <button type="button" className="editableText sectionKicker" style={{ position: "relative", zIndex: 30, ...getElementStyle(b, "title") }} onClick={() => triggerSelect("kicker")}>
                   {b.title}
                 </button>
-                <button type="button" className="editableText eyebrow" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "eyebrow") }} onClick={() => triggerSelect("subtitle")}>
+                <button type="button" className="editableText eyebrow" style={{ position: "relative", zIndex: 30, ...getElementStyle(b, "eyebrow") }} onClick={() => triggerSelect("subtitle")}>
                   {b.subtitle}
                 </button>
-                <button type="button" className="editableText heroTitle" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "heading") }} onClick={() => triggerSelect("heading")}>
+                <button type="button" className="editableText heroTitle" style={{ position: "relative", zIndex: 30, ...getElementStyle(b, "heading") }} onClick={() => triggerSelect("heading")}>
                   {b.heading}
                 </button>
-                <div className="heroTextWrap customScrollbar" style={{ position: "relative", zIndex: 20 }}>
+                <div className="heroTextWrap customScrollbar" style={{ position: "relative", zIndex: 30 }}>
                   <button type="button" className="editableText heroText" style={getElementStyle(b, "body")} onClick={() => triggerSelect("body")}>
                     {b.text}
                   </button>
@@ -946,41 +1106,35 @@ export default function GreetingView({
               </>
             ) : (
               <>
-                <div className={`publicEmoji emoji-anim-${emojiAnim}`} style={{ position: "relative", zIndex: 10 }}>{b.emoji}</div>
-                <div className="sectionKicker" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "title") }}>{b.title}</div>
+                <div className={`publicEmoji emoji-anim-${emojiAnim}`} style={{ position: "relative", zIndex: 30 }}>{b.emoji}</div>
+                <div className="sectionKicker" style={{ position: "relative", zIndex: 30, ...getElementStyle(b, "title") }}>{b.title}</div>
                 <div className="eyebrow" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "eyebrow") }}>{b.subtitle}</div>
-                <h1 className="heroTitle" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "heading") }}>{b.heading}</h1>
-                <div className="heroTextWrap customScrollbar" style={{ position: "relative", zIndex: 20 }}>
+                <h1 className="heroTitle" style={{ position: "relative", zIndex: 30, ...getElementStyle(b, "heading") }}>{b.heading}</h1>
+                <div className="heroTextWrap customScrollbar" style={{ position: "relative", zIndex: 30 }}>
                   <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
                 </div>
               </>
             )}
 
             {isScattered && images.length > 0 && (
-              <p className="scatteredTapHint" style={{ position: "relative", zIndex: 20 }}>
+              <p className="scatteredTapHint" style={{ position: "relative", zIndex: 30 }}>
                 Tap a photo to explore the memory 💗
               </p>
             )}
 
-            {images.length > 0 ? (
+            {/* Non-Scattered Layouts (Collage, Grid, Masonry, Polaroid, Filmstrip) */}
+            {!isScattered && images.length > 0 && (
               <div
                 className={`galleryStage gallery-count-${Math.min(images.length, 20)} gallery-bg-${
                   b.galleryBackground || "transparent"
-                } ${galleryScatter && isScattered ? "scatter-active" : ""}`}
+                }`}
                 style={{
                   position: "relative",
                   zIndex: 20,
                   width: "100%",
-                  minHeight: isScattered ? "480px" : "auto",
-                  height: isScattered ? "500px" : "auto",
-                  overflow: isScattered ? "hidden" : "visible"
+                  margin: "16px 0 0"
                 }}
               >
-                {/* Canvas Dust Disintegration Overlay */}
-                {isScattered && <canvas ref={dustCanvasRef} className="galleryDustCanvas" />}
-
-                <div className="galleryShape a" />
-                <div className="galleryShape b" />
                 {images.map((src, i) => {
                   const adjustment: ImageAdjustment = b.imageAdjustments?.[String(i)] ?? b.imageAdjustments?.[`photo_${i}`] ?? {
                     scale: 100,
@@ -989,60 +1143,32 @@ export default function GreetingView({
                     opacity: 100,
                     rotation: 0
                   };
-                  const isDusted = dustedPhotos.includes(i);
-                  const defPos = defaultScatteredPositions[i % defaultScatteredPositions.length];
-                  const posX = typeof adjustment.x === "number" ? adjustment.x : defPos.x;
-                  const posY = typeof adjustment.y === "number" ? adjustment.y : defPos.y;
-                  const rotVal = typeof adjustment.rotation === "number" ? adjustment.rotation : defPos.rotate;
-                  const widthPct = typeof adjustment.width === "number" ? adjustment.width : defPos.width;
+                  const rotVal = adjustment.rotation ?? 0;
                   const scaleVal = (adjustment.scale ?? 100) / 100;
                   const opacityVal = (adjustment.opacity ?? b.imageOpacity ?? 100) / 100;
-                  const radiusPx = adjustment.cornerRadius ?? (isScattered ? 14 : 8);
+                  const radiusPx = adjustment.cornerRadius ?? 8;
                   const fitMode = adjustment.fit || "cover";
 
                   return (
                     <button
                       type="button"
-                      className={`galleryPhoto galleryPhoto-${i + 1} ${
-                        isScattered && isDusted ? "photo-dusted" : ""
-                      }`}
+                      className={`galleryPhoto galleryPhoto-${i + 1}`}
                       key={`${i}-${src.slice(-10)}`}
-                      style={
-                        isScattered
-                          ? {
-                              position: "absolute",
-                              left: `${posX}%`,
-                              top: `${posY}%`,
-                              width: `min(${widthPct}%, 340px)`,
-                              transform: `translate(-50%, -50%) rotate(${rotVal}deg) scale(${scaleVal})`,
-                              transformOrigin: "center center",
-                              zIndex: (adjustment.zIndex ?? i) + 1,
-                              opacity: opacityVal,
-                              borderRadius: `${radiusPx}px`,
-                              overflow: "hidden",
-                              border: "none",
-                              padding: 0,
-                              background: "transparent"
-                            }
-                          : {
-                              position: "relative",
-                              overflow: "hidden",
-                              borderRadius: `${radiusPx}px`,
-                              opacity: opacityVal,
-                              zIndex: (adjustment.zIndex ?? i) + 1
-                            }
-                      }
-                      aria-label={
-                        isScattered
-                          ? `Tap to dissolve memory ${i + 1}`
-                          : `Open memory photo ${i + 1}`
-                      }
+                      style={{
+                        position: "relative",
+                        overflow: "hidden",
+                        borderRadius: `${radiusPx}px`,
+                        opacity: opacityVal,
+                        zIndex: (adjustment.zIndex ?? i) + 5,
+                        pointerEvents: "auto"
+                      }}
+                      aria-label={`Open memory photo ${i + 1}`}
                       onClick={(e) => {
                         if (isEditable) {
                           triggerSelect("photo", i);
                         } else {
                           e.stopPropagation();
-                          openGalleryPhoto(images, i, isScattered, e.currentTarget);
+                          openGalleryPhoto(images, i, false, e.currentTarget);
                         }
                       }}
                     >
@@ -1054,22 +1180,23 @@ export default function GreetingView({
                           height: "100%",
                           objectFit: fitMode,
                           borderRadius: `${radiusPx}px`,
-                          transform: isScattered
-                            ? "none"
-                            : `scale(${scaleVal}) translate(${((adjustment.x ?? 50) - 50)}%, ${((adjustment.y ?? 50) - 50)}%) rotate(${rotVal}deg)`,
+                          transform: `scale(${scaleVal}) translate(${((adjustment.x ?? 50) - 50)}%, ${((adjustment.y ?? 50) - 50)}%) rotate(${rotVal}deg)`,
                           transformOrigin: "center center",
-                          display: "block"
+                          display: "block",
+                          pointerEvents: "none"
                         }}
                       />
                       <span className="galleryPhotoHint">
-                        {isEditable ? `Photo ${i + 1}` : isScattered ? "✦ Disintegrate" : "🔍 Zoom"}
+                        {isEditable ? `Photo ${i + 1}` : "🔍 Zoom"}
                       </span>
                     </button>
                   );
                 })}
               </div>
-            ) : (
-              <div className="photoFrame" style={{ position: "relative", zIndex: 20 }} onClick={() => isEditable && triggerSelect("photo", 0)}>
+            )}
+
+            {images.length === 0 && (
+              <div className="photoFrame" style={{ position: "relative", zIndex: 30 }} onClick={() => isEditable && triggerSelect("photo", 0)}>
                 <p style={{ padding: "30px 20px", color: "var(--muted)", cursor: isEditable ? "pointer" : "default" }}>
                   {isEditable ? "Tap here to add and edit photos 📸" : "No memory photos added yet."}
                 </p>
@@ -1080,7 +1207,7 @@ export default function GreetingView({
               <button
                 type="button"
                 className="btn ghost small restoreMemories"
-                style={{ position: "relative", zIndex: 20, marginTop: "14px" }}
+                style={{ position: "relative", zIndex: 30, marginTop: "14px" }}
                 onClick={resetDustedPhotos}
               >
                 ↻ Restore memories
@@ -1088,6 +1215,7 @@ export default function GreetingView({
             )}
           </div>
 
+          {/* LAYER 100: Topmost Navigation Buttons */}
           {nav}
         </div>
       );

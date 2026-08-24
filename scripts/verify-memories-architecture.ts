@@ -7,29 +7,11 @@ console.log("===================================================================
 
 // 1. Verify Memories Section Layouts
 console.log("\nTEST 1: Verifying Memories Layout Options...");
-const memoriesBlock = defaultBlocks.find(b => b.type === "memories" || b.type === "gallery") || {
-  id: "test-memories",
-  type: "memories",
-  title: "Memories",
-  subtitle: "Our story",
-  heading: "Moments We Cherish",
-  text: "Every memory with you is special.",
-  images: [
-    "https://images.unsplash.com/photo-1518199266791-5375a83190b7",
-    "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2",
-    "https://images.unsplash.com/photo-1534528741775-53994a69daeb"
-  ],
-  galleryLayout: "scattered",
-  imageAdjustments: {
-    "0": { scale: 120, x: 25, y: 30, rotation: -5, opacity: 100, width: 45, fit: "cover" },
-    "1": { scale: 90, x: 75, y: 28, rotation: 6, opacity: 95, width: 42, fit: "cover" },
-    "2": { scale: 100, x: 50, y: 70, rotation: 0, opacity: 100, width: 40, fit: "cover" }
-  }
-};
+const memoriesBlock = defaultBlocks.find(b => b.type === "memories" || b.type === "gallery") || defaultBlocks[0];
 
 const supportedLayouts = ["scattered", "collage", "grid", "masonry", "polaroid", "filmstrip"];
 for (const layout of supportedLayouts) {
-  const testBlock: Block = { ...memoriesBlock, galleryLayout: layout as any };
+  const testBlock = { ...memoriesBlock, galleryLayout: layout } as Block;
   if (!supportedLayouts.includes(testBlock.galleryLayout || "scattered")) {
     throw new Error(`Unsupported layout: ${layout}`);
   }
@@ -38,14 +20,14 @@ console.log("✓ TEST 1 PASSED: All 6 gallery layout modes supported (scattered,
 
 // 2. Verify Independent Photo Transformations
 console.log("\nTEST 2: Verifying Independent Photo Transformations (Photo 1 zoom/X/Y isolation)...");
-const testBlockWithAdj: Block = {
+const testBlockWithAdj = {
   ...memoriesBlock,
   imageAdjustments: {
     "0": { scale: 120, x: 25, y: 30, rotation: -5, opacity: 100, width: 45, fit: "cover" },
     "1": { scale: 90, x: 75, y: 28, rotation: 6, opacity: 95, width: 42, fit: "cover" },
     "2": { scale: 100, x: 50, y: 70, rotation: 0, opacity: 100, width: 40, fit: "cover" }
   }
-};
+} as Block;
 
 const photo0Adj = (testBlockWithAdj.imageAdjustments as Record<string, ImageAdjustment>)["0"];
 const photo1Adj = (testBlockWithAdj.imageAdjustments as Record<string, ImageAdjustment>)["1"];
