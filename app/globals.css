@@ -2386,7 +2386,228 @@ button {
 }
 
 /* Modal */
-.modal {
+.modal/* ==========================================================================
+   GALLERY / MEMORIES LAYOUTS & STYLES
+   ========================================================================== */
+
+.galleryPage {
+  width: 100%;
+}
+
+.galleryStage {
+  position: relative;
+  width: 100%;
+  margin: 16px auto 0;
+  transition: all 0.3s ease;
+}
+
+.galleryDustCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.galleryPhoto {
+  position: relative;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  outline: none;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.galleryPhoto img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.galleryPhotoHint {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  font-size: 10px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+}
+
+.galleryPhoto:hover .galleryPhotoHint {
+  opacity: 1;
+}
+
+/* Grid Layout */
+.galleryPage.layout-grid .galleryStage {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 165px;
+  gap: 12px;
+}
+
+.galleryPage.layout-grid .galleryPhoto {
+  height: 100%;
+  border-radius: 12px;
+}
+
+/* Auto Collage Layout */
+.galleryPage.layout-collage .galleryStage {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 130px;
+  gap: 12px;
+}
+
+.galleryPage.layout-collage .galleryPhoto {
+  border-radius: 12px;
+}
+
+.galleryPage.layout-collage .galleryPhoto-1 {
+  grid-column: span 2;
+  grid-row: span 2;
+  height: 100%;
+}
+
+.galleryPage.layout-collage .galleryPhoto-2 {
+  grid-column: span 2;
+  grid-row: span 1;
+  height: 100%;
+}
+
+.galleryPage.layout-collage .galleryPhoto-3 {
+  grid-column: span 2;
+}
+
+.galleryPage.layout-collage.gallery-count-1 .galleryPhoto-1 {
+  grid-column: span 4;
+  grid-row: span 3;
+  height: 340px;
+}
+
+.galleryPage.layout-collage.gallery-count-2 .galleryPhoto-1,
+.galleryPage.layout-collage.gallery-count-2 .galleryPhoto-2 {
+  grid-column: span 2;
+  grid-row: span 2;
+  height: 270px;
+}
+
+/* Masonry Layout */
+.galleryPage.layout-masonry .galleryStage {
+  display: block !important;
+  column-count: 3;
+  column-gap: 12px;
+}
+
+.galleryPage.layout-masonry .galleryPhoto {
+  display: block;
+  margin: 0 0 12px;
+  height: 190px;
+  break-inside: avoid;
+  border-radius: 12px;
+}
+
+.galleryPage.layout-masonry .galleryPhoto:nth-child(3n) {
+  height: 240px;
+}
+
+.galleryPage.layout-masonry .galleryPhoto:nth-child(4n) {
+  height: 160px;
+}
+
+/* Polaroid Layout */
+.galleryPage.layout-polaroid .galleryStage {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 205px;
+  gap: 14px;
+}
+
+.galleryPage.layout-polaroid .galleryPhoto {
+  background: #fff !important;
+  padding: 8px 8px 24px !important;
+  border-radius: 6px !important;
+  box-shadow: 0 16px 35px rgba(0, 0, 0, 0.45);
+}
+
+.galleryPage.layout-polaroid .galleryPhoto:nth-child(odd) {
+  transform: rotate(-2deg);
+}
+
+.galleryPage.layout-polaroid .galleryPhoto:nth-child(even) {
+  transform: rotate(2.5deg);
+}
+
+.galleryPage.layout-polaroid .galleryPhoto:hover {
+  transform: scale(1.06) rotate(0deg) !important;
+  z-index: 10;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.6);
+}
+
+/* Filmstrip Layout */
+.galleryPage.layout-filmstrip .galleryStage {
+  display: flex !important;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 8px 4px 16px;
+  gap: 12px;
+}
+
+.galleryPage.layout-filmstrip .galleryPhoto {
+  flex: 0 0 min(72%, 320px);
+  height: 250px;
+  scroll-snap-align: center;
+  border-radius: 14px;
+}
+
+/* Scattered Layout */
+.galleryPage.layout-scattered .galleryStage {
+  position: relative !important;
+  width: 100% !important;
+  min-height: 480px !important;
+  height: 500px !important;
+  margin: 16px 0 !important;
+  overflow: hidden !important;
+}
+
+.galleryPage.layout-scattered .galleryPhoto {
+  position: absolute !important;
+  aspect-ratio: 4 / 3;
+  height: 140px;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease !important;
+  cursor: pointer;
+}
+
+.galleryPage.layout-scattered .galleryPhoto:hover {
+  transform: scale(1.06) rotate(0deg) !important;
+  z-index: 50 !important;
+  box-shadow: 0 16px 36px rgba(255, 61, 120, 0.4) !important;
+  border-color: var(--accent) !important;
+}
+
+.scatteredTapHint {
+  font-size: 13px;
+  color: var(--accent2, #ff4f8b);
+  font-weight: 600;
+  text-align: center;
+  margin: 4px 0 10px;
+}
+
+.modalBackdrop {
   position: fixed;
   inset: 0;
   z-index: 80;

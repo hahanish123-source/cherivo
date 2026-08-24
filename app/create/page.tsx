@@ -1989,6 +1989,33 @@ export default function CreatePage() {
                     </button>
                   </div>
 
+                  {/* Layout Selector for Memories/Gallery Section */}
+                  {(current.type === "memories" || current.type === "gallery") && (
+                    <label className="fieldLabel" style={{ marginBottom: "14px" }}>
+                      Layout / Arrangement
+                      <select
+                        value={current.galleryLayout || "scattered"}
+                        onChange={(e) => updateCurrent({ galleryLayout: e.target.value })}
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          borderRadius: "10px",
+                          background: "#161220",
+                          color: "#fff",
+                          border: "1px solid var(--line)",
+                          marginTop: "6px"
+                        }}
+                      >
+                        <option value="scattered">Scattered Images (Interactive Tap)</option>
+                        <option value="collage">Collage Flow</option>
+                        <option value="grid">Clean Photo Grid</option>
+                        <option value="masonry">Masonry Wall</option>
+                        <option value="polaroid">Polaroid Snapshots</option>
+                        <option value="filmstrip">Filmstrip Scroll</option>
+                      </select>
+                    </label>
+                  )}
+
                   {galleryImages.length === 0 ? (
                     <button
                       type="button"
@@ -2181,6 +2208,27 @@ export default function CreatePage() {
                           />
                         </label>
                       </div>
+
+                      {/* Rotation Slider */}
+                      <label className="fieldLabel">
+                        <div className="sliderHeader">
+                          <span>Rotation</span>
+                          <span className="valueBadge">{selectedPhotoAdj.rotation ?? 0}°</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-45"
+                          max="45"
+                          value={selectedPhotoAdj.rotation ?? 0}
+                          onChange={(e) => {
+                            const adjustments = { ...(current.imageAdjustments || {}) };
+                            const val = Number(e.target.value);
+                            adjustments[String(selectedPhotoIdx)] = { ...selectedPhotoAdj, rotation: val };
+                            if (selectedPhotoIdx === 0) adjustments["hero"] = { ...selectedPhotoAdj, rotation: val };
+                            updateCurrent({ imageAdjustments: adjustments });
+                          }}
+                        />
+                      </label>
 
                       {/* Corner Position Presets (3x3 Grid) */}
                       <div className="presetPositionSection" style={{ marginTop: "12px", marginBottom: "8px" }}>

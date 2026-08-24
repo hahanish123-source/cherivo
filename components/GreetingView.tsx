@@ -909,6 +909,17 @@ export default function GreetingView({
       const layout = b.galleryLayout || "collage";
       const isScattered = layout === "scattered";
 
+      const defaultScatteredPositions = [
+        { x: 26, y: 22, rotate: -6, width: 44 },
+        { x: 74, y: 24, rotate: 5, width: 42 },
+        { x: 30, y: 56, rotate: 4, width: 40 },
+        { x: 70, y: 60, rotate: -5, width: 44 },
+        { x: 25, y: 84, rotate: -3, width: 42 },
+        { x: 72, y: 86, rotate: 6, width: 44 },
+        { x: 48, y: 38, rotate: -7, width: 38 },
+        { x: 50, y: 72, rotate: 5, width: 40 }
+      ];
+
       return (
         <div className={`sceneInner galleryPage layout-${layout}`} style={style}>
           {editBadge}
@@ -944,120 +955,139 @@ export default function GreetingView({
                 </div>
               </>
             )}
+
+            {isScattered && images.length > 0 && (
+              <p className="scatteredTapHint" style={{ position: "relative", zIndex: 20 }}>
+                Tap a photo to explore the memory 💗
+              </p>
+            )}
+
+            {images.length > 0 ? (
+              <div
+                className={`galleryStage gallery-count-${Math.min(images.length, 20)} gallery-bg-${
+                  b.galleryBackground || "transparent"
+                } ${galleryScatter && isScattered ? "scatter-active" : ""}`}
+                style={{
+                  position: "relative",
+                  zIndex: 20,
+                  width: "100%",
+                  minHeight: isScattered ? "480px" : "auto",
+                  height: isScattered ? "500px" : "auto",
+                  overflow: isScattered ? "hidden" : "visible"
+                }}
+              >
+                {/* Canvas Dust Disintegration Overlay */}
+                {isScattered && <canvas ref={dustCanvasRef} className="galleryDustCanvas" />}
+
+                <div className="galleryShape a" />
+                <div className="galleryShape b" />
+                {images.map((src, i) => {
+                  const adjustment: ImageAdjustment = b.imageAdjustments?.[String(i)] ?? b.imageAdjustments?.[`photo_${i}`] ?? {
+                    scale: 100,
+                    x: 50,
+                    y: 50,
+                    opacity: 100,
+                    rotation: 0
+                  };
+                  const isDusted = dustedPhotos.includes(i);
+                  const defPos = defaultScatteredPositions[i % defaultScatteredPositions.length];
+                  const posX = typeof adjustment.x === "number" ? adjustment.x : defPos.x;
+                  const posY = typeof adjustment.y === "number" ? adjustment.y : defPos.y;
+                  const rotVal = typeof adjustment.rotation === "number" ? adjustment.rotation : defPos.rotate;
+                  const widthPct = typeof adjustment.width === "number" ? adjustment.width : defPos.width;
+                  const scaleVal = (adjustment.scale ?? 100) / 100;
+                  const opacityVal = (adjustment.opacity ?? b.imageOpacity ?? 100) / 100;
+                  const radiusPx = adjustment.cornerRadius ?? (isScattered ? 14 : 8);
+                  const fitMode = adjustment.fit || "cover";
+
+                  return (
+                    <button
+                      type="button"
+                      className={`galleryPhoto galleryPhoto-${i + 1} ${
+                        isScattered && isDusted ? "photo-dusted" : ""
+                      }`}
+                      key={`${i}-${src.slice(-10)}`}
+                      style={
+                        isScattered
+                          ? {
+                              position: "absolute",
+                              left: `${posX}%`,
+                              top: `${posY}%`,
+                              width: `min(${widthPct}%, 340px)`,
+                              transform: `translate(-50%, -50%) rotate(${rotVal}deg) scale(${scaleVal})`,
+                              transformOrigin: "center center",
+                              zIndex: (adjustment.zIndex ?? i) + 1,
+                              opacity: opacityVal,
+                              borderRadius: `${radiusPx}px`,
+                              overflow: "hidden",
+                              border: "none",
+                              padding: 0,
+                              background: "transparent"
+                            }
+                          : {
+                              position: "relative",
+                              overflow: "hidden",
+                              borderRadius: `${radiusPx}px`,
+                              opacity: opacityVal,
+                              zIndex: (adjustment.zIndex ?? i) + 1
+                            }
+                      }
+                      aria-label={
+                        isScattered
+                          ? `Tap to dissolve memory ${i + 1}`
+                          : `Open memory photo ${i + 1}`
+                      }
+                      onClick={(e) => {
+                        if (isEditable) {
+                          triggerSelect("photo", i);
+                        } else {
+                          e.stopPropagation();
+                          openGalleryPhoto(images, i, isScattered, e.currentTarget);
+                        }
+                      }}
+                    >
+                      <img
+                        src={src}
+                        alt={`Memory ${i + 1}`}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: fitMode,
+                          borderRadius: `${radiusPx}px`,
+                          transform: isScattered
+                            ? "none"
+                            : `scale(${scaleVal}) translate(${((adjustment.x ?? 50) - 50)}%, ${((adjustment.y ?? 50) - 50)}%) rotate(${rotVal}deg)`,
+                          transformOrigin: "center center",
+                          display: "block"
+                        }}
+                      />
+                      <span className="galleryPhotoHint">
+                        {isEditable ? `Photo ${i + 1}` : isScattered ? "✦ Disintegrate" : "🔍 Zoom"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="photoFrame" style={{ position: "relative", zIndex: 20 }} onClick={() => isEditable && triggerSelect("photo", 0)}>
+                <p style={{ padding: "30px 20px", color: "var(--muted)", cursor: isEditable ? "pointer" : "default" }}>
+                  {isEditable ? "Tap here to add and edit photos 📸" : "No memory photos added yet."}
+                </p>
+              </div>
+            )}
+
+            {isScattered && dustedPhotos.length > 0 && (
+              <button
+                type="button"
+                className="btn ghost small restoreMemories"
+                style={{ position: "relative", zIndex: 20, marginTop: "14px" }}
+                onClick={resetDustedPhotos}
+              >
+                ↻ Restore memories
+              </button>
+            )}
           </div>
 
-          {isScattered && images.length > 0 && (
-            <p className="scatteredTapHint" style={{ position: "relative", zIndex: 20 }}>
-              Tap a photo to explore the memory 💗
-            </p>
-          )}
-
-          {images.length > 0 ? (
-            <div
-              className={`galleryStage gallery-count-${Math.min(images.length, 20)} gallery-bg-${
-                b.galleryBackground || "transparent"
-              } ${galleryScatter && isScattered ? "scatter-active" : ""}`}
-              style={{ position: "relative", zIndex: 20 }}
-            >
-              {/* Canvas Dust Disintegration Overlay */}
-              {isScattered && <canvas ref={dustCanvasRef} className="galleryDustCanvas" />}
-
-              <div className="galleryShape a" />
-              <div className="galleryShape b" />
-              {images.map((src, i) => {
-                const adjustment: ImageAdjustment = b.imageAdjustments?.[String(i)] ?? b.imageAdjustments?.[`photo_${i}`] ?? {
-                  scale: 100,
-                  x: 50,
-                  y: 50,
-                  opacity: 100,
-                  rotation: 0
-                };
-                const isDusted = dustedPhotos.includes(i);
-                const scatteredPositions = [
-                  { left: "6%", top: "3%", rotate: "-6deg", width: "44%" },
-                  { left: "52%", top: "6%", rotate: "5deg", width: "42%" },
-                  { left: "10%", top: "34%", rotate: "4deg", width: "40%" },
-                  { left: "48%", top: "38%", rotate: "-5deg", width: "44%" },
-                  { left: "4%", top: "66%", rotate: "-3deg", width: "42%" },
-                  { left: "50%", top: "70%", rotate: "6deg", width: "44%" },
-                  { left: "16%", top: "18%", rotate: "-7deg", width: "38%" },
-                  { left: "46%", top: "52%", rotate: "5deg", width: "40%" },
-                  { left: "8%", top: "48%", rotate: "-4deg", width: "42%" },
-                  { left: "54%", top: "24%", rotate: "4deg", width: "38%" }
-                ];
-                const sPos = scatteredPositions[i % scatteredPositions.length];
-                const finalRotate = isScattered
-                  ? (adjustment.rotation ? `${parseInt(sPos.rotate) + adjustment.rotation}deg` : sPos.rotate)
-                  : `${adjustment.rotation ?? 0}deg`;
-
-                return (
-                  <button
-                    type="button"
-                    className={`galleryPhoto galleryPhoto-${i + 1} ${
-                      isScattered && isDusted ? "photo-dusted" : ""
-                    }`}
-                    key={`${i}-${src.slice(-10)}`}
-                    style={
-                      isScattered
-                        ? {
-                            position: "absolute",
-                            left: sPos.left,
-                            top: sPos.top,
-                            width: sPos.width,
-                            transform: `rotate(${finalRotate})`,
-                            zIndex: i + 1
-                          }
-                        : undefined
-                    }
-                    aria-label={
-                      isScattered
-                        ? `Tap to dissolve memory ${i + 1}`
-                        : `Open memory photo ${i + 1}`
-                    }
-                    onClick={(e) => {
-                      if (isEditable) {
-                        triggerSelect("photo", i);
-                      } else {
-                        e.stopPropagation();
-                        openGalleryPhoto(images, i, isScattered, e.currentTarget);
-                      }
-                    }}
-                  >
-                    <img
-                      src={src}
-                      alt={`Memory ${i + 1}`}
-                      style={{
-                        transform: `scale(${(adjustment.scale ?? 100) / 100}) rotate(${adjustment.rotation ?? 0}deg)`,
-                        objectPosition: `${adjustment.x ?? 50}% ${adjustment.y ?? 50}%`,
-                        transformOrigin: `${adjustment.x ?? 50}% ${adjustment.y ?? 50}%`,
-                        opacity: (adjustment.opacity ?? b.imageOpacity ?? 100) / 100
-                      }}
-                    />
-                    <span className="galleryPhotoHint">
-                      {isEditable ? `Photo ${i + 1}` : isScattered ? "✦ Disintegrate" : "🔍 Zoom"}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="photoFrame" style={{ position: "relative", zIndex: 20 }} onClick={() => isEditable && triggerSelect("photo", 0)}>
-              <p style={{ padding: "30px 20px", color: "var(--muted)", cursor: isEditable ? "pointer" : "default" }}>
-                {isEditable ? "Tap here to add and edit photos 📸" : "No memory photos added yet."}
-              </p>
-            </div>
-          )}
-
-          {isScattered && dustedPhotos.length > 0 && (
-            <button
-              type="button"
-              className="btn ghost small restoreMemories"
-              style={{ position: "relative", zIndex: 20 }}
-              onClick={resetDustedPhotos}
-            >
-              ↻ Restore memories
-            </button>
-          )}
           {nav}
         </div>
       );
