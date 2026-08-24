@@ -604,13 +604,17 @@ export default function GreetingView({
 
       return (
         <div
-          className="foregroundMediaLayer"
+          className="foregroundPhotoSectionWrap"
           style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 5,
-            pointerEvents: "none",
-            overflow: "hidden"
+            position: "relative",
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            margin: "18px auto 14px",
+            zIndex: 25,
+            pointerEvents: "auto"
           }}
         >
           {imagesList.map((src, idx) => {
@@ -618,57 +622,54 @@ export default function GreetingView({
               targetBlock.imageAdjustments?.[String(idx)] ??
               targetBlock.imageAdjustments?.[`photo_${idx}`] ??
               (idx === 0 ? targetBlock.imageAdjustments?.["hero"] ?? targetBlock.imageAdjustments?.["0"] : undefined) ??
-              { scale: 100, x: 50, y: 50, opacity: 100, rotation: 0, width: 60, cornerRadius: 0 };
+              { scale: 100, x: 50, y: 50, opacity: 100, rotation: 0, width: 65, cornerRadius: 0 };
 
             const fitMode = (bAdj.fit || targetBlock.imageFit || "contain") as "cover" | "contain" | "fill";
             const isCover = fitMode === "cover";
             const scaleVal = (bAdj.scale ?? 100) / 100;
             const opacityVal = (bAdj.opacity ?? targetBlock.imageOpacity ?? 100) / 100;
             const rotVal = bAdj.rotation ?? 0;
-            const widthPct = bAdj.width ?? 60;
+            const widthPct = bAdj.width ?? 65;
             const radiusPx = bAdj.cornerRadius ?? 0;
-            const posX = bAdj.x ?? 50;
-            const posY = bAdj.y ?? 50;
+            const offsetX = ((bAdj.x ?? 50) - 50) * 1.5;
+            const offsetY = ((bAdj.y ?? 50) - 50) * 1.5;
 
             return (
               <div
                 key={`${idx}-${src.slice(-15)}`}
-                className="foregroundMediaItem sectionPhotoMediaWrap"
+                className="foregroundPhotoMediaBox sectionPhotoMediaWrap"
                 onClick={() => isEditable && triggerSelect("photo", idx)}
                 style={{
-                  position: "absolute",
-                  left: `${posX}%`,
-                  top: `${posY}%`,
-                  transform: `translate(-50%, -50%) scale(${scaleVal}) rotate(${rotVal}deg)`,
-                  transformOrigin: "center center",
-                  width: `min(${widthPct}%, 480px)`,
-                  height: isCover ? "220px" : "auto",
-                  maxHeight: isCover ? "240px" : "340px",
+                  position: "relative",
+                  width: `min(${widthPct}%, 500px)`,
+                  maxWidth: "500px",
+                  height: isCover ? "240px" : "auto",
+                  maxHeight: isCover ? "260px" : "380px",
                   aspectRatio: isCover ? "4 / 3" : "auto",
                   overflow: isCover ? "hidden" : "visible",
-                  opacity: opacityVal,
-                  borderRadius: `${radiusPx}px`,
-                  zIndex: 5 + idx,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  transform: `translate(${offsetX}%, ${offsetY}%) scale(${scaleVal}) rotate(${rotVal}deg)`,
+                  transformOrigin: "center center",
+                  opacity: opacityVal,
+                  borderRadius: `${radiusPx}px`,
                   background: "transparent",
                   border: "none",
                   boxShadow: "none",
                   padding: 0,
-                  margin: 0,
-                  pointerEvents: isEditable ? "auto" : "none",
+                  margin: idx > 0 ? "12px 0 0 0" : "0",
                   cursor: isEditable ? "pointer" : "default"
                 }}
               >
                 <img
-                  className="foregroundMediaImage foregroundPhotoImage sectionPhoto heroPhotoImage"
+                  className="foregroundPhotoImage sectionPhoto heroPhotoImage"
                   src={src}
                   alt=""
                   style={{
                     width: isCover ? "100%" : "100%",
                     height: isCover ? "100%" : "auto",
-                    maxHeight: "340px",
+                    maxHeight: "380px",
                     objectFit: fitMode,
                     objectPosition: "center center",
                     borderRadius: `${radiusPx}px`,
@@ -756,7 +757,6 @@ export default function GreetingView({
       return (
         <div className="sceneInner" style={style}>
           {editBadge}
-          {renderForegroundMediaLayer(b)}
           <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {isEditable ? (
               <>
@@ -789,6 +789,9 @@ export default function GreetingView({
                 </div>
               </>
             )}
+
+            {/* Dedicated Photo Area BELOW Text */}
+            {renderForegroundMediaLayer(b)}
 
             <div className="cards" style={{ position: "relative", zIndex: 20, width: "100%" }}>
               {(b.items ?? []).map((r, i) => (
@@ -828,7 +831,6 @@ export default function GreetingView({
       return (
         <div className="sceneInner incidentsScene" style={style}>
           {editBadge}
-          {renderForegroundMediaLayer(b)}
           <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {isEditable ? (
               <>
@@ -861,6 +863,9 @@ export default function GreetingView({
                 </div>
               </>
             )}
+
+            {/* Dedicated Photo Area BELOW Text */}
+            {renderForegroundMediaLayer(b)}
 
             <div className="incidentCards" style={{ position: "relative", zIndex: 20, width: "100%" }}>
               {(b.incidents ?? []).map((inc, i) => (
@@ -1062,7 +1067,6 @@ export default function GreetingView({
       return (
         <div className="sceneInner letterScene" style={style}>
           {editBadge}
-          {renderForegroundMediaLayer(b)}
           <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {isEditable ? (
               <>
@@ -1099,6 +1103,9 @@ export default function GreetingView({
                 </article>
               </>
             )}
+
+            {/* Dedicated Photo Area BELOW Letter */}
+            {renderForegroundMediaLayer(b)}
           </div>
           {nav}
         </div>
@@ -1109,7 +1116,6 @@ export default function GreetingView({
       return (
         <div className="sceneInner secretScene" style={style}>
           {editBadge}
-          {renderForegroundMediaLayer(b)}
           <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {isEditable ? (
               <>
@@ -1146,6 +1152,8 @@ export default function GreetingView({
                     <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
                   )}
                 </div>
+                {/* Dedicated Photo Area BELOW Text */}
+                {renderForegroundMediaLayer(b)}
                 <button
                   type="button"
                   className="btn primary revealBtn"
@@ -1159,6 +1167,8 @@ export default function GreetingView({
               <div className="secretReveal" style={{ position: "relative", zIndex: 20 }} onClick={() => isEditable && triggerSelect("secret")}>
                 <span className="secretSparkle">✦</span>
                 <h2 style={getElementStyle(b, "secretMessage")}>{b.text}</h2>
+                {/* Dedicated Photo Area in reveal */}
+                {renderForegroundMediaLayer(b)}
                 {b.secretImage && (
                   <div className="secretPhotoMount" onClick={(e) => { e.stopPropagation(); isEditable && triggerSelect("photo", 0); }}>
                     <img src={b.secretImage} alt="Secret memory" style={{ opacity: (b.imageOpacity ?? 100) / 100 }} />
@@ -1215,7 +1225,6 @@ export default function GreetingView({
       return (
         <div className="sceneInner cakeScene" style={style}>
           {editBadge}
-          {renderForegroundMediaLayer(b)}
           <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {isEditable ? (
               <>
@@ -1258,6 +1267,9 @@ export default function GreetingView({
                 ))}
               </div>
             </div>
+
+            {/* Dedicated Photo Area BELOW Cake */}
+            {renderForegroundMediaLayer(b)}
 
             {cakeCelebrated ? (
               <div className="cakeCelebrationCard" style={{ position: "relative", zIndex: 20 }} onClick={() => isEditable && triggerSelect("cake")}>
@@ -1305,7 +1317,6 @@ export default function GreetingView({
     return (
       <div className="sceneInner" style={style}>
         {editBadge}
-        {renderForegroundMediaLayer(b)}
 
         <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
           {isEditable ? (
@@ -1339,6 +1350,9 @@ export default function GreetingView({
               </div>
             </>
           )}
+
+          {/* Dedicated Photo Area BELOW Text */}
+          {renderForegroundMediaLayer(b)}
 
           {(b.memoryVideo || b.video || resolvedVideo) && (
             <video
