@@ -50,7 +50,7 @@ export type ImageAdjustment = {
   y: number;
   opacity?: number;
   rotation?: number;
-  fit?: "cover" | "contain" | "fill";
+  fit?: "cover" | "contain" | "natural" | "fill";
   width?: number;
   cornerRadius?: number;
   zIndex?: number;
@@ -140,7 +140,7 @@ export type Block = {
   images?: string[];
   imageAdjustments?: Record<string, ImageAdjustment>;
   imageOpacity: number;
-  imageFit?: "cover" | "contain" | "fill";
+  imageFit?: "cover" | "contain" | "natural" | "fill";
   audioName?: string;
   audioUrl?: MediaValue;
   memoryVideo?: MediaValue;

@@ -1097,7 +1097,9 @@ export default function GreetingView({
                   const scaleVal = (adjustment.scale ?? 100) / 100;
                   const opacityVal = (adjustment.opacity ?? b.imageOpacity ?? 100) / 100;
                   const radiusPx = adjustment.cornerRadius ?? 12;
-                  const fitMode = (adjustment.fit || b.imageFit || "contain") as "cover" | "contain" | "fill";
+                  const fitMode = (adjustment.fit || b.imageFit || "contain") as "cover" | "contain" | "natural" | "fill";
+                  const isCover = fitMode === "cover";
+                  const isNatural = fitMode === "natural";
 
                   return (
                     <button
@@ -1110,11 +1112,11 @@ export default function GreetingView({
                         position: "absolute",
                         left: `${posX}%`,
                         top: `${posY}%`,
-                        width: `min(${widthPct}%, 260px)`,
-                        maxWidth: "260px",
-                        height: "auto",
-                        maxHeight: "200px",
-                        transform: `translate(-50%, -50%) rotate(${rotVal}deg) scale(${scaleVal})`,
+                        width: isNatural ? "auto" : `min(${widthPct}%, 280px)`,
+                        maxWidth: "280px",
+                        height: isCover ? "180px" : "auto",
+                        maxHeight: "220px",
+                        transform: `translate(-50%, -50%) rotate(${rotVal}deg)`,
                         transformOrigin: "center center",
                         zIndex: (adjustment.zIndex ?? i) + 5,
                         opacity: opacityVal,
@@ -1144,11 +1146,14 @@ export default function GreetingView({
                         src={src}
                         alt={`Memory ${i + 1}`}
                         style={{
-                          width: "100%",
-                          height: fitMode === "cover" ? "100%" : "auto",
-                          maxHeight: "200px",
-                          objectFit: fitMode,
+                          width: isNatural ? "auto" : "100%",
+                          maxWidth: "100%",
+                          height: isCover ? "100%" : "auto",
+                          maxHeight: "220px",
+                          objectFit: isNatural ? "scale-down" : isCover ? "cover" : "contain",
                           borderRadius: `${radiusPx}px`,
+                          transform: `scale(${scaleVal}) translate(${isCover ? ((adjustment.x ?? 50) - 50) * 0.8 : 0}%, ${isCover ? ((adjustment.y ?? 50) - 50) * 0.8 : 0}%)`,
+                          transformOrigin: "center center",
                           display: "block",
                           pointerEvents: "none"
                         }}
@@ -1186,7 +1191,9 @@ export default function GreetingView({
                   const scaleVal = (adjustment.scale ?? 100) / 100;
                   const opacityVal = (adjustment.opacity ?? b.imageOpacity ?? 100) / 100;
                   const radiusPx = adjustment.cornerRadius ?? 8;
-                  const fitMode = adjustment.fit || "cover";
+                  const fitMode = (adjustment.fit || b.imageFit || "contain") as "cover" | "contain" | "natural" | "fill";
+                  const isCover = fitMode === "cover";
+                  const isNatural = fitMode === "natural";
 
                   return (
                     <button
@@ -1215,11 +1222,13 @@ export default function GreetingView({
                         src={src}
                         alt={`Memory ${i + 1}`}
                         style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: fitMode,
+                          width: isNatural ? "auto" : "100%",
+                          maxWidth: "100%",
+                          height: isCover ? "100%" : "auto",
+                          maxHeight: "100%",
+                          objectFit: isNatural ? "scale-down" : isCover ? "cover" : "contain",
                           borderRadius: `${radiusPx}px`,
-                          transform: `scale(${scaleVal}) translate(${((adjustment.x ?? 50) - 50)}%, ${((adjustment.y ?? 50) - 50)}%) rotate(${rotVal}deg)`,
+                          transform: `scale(${scaleVal}) translate(${isCover ? ((adjustment.x ?? 50) - 50) * 0.8 : 0}%, ${isCover ? ((adjustment.y ?? 50) - 50) * 0.8 : 0}%) rotate(${rotVal}deg)`,
                           transformOrigin: "center center",
                           display: "block",
                           pointerEvents: "none"

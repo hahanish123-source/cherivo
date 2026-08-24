@@ -2097,10 +2097,10 @@ export default function CreatePage() {
                       {/* Fit Mode */}
                       <label className="fieldLabel">
                         Fit / Display Mode
-                        <div className="fitModeToggleGroup">
+                        <div className="fitModeToggleGroup" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px" }}>
                           <button
                             type="button"
-                            className={`fitModeToggleBtn ${selectedPhotoAdj.fit === "contain" || (!selectedPhotoAdj.fit && current.imageFit !== "cover") ? "active" : ""}`}
+                            className={`fitModeToggleBtn ${(selectedPhotoAdj.fit === "contain" || (!selectedPhotoAdj.fit && current.imageFit !== "cover" && current.imageFit !== "natural")) ? "active" : ""}`}
                             onClick={() => {
                               const adjustments = { ...(current.imageAdjustments || {}) };
                               adjustments[String(selectedPhotoIdx)] = { ...selectedPhotoAdj, fit: "contain" };
@@ -2108,11 +2108,11 @@ export default function CreatePage() {
                               updateCurrent({ imageAdjustments: adjustments });
                             }}
                           >
-                            Contain (Full Image)
+                            Contain
                           </button>
                           <button
                             type="button"
-                            className={`fitModeToggleBtn ${selectedPhotoAdj.fit === "cover" || (!selectedPhotoAdj.fit && current.imageFit === "cover") ? "active" : ""}`}
+                            className={`fitModeToggleBtn ${(selectedPhotoAdj.fit === "cover" || (!selectedPhotoAdj.fit && current.imageFit === "cover")) ? "active" : ""}`}
                             onClick={() => {
                               const adjustments = { ...(current.imageAdjustments || {}) };
                               adjustments[String(selectedPhotoIdx)] = { ...selectedPhotoAdj, fit: "cover" };
@@ -2121,6 +2121,18 @@ export default function CreatePage() {
                             }}
                           >
                             Cover
+                          </button>
+                          <button
+                            type="button"
+                            className={`fitModeToggleBtn ${(selectedPhotoAdj.fit === "natural" || (!selectedPhotoAdj.fit && current.imageFit === "natural")) ? "active" : ""}`}
+                            onClick={() => {
+                              const adjustments = { ...(current.imageAdjustments || {}) };
+                              adjustments[String(selectedPhotoIdx)] = { ...selectedPhotoAdj, fit: "natural" };
+                              if (selectedPhotoIdx === 0) adjustments["hero"] = { ...selectedPhotoAdj, fit: "natural" };
+                              updateCurrent({ imageAdjustments: adjustments });
+                            }}
+                          >
+                            Natural
                           </button>
                         </div>
                       </label>
