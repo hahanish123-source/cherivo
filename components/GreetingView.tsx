@@ -969,8 +969,8 @@ export default function GreetingView({
 
       const scatteredPositions = getScatteredPositions(images.length, isMobile);
       const scatteredMinHeight = isMobile
-        ? (images.length >= 5 ? "560px" : "500px")
-        : (images.length >= 5 ? "600px" : "540px");
+        ? (images.length >= 5 ? "580px" : "520px")
+        : (images.length >= 5 ? "640px" : "560px");
 
       return (
         <div
@@ -1017,14 +1017,16 @@ export default function GreetingView({
                 };
                 const isDusted = dustedPhotos.includes(i);
                 const defPos = scatteredPositions[i % scatteredPositions.length];
-                const posX = typeof adjustment.x === "number" ? adjustment.x : defPos.x;
-                const posY = typeof adjustment.y === "number" ? adjustment.y : defPos.y;
-                const rotVal = typeof adjustment.rotation === "number" ? adjustment.rotation : defPos.rotate;
+                const offsetX = typeof adjustment.x === "number" ? (adjustment.x - 50) * 0.8 : 0;
+                const offsetY = typeof adjustment.y === "number" ? (adjustment.y - 50) * 0.8 : 0;
+                const posX = Math.max(8, Math.min(92, defPos.x + offsetX));
+                const posY = Math.max(8, Math.min(90, defPos.y + offsetY));
+                const rotVal = (typeof adjustment.rotation === "number" ? adjustment.rotation : 0) + defPos.rotate;
                 const widthPct = typeof adjustment.width === "number" ? adjustment.width : defPos.width;
                 const scaleVal = (adjustment.scale ?? 100) / 100;
                 const opacityVal = (adjustment.opacity ?? b.imageOpacity ?? 100) / 100;
-                const radiusPx = adjustment.cornerRadius ?? 14;
-                const fitMode = adjustment.fit || "cover";
+                const radiusPx = adjustment.cornerRadius ?? 12;
+                const fitMode = (adjustment.fit || b.imageFit || "contain") as "cover" | "contain" | "fill";
 
                 return (
                   <button
@@ -1037,10 +1039,11 @@ export default function GreetingView({
                       position: "absolute",
                       left: `${posX}%`,
                       top: `${posY}%`,
-                      width: `min(${widthPct}%, 300px)`,
-                      aspectRatio: "4 / 3",
+                      width: `min(${widthPct}%, 280px)`,
+                      maxWidth: "280px",
                       height: "auto",
-                      transform: `translate(-50%, -50%) rotate(${rotVal}deg)`,
+                      maxHeight: "220px",
+                      transform: `translate(-50%, -50%) rotate(${rotVal}deg) scale(${scaleVal})`,
                       transformOrigin: "center center",
                       zIndex: (adjustment.zIndex ?? i) + 5,
                       opacity: opacityVal,
@@ -1051,7 +1054,10 @@ export default function GreetingView({
                       padding: 0,
                       background: "transparent",
                       pointerEvents: "auto",
-                      cursor: "pointer"
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
                     }}
                     aria-label={`Tap to dissolve memory ${i + 1}`}
                     onClick={(e) => {
@@ -1068,11 +1074,10 @@ export default function GreetingView({
                       alt={`Memory ${i + 1}`}
                       style={{
                         width: "100%",
-                        height: "100%",
+                        height: fitMode === "cover" ? "100%" : "auto",
+                        maxHeight: "220px",
                         objectFit: fitMode,
                         borderRadius: `${radiusPx}px`,
-                        transform: `scale(${scaleVal}) translate(${((adjustment.x ?? 50) - 50)}%, ${((adjustment.y ?? 50) - 50)}%)`,
-                        transformOrigin: "center center",
                         display: "block",
                         pointerEvents: "none"
                       }}

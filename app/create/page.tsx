@@ -2006,7 +2006,7 @@ export default function CreatePage() {
                           marginTop: "6px"
                         }}
                       >
-                        <option value="scattered">Scattered Images (Interactive Tap)</option>
+                        <option value="scattered">Scattered Image (Interactive Tap)</option>
                         <option value="collage">Collage Flow</option>
                         <option value="grid">Clean Photo Grid</option>
                         <option value="masonry">Masonry Wall</option>
