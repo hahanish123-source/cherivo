@@ -596,43 +596,59 @@ export default function GreetingView({
     const renderHeroPhoto = (targetBlock: Block) => {
       if (!targetBlock.image) return null;
       const bAdj = targetBlock.imageAdjustments?.["hero"] ?? targetBlock.imageAdjustments?.["0"] ?? { scale: 100, x: 50, y: 50, opacity: 100, rotation: 0 };
-      const fitMode = (targetBlock.imageFit === "contain" || (bAdj as any).fit === "contain") ? "contain" : (targetBlock.imageFit === "fill" || (bAdj as any).fit === "fill") ? "fill" : "cover";
+      const fitMode = (targetBlock.imageFit === "contain" || (bAdj as any).fit === "contain") ? "contain" : "cover";
+      const isCover = fitMode === "cover";
 
       return (
         <div
-          className="heroPhotoLayer"
+          className="sectionPhotoMediaWrap"
           onClick={() => isEditable && triggerSelect("photo", 0)}
           style={{
             position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            overflow: "hidden",
-            pointerEvents: isEditable ? "auto" : "none",
-            zIndex: 2,
+            left: `${bAdj.x ?? 50}%`,
+            top: `${bAdj.y ?? 50}%`,
+            transform: `translate(-50%, -50%) scale(${(bAdj.scale ?? 100) / 100}) rotate(${bAdj.rotation ?? 0}deg)`,
+            transformOrigin: "center center",
+            width: isCover ? "min(65%, 280px)" : "auto",
+            height: isCover ? "auto" : "auto",
+            aspectRatio: isCover ? "4 / 3" : "auto",
+            maxWidth: "min(65%, 280px)",
+            maxHeight: isCover ? "240px" : "260px",
+            overflow: isCover ? "hidden" : "visible",
+            zIndex: 1,
+            opacity: (bAdj.opacity ?? targetBlock.imageOpacity ?? 100) / 100,
+            background: "transparent",
+            border: "none",
+            boxShadow: "none",
+            padding: 0,
+            margin: 0,
+            borderRadius: 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             cursor: isEditable ? "pointer" : "default",
-            borderRadius: "inherit"
+            pointerEvents: isEditable ? "auto" : "none"
           }}
         >
           <img
-            className="heroPhotoImage"
+            className="sectionPhoto heroPhotoImage"
             src={targetBlock.image}
             alt=""
             style={{
-              width: "100%",
-              height: "100%",
+              width: isCover ? "100%" : "auto",
+              height: isCover ? "100%" : "auto",
+              maxWidth: "min(65%, 280px)",
+              maxHeight: isCover ? "240px" : "260px",
               objectFit: fitMode,
-              objectPosition: `${bAdj.x ?? 50}% ${bAdj.y ?? 50}%`,
-              transform: `scale(${(bAdj.scale ?? 100) / 100}) rotate(${bAdj.rotation ?? 0}deg)`,
-              transformOrigin: `${bAdj.x ?? 50}% ${bAdj.y ?? 50}%`,
-              opacity: (bAdj.opacity ?? targetBlock.imageOpacity ?? 100) / 100,
+              objectPosition: "center center",
               display: "block",
               border: "none",
               background: "transparent",
-              boxShadow: "none"
+              boxShadow: "none",
+              borderRadius: 0,
+              padding: 0,
+              margin: 0,
+              pointerEvents: "none"
             }}
           />
         </div>
@@ -640,13 +656,13 @@ export default function GreetingView({
     };
 
     const nav = (
-      <div className="actions" style={{ position: "relative", zIndex: 10 }}>
+      <div className="actions" style={{ position: "relative", zIndex: 40 }}>
         <button
           type="button"
           className="btn"
           disabled={currentSceneIndex === 0}
           onClick={() => setScene(currentSceneIndex - 1)}
-          style={{ position: "relative", zIndex: 10, ...getElementStyle(b, "backButton") }}
+          style={{ position: "relative", zIndex: 40, ...getElementStyle(b, "backButton") }}
         >
           <ArrowLeft size={16} /> {b.backButtonText || "Back"}
         </button>
@@ -655,12 +671,12 @@ export default function GreetingView({
             type="button"
             className="btn primary"
             onClick={() => setScene(currentSceneIndex + 1)}
-            style={{ position: "relative", zIndex: 10, ...getElementStyle(b, "keepGoingButton") }}
+            style={{ position: "relative", zIndex: 40, ...getElementStyle(b, "keepGoingButton") }}
           >
             {b.keepGoingButtonText || "Keep going"} <ArrowRight size={16} />
           </button>
         ) : (
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center", position: "relative", zIndex: 10 }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center", position: "relative", zIndex: 40 }}>
             {!isEditable && onOpenResponseModal && (
               <button
                 type="button"
@@ -669,7 +685,7 @@ export default function GreetingView({
                   e.stopPropagation();
                   onOpenResponseModal();
                 }}
-                style={{ background: "linear-gradient(135deg, #ff4f8b 0%, #7c5cff 100%)", color: "#fff", fontWeight: 600, position: "relative", zIndex: 10 }}
+                style={{ background: "linear-gradient(135deg, #ff4f8b 0%, #7c5cff 100%)", color: "#fff", fontWeight: 600, position: "relative", zIndex: 40 }}
               >
                 💌 Reply to Greeting
               </button>
@@ -683,7 +699,7 @@ export default function GreetingView({
                 setCandles([false, false, false]);
                 setDustedPhotos([]);
               }}
-              style={{ position: "relative", zIndex: 10 }}
+              style={{ position: "relative", zIndex: 40 }}
             >
               <RotateCcw size={16} /> {b.replayButtonText || "Replay"}
             </button>
@@ -696,6 +712,7 @@ export default function GreetingView({
       <button
         type="button"
         className="previewEdit"
+        style={{ position: "absolute", right: 0, top: 0, zIndex: 30 }}
         onClick={() => triggerSelect("heading")}
       >
         <Pencil size={13} /> Edit this section
@@ -707,65 +724,67 @@ export default function GreetingView({
         <div className="sceneInner" style={style}>
           {editBadge}
           {renderHeroPhoto(b)}
-          {isEditable ? (
-            <>
-              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => triggerSelect("emoji")}>
-                {b.emoji}
-              </button>
-              <button type="button" className="editableText sectionKicker" style={getElementStyle(b, "title")} onClick={() => triggerSelect("kicker")}>
-                {b.title}
-              </button>
-              <button type="button" className="editableText eyebrow" style={getElementStyle(b, "eyebrow")} onClick={() => triggerSelect("subtitle")}>
-                {b.subtitle}
-              </button>
-              <button type="button" className="editableText heroTitle" style={getElementStyle(b, "heading")} onClick={() => triggerSelect("heading")}>
-                {b.heading}
-              </button>
-              <div className="heroTextWrap customScrollbar">
-                <button type="button" className="editableText heroText" style={getElementStyle(b, "body")} onClick={() => triggerSelect("body")}>
-                  {b.text}
+          <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {isEditable ? (
+              <>
+                <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} style={{ position: "relative", zIndex: 10 }} onClick={() => triggerSelect("emoji")}>
+                  {b.emoji}
                 </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className={`publicEmoji emoji-anim-${emojiAnim}`}>{b.emoji}</div>
-              <div className="sectionKicker" style={getElementStyle(b, "title")}>{b.title}</div>
-              <div className="eyebrow" style={getElementStyle(b, "eyebrow")}>{b.subtitle}</div>
-              <h1 className="heroTitle" style={getElementStyle(b, "heading")}>{b.heading}</h1>
-              <div className="heroTextWrap customScrollbar">
-                <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
-              </div>
-            </>
-          )}
+                <button type="button" className="editableText sectionKicker" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "title") }} onClick={() => triggerSelect("kicker")}>
+                  {b.title}
+                </button>
+                <button type="button" className="editableText eyebrow" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "eyebrow") }} onClick={() => triggerSelect("subtitle")}>
+                  {b.subtitle}
+                </button>
+                <button type="button" className="editableText heroTitle" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "heading") }} onClick={() => triggerSelect("heading")}>
+                  {b.heading}
+                </button>
+                <div className="heroTextWrap customScrollbar" style={{ position: "relative", zIndex: 20 }}>
+                  <button type="button" className="editableText heroText" style={getElementStyle(b, "body")} onClick={() => triggerSelect("body")}>
+                    {b.text}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={`publicEmoji emoji-anim-${emojiAnim}`} style={{ position: "relative", zIndex: 10 }}>{b.emoji}</div>
+                <div className="sectionKicker" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "title") }}>{b.title}</div>
+                <div className="eyebrow" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "eyebrow") }}>{b.subtitle}</div>
+                <h1 className="heroTitle" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "heading") }}>{b.heading}</h1>
+                <div className="heroTextWrap customScrollbar" style={{ position: "relative", zIndex: 20 }}>
+                  <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
+                </div>
+              </>
+            )}
 
-          <div className="cards">
-            {(b.items ?? []).map((r, i) => (
-              <article
-                className="memoryCard"
-                key={r.id || i}
-                onClick={() => (isEditable ? triggerSelect("reasons", i) : undefined)}
-                style={{ cursor: isEditable ? "pointer" : "default" }}
-              >
-                {isEditable && (
-                  <span className="cardEdit" title="Edit this reason">
-                    <Pencil size={12} />
-                  </span>
-                )}
-                <h3 style={getElementStyle(b, "reasonTitle")}>
-                  <span className={`emoji-anim-${emojiAnim}`} style={{ display: "inline-block", marginRight: "6px" }}>{r.emoji}</span>
-                  {r.title}
-                </h3>
-                <p style={getElementStyle(b, "reasonText")}>{r.text}</p>
-              </article>
-            ))}
+            <div className="cards" style={{ position: "relative", zIndex: 20, width: "100%" }}>
+              {(b.items ?? []).map((r, i) => (
+                <article
+                  className="memoryCard"
+                  key={r.id || i}
+                  onClick={() => (isEditable ? triggerSelect("reasons", i) : undefined)}
+                  style={{ cursor: isEditable ? "pointer" : "default" }}
+                >
+                  {isEditable && (
+                    <span className="cardEdit" title="Edit this reason">
+                      <Pencil size={12} />
+                    </span>
+                  )}
+                  <h3 style={getElementStyle(b, "reasonTitle")}>
+                    <span className={`emoji-anim-${emojiAnim}`} style={{ display: "inline-block", marginRight: "6px" }}>{r.emoji}</span>
+                    {r.title}
+                  </h3>
+                  <p style={getElementStyle(b, "reasonText")}>{r.text}</p>
+                </article>
+              ))}
+            </div>
+
+            {isEditable && (
+              <button type="button" className="addReasonPreview" style={{ position: "relative", zIndex: 20 }} onClick={onAddReason}>
+                <span>+ Add another reason</span>
+              </button>
+            )}
           </div>
-
-          {isEditable && (
-            <button type="button" className="addReasonPreview" onClick={onAddReason}>
-              <span>+ Add another reason</span>
-            </button>
-          )}
 
           {nav}
         </div>
@@ -777,67 +796,69 @@ export default function GreetingView({
         <div className="sceneInner incidentsScene" style={style}>
           {editBadge}
           {renderHeroPhoto(b)}
-          {isEditable ? (
-            <>
-              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => triggerSelect("emoji")}>
-                {b.emoji}
-              </button>
-              <button type="button" className="editableText sectionKicker" style={getElementStyle(b, "title")} onClick={() => triggerSelect("kicker")}>
-                {b.title}
-              </button>
-              <button type="button" className="editableText eyebrow" style={getElementStyle(b, "eyebrow")} onClick={() => triggerSelect("subtitle")}>
-                {b.subtitle}
-              </button>
-              <button type="button" className="editableText heroTitle" style={getElementStyle(b, "heading")} onClick={() => triggerSelect("heading")}>
-                {b.heading}
-              </button>
-              <div className="heroTextWrap customScrollbar">
-                <button type="button" className="editableText heroText" style={getElementStyle(b, "body")} onClick={() => triggerSelect("body")}>
-                  {b.text}
+          <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {isEditable ? (
+              <>
+                <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} style={{ position: "relative", zIndex: 10 }} onClick={() => triggerSelect("emoji")}>
+                  {b.emoji}
                 </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className={`publicEmoji emoji-anim-${emojiAnim}`}>{b.emoji}</div>
-              <div className="sectionKicker" style={getElementStyle(b, "title")}>{b.title}</div>
-              <div className="eyebrow" style={getElementStyle(b, "eyebrow")}>{b.subtitle}</div>
-              <h1 className="heroTitle" style={getElementStyle(b, "heading")}>{b.heading}</h1>
-              <div className="heroTextWrap customScrollbar">
-                <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
-              </div>
-            </>
-          )}
-
-          <div className="incidentCards">
-            {(b.incidents ?? []).map((inc, i) => (
-              <article
-                className="incidentCard"
-                key={inc.id || i}
-                onClick={() => (isEditable ? triggerSelect("incidents", i) : undefined)}
-                style={{ cursor: isEditable ? "pointer" : "default" }}
-              >
-                {isEditable && (
-                  <span className="cardEdit" title="Edit this incident">
-                    <Pencil size={12} />
-                  </span>
-                )}
-                <div className="incidentCardHeader">
-                  <span className="incidentTag" style={getElementStyle(b, "incidentTag")}>{inc.tag || `Incident #${i + 1}`}</span>
-                  {inc.date && <span className="incidentDate" style={getElementStyle(b, "incidentDate")}>{inc.date}</span>}
+                <button type="button" className="editableText sectionKicker" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "title") }} onClick={() => triggerSelect("kicker")}>
+                  {b.title}
+                </button>
+                <button type="button" className="editableText eyebrow" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "eyebrow") }} onClick={() => triggerSelect("subtitle")}>
+                  {b.subtitle}
+                </button>
+                <button type="button" className="editableText heroTitle" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "heading") }} onClick={() => triggerSelect("heading")}>
+                  {b.heading}
+                </button>
+                <div className="heroTextWrap customScrollbar" style={{ position: "relative", zIndex: 20 }}>
+                  <button type="button" className="editableText heroText" style={getElementStyle(b, "body")} onClick={() => triggerSelect("body")}>
+                    {b.text}
+                  </button>
                 </div>
-                <h3 style={getElementStyle(b, "incidentTitle")}>
-                  <span className={`emoji-anim-${emojiAnim}`} style={{ display: "inline-block", marginRight: "8px" }}>{inc.emoji}</span>
-                  {inc.title}
-                </h3>
-                <p style={getElementStyle(b, "incidentText")}>{inc.text}</p>
-                {inc.image && (
-                  <div className="incidentPhoto">
-                    <img src={inc.image} alt={inc.title} style={{ opacity: (b.imageOpacity ?? 100) / 100 }} />
+              </>
+            ) : (
+              <>
+                <div className={`publicEmoji emoji-anim-${emojiAnim}`} style={{ position: "relative", zIndex: 10 }}>{b.emoji}</div>
+                <div className="sectionKicker" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "title") }}>{b.title}</div>
+                <div className="eyebrow" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "eyebrow") }}>{b.subtitle}</div>
+                <h1 className="heroTitle" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "heading") }}>{b.heading}</h1>
+                <div className="heroTextWrap customScrollbar" style={{ position: "relative", zIndex: 20 }}>
+                  <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
+                </div>
+              </>
+            )}
+
+            <div className="incidentCards" style={{ position: "relative", zIndex: 20, width: "100%" }}>
+              {(b.incidents ?? []).map((inc, i) => (
+                <article
+                  className="incidentCard"
+                  key={inc.id || i}
+                  onClick={() => (isEditable ? triggerSelect("incidents", i) : undefined)}
+                  style={{ cursor: isEditable ? "pointer" : "default" }}
+                >
+                  {isEditable && (
+                    <span className="cardEdit" title="Edit this incident">
+                      <Pencil size={12} />
+                    </span>
+                  )}
+                  <div className="incidentCardHeader">
+                    <span className="incidentTag" style={getElementStyle(b, "incidentTag")}>{inc.tag || `Incident #${i + 1}`}</span>
+                    {inc.date && <span className="incidentDate" style={getElementStyle(b, "incidentDate")}>{inc.date}</span>}
                   </div>
-                )}
-              </article>
-            ))}
+                  <h3 style={getElementStyle(b, "incidentTitle")}>
+                    <span className={`emoji-anim-${emojiAnim}`} style={{ display: "inline-block", marginRight: "8px" }}>{inc.emoji}</span>
+                    {inc.title}
+                  </h3>
+                  <p style={getElementStyle(b, "incidentText")}>{inc.text}</p>
+                  {inc.image && (
+                    <div className="incidentPhoto">
+                      <img src={inc.image} alt={inc.title} style={{ opacity: (b.imageOpacity ?? 100) / 100 }} />
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
           </div>
 
           {nav}
@@ -853,40 +874,42 @@ export default function GreetingView({
       return (
         <div className={`sceneInner galleryPage layout-${layout}`} style={style}>
           {editBadge}
-          {isEditable ? (
-            <>
-              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => triggerSelect("emoji")}>
-                {b.emoji}
-              </button>
-              <button type="button" className="editableText sectionKicker" style={getElementStyle(b, "title")} onClick={() => triggerSelect("kicker")}>
-                {b.title}
-              </button>
-              <button type="button" className="editableText eyebrow" style={getElementStyle(b, "eyebrow")} onClick={() => triggerSelect("subtitle")}>
-                {b.subtitle}
-              </button>
-              <button type="button" className="editableText heroTitle" style={getElementStyle(b, "heading")} onClick={() => triggerSelect("heading")}>
-                {b.heading}
-              </button>
-              <div className="heroTextWrap customScrollbar">
-                <button type="button" className="editableText heroText" style={getElementStyle(b, "body")} onClick={() => triggerSelect("body")}>
-                  {b.text}
+          <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {isEditable ? (
+              <>
+                <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} style={{ position: "relative", zIndex: 10 }} onClick={() => triggerSelect("emoji")}>
+                  {b.emoji}
                 </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className={`publicEmoji emoji-anim-${emojiAnim}`}>{b.emoji}</div>
-              <div className="sectionKicker" style={getElementStyle(b, "title")}>{b.title}</div>
-              <div className="eyebrow" style={getElementStyle(b, "eyebrow")}>{b.subtitle}</div>
-              <h1 className="heroTitle" style={getElementStyle(b, "heading")}>{b.heading}</h1>
-              <div className="heroTextWrap customScrollbar">
-                <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
-              </div>
-            </>
-          )}
+                <button type="button" className="editableText sectionKicker" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "title") }} onClick={() => triggerSelect("kicker")}>
+                  {b.title}
+                </button>
+                <button type="button" className="editableText eyebrow" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "eyebrow") }} onClick={() => triggerSelect("subtitle")}>
+                  {b.subtitle}
+                </button>
+                <button type="button" className="editableText heroTitle" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "heading") }} onClick={() => triggerSelect("heading")}>
+                  {b.heading}
+                </button>
+                <div className="heroTextWrap customScrollbar" style={{ position: "relative", zIndex: 20 }}>
+                  <button type="button" className="editableText heroText" style={getElementStyle(b, "body")} onClick={() => triggerSelect("body")}>
+                    {b.text}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={`publicEmoji emoji-anim-${emojiAnim}`} style={{ position: "relative", zIndex: 10 }}>{b.emoji}</div>
+                <div className="sectionKicker" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "title") }}>{b.title}</div>
+                <div className="eyebrow" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "eyebrow") }}>{b.subtitle}</div>
+                <h1 className="heroTitle" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "heading") }}>{b.heading}</h1>
+                <div className="heroTextWrap customScrollbar" style={{ position: "relative", zIndex: 20 }}>
+                  <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
+                </div>
+              </>
+            )}
+          </div>
 
           {isScattered && images.length > 0 && (
-            <p className="scatteredTapHint">
+            <p className="scatteredTapHint" style={{ position: "relative", zIndex: 20 }}>
               Tap a photo to explore the memory 💗
             </p>
           )}
@@ -896,6 +919,7 @@ export default function GreetingView({
               className={`galleryStage gallery-count-${Math.min(images.length, 20)} gallery-bg-${
                 b.galleryBackground || "transparent"
               } ${galleryScatter && isScattered ? "scatter-active" : ""}`}
+              style={{ position: "relative", zIndex: 20 }}
             >
               {/* Canvas Dust Disintegration Overlay */}
               {isScattered && <canvas ref={dustCanvasRef} className="galleryDustCanvas" />}
@@ -979,7 +1003,7 @@ export default function GreetingView({
               })}
             </div>
           ) : (
-            <div className="photoFrame" onClick={() => isEditable && triggerSelect("photo", 0)}>
+            <div className="photoFrame" style={{ position: "relative", zIndex: 20 }} onClick={() => isEditable && triggerSelect("photo", 0)}>
               <p style={{ padding: "30px 20px", color: "var(--muted)", cursor: isEditable ? "pointer" : "default" }}>
                 {isEditable ? "Tap here to add and edit photos 📸" : "No memory photos added yet."}
               </p>
@@ -990,6 +1014,7 @@ export default function GreetingView({
             <button
               type="button"
               className="btn ghost small restoreMemories"
+              style={{ position: "relative", zIndex: 20 }}
               onClick={resetDustedPhotos}
             >
               ↻ Restore memories
@@ -1004,65 +1029,44 @@ export default function GreetingView({
       return (
         <div className="sceneInner letterScene" style={style}>
           {editBadge}
-          {isEditable ? (
-            <>
-              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => triggerSelect("emoji")}>
-                {b.emoji}
-              </button>
-              <button type="button" className="editableText sectionKicker" style={getElementStyle(b, "title")} onClick={() => triggerSelect("kicker")}>
-                {b.title}
-              </button>
-              <button type="button" className="editableText eyebrow" style={getElementStyle(b, "eyebrow")} onClick={() => triggerSelect("subtitle")}>
-                {b.subtitle}
-              </button>
-              <button type="button" className="editableText heroTitle" style={getElementStyle(b, "heading")} onClick={() => triggerSelect("heading")}>
-                {b.heading}
-              </button>
-              <button type="button" className="letter editableLetter" onClick={() => triggerSelect("letter")}>
-                {b.image && (
-                  <div className="letterPhotoMount" onClick={(e) => { e.stopPropagation(); triggerSelect("photo", 0); }}>
-                    <img
-                      src={b.image}
-                      alt="Letter memory"
-                      style={{
-                        transform: `scale(${(heroAdj.scale ?? 100) / 100})`,
-                        objectPosition: `${heroAdj.x ?? 50}% ${heroAdj.y ?? 50}%`
-                      }}
-                    />
+          {renderHeroPhoto(b)}
+          <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {isEditable ? (
+              <>
+                <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} style={{ position: "relative", zIndex: 10 }} onClick={() => triggerSelect("emoji")}>
+                  {b.emoji}
+                </button>
+                <button type="button" className="editableText sectionKicker" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "title") }} onClick={() => triggerSelect("kicker")}>
+                  {b.title}
+                </button>
+                <button type="button" className="editableText eyebrow" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "eyebrow") }} onClick={() => triggerSelect("subtitle")}>
+                  {b.subtitle}
+                </button>
+                <button type="button" className="editableText heroTitle" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "heading") }} onClick={() => triggerSelect("heading")}>
+                  {b.heading}
+                </button>
+                <button type="button" className="letter editableLetter" style={{ position: "relative", zIndex: 20 }} onClick={() => triggerSelect("letter")}>
+                  <h2 style={getElementStyle(b, "letterHeading")}>{b.heading}</h2>
+                  <div className="letterBodyWrap customScrollbar">
+                    <p style={getElementStyle(b, "letterBody")}>{b.text}</p>
                   </div>
-                )}
-                <h2 style={getElementStyle(b, "letterHeading")}>{b.heading}</h2>
-                <div className="letterBodyWrap customScrollbar">
-                  <p style={getElementStyle(b, "letterBody")}>{b.text}</p>
-                </div>
-              </button>
-            </>
-          ) : (
-            <>
-              <div className={`publicEmoji emoji-anim-${emojiAnim}`}>{b.emoji}</div>
-              <div className="sectionKicker" style={getElementStyle(b, "title")}>{b.title}</div>
-              <div className="eyebrow" style={getElementStyle(b, "eyebrow")}>{b.subtitle}</div>
-              <h1 className="heroTitle" style={getElementStyle(b, "heading")}>{b.heading}</h1>
-              <article className="letter">
-                {b.image && (
-                  <div className="letterPhotoMount">
-                    <img
-                      src={b.image}
-                      alt="Letter memory"
-                      style={{
-                        transform: `scale(${(heroAdj.scale ?? 100) / 100})`,
-                        objectPosition: `${heroAdj.x ?? 50}% ${heroAdj.y ?? 50}%`
-                      }}
-                    />
+                </button>
+              </>
+            ) : (
+              <>
+                <div className={`publicEmoji emoji-anim-${emojiAnim}`} style={{ position: "relative", zIndex: 10 }}>{b.emoji}</div>
+                <div className="sectionKicker" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "title") }}>{b.title}</div>
+                <div className="eyebrow" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "eyebrow") }}>{b.subtitle}</div>
+                <h1 className="heroTitle" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "heading") }}>{b.heading}</h1>
+                <article className="letter" style={{ position: "relative", zIndex: 20 }}>
+                  <h2 style={getElementStyle(b, "letterHeading")}>{b.heading}</h2>
+                  <div className="letterBodyWrap customScrollbar">
+                    <p style={getElementStyle(b, "letterBody")}>{b.text}</p>
                   </div>
-                )}
-                <h2 style={getElementStyle(b, "letterHeading")}>{b.heading}</h2>
-                <div className="letterBodyWrap customScrollbar">
-                  <p style={getElementStyle(b, "letterBody")}>{b.text}</p>
-                </div>
-              </article>
-            </>
-          )}
+                </article>
+              </>
+            )}
+          </div>
           {nav}
         </div>
       );
@@ -1072,100 +1076,103 @@ export default function GreetingView({
       return (
         <div className="sceneInner secretScene" style={style}>
           {editBadge}
-          {isEditable ? (
-            <>
-              <button type="button" className={`editableDecor secretHeart emoji-anim-${emojiAnim}`} onClick={() => triggerSelect("emoji")}>
-                {b.emoji}
-              </button>
-              <button type="button" className="editableText sectionKicker" style={getElementStyle(b, "title")} onClick={() => triggerSelect("kicker")}>
-                {b.title}
-              </button>
-              <button type="button" className="editableText eyebrow" style={getElementStyle(b, "eyebrow")} onClick={() => triggerSelect("subtitle")}>
-                {b.subtitle}
-              </button>
-              <button type="button" className="editableText heroTitle" style={getElementStyle(b, "heading")} onClick={() => triggerSelect("heading")}>
-                {b.heading}
-              </button>
-            </>
-          ) : (
-            <>
-              <div className={`publicEmoji secretHeart emoji-anim-${emojiAnim}`}>{b.emoji}</div>
-              <div className="sectionKicker" style={getElementStyle(b, "title")}>{b.title}</div>
-              <div className="eyebrow" style={getElementStyle(b, "eyebrow")}>{b.subtitle}</div>
-              <h1 className="heroTitle" style={getElementStyle(b, "heading")}>{b.heading}</h1>
-            </>
-          )}
+          {renderHeroPhoto(b)}
+          <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {isEditable ? (
+              <>
+                <button type="button" className={`editableDecor secretHeart emoji-anim-${emojiAnim}`} style={{ position: "relative", zIndex: 10 }} onClick={() => triggerSelect("emoji")}>
+                  {b.emoji}
+                </button>
+                <button type="button" className="editableText sectionKicker" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "title") }} onClick={() => triggerSelect("kicker")}>
+                  {b.title}
+                </button>
+                <button type="button" className="editableText eyebrow" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "eyebrow") }} onClick={() => triggerSelect("subtitle")}>
+                  {b.subtitle}
+                </button>
+                <button type="button" className="editableText heroTitle" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "heading") }} onClick={() => triggerSelect("heading")}>
+                  {b.heading}
+                </button>
+              </>
+            ) : (
+              <>
+                <div className={`publicEmoji secretHeart emoji-anim-${emojiAnim}`} style={{ position: "relative", zIndex: 10 }}>{b.emoji}</div>
+                <div className="sectionKicker" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "title") }}>{b.title}</div>
+                <div className="eyebrow" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "eyebrow") }}>{b.subtitle}</div>
+                <h1 className="heroTitle" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "heading") }}>{b.heading}</h1>
+              </>
+            )}
 
-          {!secretRevealed ? (
-            <>
-              <div className="heroTextWrap customScrollbar">
-                {isEditable ? (
-                  <button type="button" className="editableText heroText" style={getElementStyle(b, "body")} onClick={() => triggerSelect("body")}>
-                    {b.text}
-                  </button>
-                ) : (
-                  <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
-                )}
-              </div>
-              <button
-                type="button"
-                className="btn primary revealBtn"
-                style={getElementStyle(b, "revealButton")}
-                onClick={() => handleSecretToggle(true)}
-              >
-                {b.revealButtonText || "Tap to reveal"} <span>♥</span>
-              </button>
-            </>
-          ) : (
-            <div className="secretReveal" onClick={() => isEditable && triggerSelect("secret")}>
-              <span className="secretSparkle">✦</span>
-              <h2 style={getElementStyle(b, "secretMessage")}>{b.text}</h2>
-              {b.secretImage && (
-                <div className="secretPhotoMount" onClick={(e) => { e.stopPropagation(); isEditable && triggerSelect("photo", 0); }}>
-                  <img src={b.secretImage} alt="Secret memory" style={{ opacity: (b.imageOpacity ?? 100) / 100 }} />
+            {!secretRevealed ? (
+              <>
+                <div className="heroTextWrap customScrollbar" style={{ position: "relative", zIndex: 20 }}>
+                  {isEditable ? (
+                    <button type="button" className="editableText heroText" style={getElementStyle(b, "body")} onClick={() => triggerSelect("body")}>
+                      {b.text}
+                    </button>
+                  ) : (
+                    <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
+                  )}
                 </div>
-              )}
-              {b.secretVideo && (
-                <video
-                  className="secretVideo"
-                  src={typeof b.secretVideo === "string" ? b.secretVideo : ""}
-                  controls
-                  playsInline
-                  preload="metadata"
-                  autoPlay={b.videoAutoplay ?? false}
-                  muted={b.videoMuted ?? true}
-                  loop={b.videoLoop ?? false}
-                  onClick={(e) => { e.stopPropagation(); isEditable && triggerSelect("video"); }}
-                  style={{
-                    display: "block",
-                    margin: "16px auto",
-                    maxWidth: `${b.videoWidth ?? 100}%`,
-                    maxHeight: "360px",
-                    width: "auto",
-                    height: "auto",
-                    objectFit: b.videoFit === "contain" ? "contain" : b.videoFit === "fill" ? "fill" : "cover",
-                    objectPosition: `${b.videoPositionX ?? 50}% ${b.videoPositionY ?? 50}%`,
-                    transform: `scale(${(b.videoScale ?? 100) / 100}) translate(${((b.videoPositionX ?? 50) - 50)}%, ${((b.videoPositionY ?? 50) - 50)}%)`,
-                    transformOrigin: "center center",
-                    opacity: (b.videoOpacity ?? 100) / 100,
-                    borderRadius: `${b.videoRadius ?? 16}px`,
-                    background: "transparent",
-                    border: "none",
-                    boxShadow: "none",
-                    outline: "none"
-                  }}
-                />
-              )}
-              <button
-                type="button"
-                className="btn ghost small"
-                onClick={() => handleSecretToggle(false)}
-                style={{ marginTop: "12px" }}
-              >
-                Hide again
-              </button>
-            </div>
-          )}
+                <button
+                  type="button"
+                  className="btn primary revealBtn"
+                  style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "revealButton") }}
+                  onClick={() => handleSecretToggle(true)}
+                >
+                  {b.revealButtonText || "Tap to reveal"} <span>♥</span>
+                </button>
+              </>
+            ) : (
+              <div className="secretReveal" style={{ position: "relative", zIndex: 20 }} onClick={() => isEditable && triggerSelect("secret")}>
+                <span className="secretSparkle">✦</span>
+                <h2 style={getElementStyle(b, "secretMessage")}>{b.text}</h2>
+                {b.secretImage && (
+                  <div className="secretPhotoMount" onClick={(e) => { e.stopPropagation(); isEditable && triggerSelect("photo", 0); }}>
+                    <img src={b.secretImage} alt="Secret memory" style={{ opacity: (b.imageOpacity ?? 100) / 100 }} />
+                  </div>
+                )}
+                {b.secretVideo && (
+                  <video
+                    className="secretVideo"
+                    src={typeof b.secretVideo === "string" ? b.secretVideo : ""}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    autoPlay={b.videoAutoplay ?? false}
+                    muted={b.videoMuted ?? true}
+                    loop={b.videoLoop ?? false}
+                    onClick={(e) => { e.stopPropagation(); isEditable && triggerSelect("video"); }}
+                    style={{
+                      display: "block",
+                      margin: "16px auto",
+                      maxWidth: `${b.videoWidth ?? 100}%`,
+                      maxHeight: "360px",
+                      width: "auto",
+                      height: "auto",
+                      objectFit: b.videoFit === "contain" ? "contain" : b.videoFit === "fill" ? "fill" : "cover",
+                      objectPosition: `${b.videoPositionX ?? 50}% ${b.videoPositionY ?? 50}%`,
+                      transform: `scale(${(b.videoScale ?? 100) / 100}) translate(${((b.videoPositionX ?? 50) - 50)}%, ${((b.videoPositionY ?? 50) - 50)}%)`,
+                      transformOrigin: "center center",
+                      opacity: (b.videoOpacity ?? 100) / 100,
+                      borderRadius: `${b.videoRadius ?? 16}px`,
+                      background: "transparent",
+                      border: "none",
+                      boxShadow: "none",
+                      outline: "none"
+                    }}
+                  />
+                )}
+                <button
+                  type="button"
+                  className="btn ghost small"
+                  onClick={() => handleSecretToggle(false)}
+                  style={{ marginTop: "12px" }}
+                >
+                  Hide again
+                </button>
+              </div>
+            )}
+          </div>
           {nav}
         </div>
       );
@@ -1176,83 +1183,85 @@ export default function GreetingView({
         <div className="sceneInner cakeScene" style={style}>
           {editBadge}
           {renderHeroPhoto(b)}
-          {isEditable ? (
-            <>
-              <button type="button" className="editableText sectionKicker" style={getElementStyle(b, "title")} onClick={() => triggerSelect("kicker")}>
-                {b.title}
-              </button>
-              <button type="button" className="editableText eyebrow" style={getElementStyle(b, "eyebrow")} onClick={() => triggerSelect("subtitle")}>
-                {b.subtitle}
-              </button>
-              <button type="button" className="editableText heroTitle" style={getElementStyle(b, "heading")} onClick={() => triggerSelect("heading")}>
-                {b.heading}
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="sectionKicker" style={getElementStyle(b, "title")}>{b.title}</div>
-              <div className="eyebrow" style={getElementStyle(b, "eyebrow")}>{b.subtitle}</div>
-              <h1 className="heroTitle" style={getElementStyle(b, "heading")}>{b.heading}</h1>
-            </>
-          )}
+          <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {isEditable ? (
+              <>
+                <button type="button" className="editableText sectionKicker" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "title") }} onClick={() => triggerSelect("kicker")}>
+                  {b.title}
+                </button>
+                <button type="button" className="editableText eyebrow" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "eyebrow") }} onClick={() => triggerSelect("subtitle")}>
+                  {b.subtitle}
+                </button>
+                <button type="button" className="editableText heroTitle" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "heading") }} onClick={() => triggerSelect("heading")}>
+                  {b.heading}
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="sectionKicker" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "title") }}>{b.title}</div>
+                <div className="eyebrow" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "eyebrow") }}>{b.subtitle}</div>
+                <h1 className="heroTitle" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "heading") }}>{b.heading}</h1>
+              </>
+            )}
 
-          <div className="cakeGraphic" onClick={() => isEditable && triggerSelect("cake")}>
-            <div className="cakePlate" />
-            <div className="cakeBody">
-              <div className="cakeTop" />
-              <div className="cakeCream" />
-            </div>
-            <div className="candles">
-              {candles.map((off, i) => (
-                <span className="candleWrap" key={i}>
-                  <span className={`flame ${off ? "flameOff" : ""}`} />
-                  {smoke.includes(i) && <span className="smokePuff" />}
-                  <button
-                    type="button"
-                    aria-label={`Candle ${i + 1}`}
-                    className={`candleStick ${off ? "off" : ""}`}
-                    onClick={blowCandle}
-                  />
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {cakeCelebrated ? (
-            <div className="cakeCelebrationCard" onClick={() => isEditable && triggerSelect("cake")}>
-              <div className="cakeCelebrationEmoji">🎂✨❤️</div>
-              <h2 className="cakeCelebrationTitle" style={getElementStyle(b, "cakeSubtitle")}>{b.subtitle || "Happy Birthday, once again!"}</h2>
-              <p className="cakeCelebrationSub" style={getElementStyle(b, "cakeText")}>{b.text || "May your year be filled with immense joy, love, and all your heart desires!"}</p>
-              <button
-                type="button"
-                className="btn small ghost"
-                onClick={() => {
-                  setCandles([false, false, false]);
-                  setCakeCelebrated(false);
-                }}
-                style={{ marginTop: "10px" }}
-              >
-                🕯️ Light candles again
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="heroTextWrap customScrollbar">
-                {isEditable ? (
-                  <button type="button" className="editableText heroText" style={getElementStyle(b, "body")} onClick={() => triggerSelect("body")}>
-                    {b.text || "Tap a candle to blow it out. Watch the flame flicker, fade and leave a soft trail of smoke."}
-                  </button>
-                ) : (
-                  <p className="heroText" style={getElementStyle(b, "body")}>
-                    {b.text || "Tap a candle to blow it out. Watch the flame flicker, fade and leave a soft trail of smoke."}
-                  </p>
-                )}
+            <div className="cakeGraphic" style={{ position: "relative", zIndex: 20 }} onClick={() => isEditable && triggerSelect("cake")}>
+              <div className="cakePlate" />
+              <div className="cakeBody">
+                <div className="cakeTop" />
+                <div className="cakeCream" />
               </div>
-              <button type="button" className="btn primary small" onClick={blowCandle}>
-                🌬️ Blow a candle
-              </button>
-            </>
-          )}
+              <div className="candles">
+                {candles.map((off, i) => (
+                  <span className="candleWrap" key={i}>
+                    <span className={`flame ${off ? "flameOff" : ""}`} />
+                    {smoke.includes(i) && <span className="smokePuff" />}
+                    <button
+                      type="button"
+                      aria-label={`Candle ${i + 1}`}
+                      className={`candleStick ${off ? "off" : ""}`}
+                      onClick={blowCandle}
+                    />
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {cakeCelebrated ? (
+              <div className="cakeCelebrationCard" style={{ position: "relative", zIndex: 20 }} onClick={() => isEditable && triggerSelect("cake")}>
+                <div className="cakeCelebrationEmoji">🎂✨❤️</div>
+                <h2 className="cakeCelebrationTitle" style={getElementStyle(b, "cakeSubtitle")}>{b.subtitle || "Happy Birthday, once again!"}</h2>
+                <p className="cakeCelebrationSub" style={getElementStyle(b, "cakeText")}>{b.text || "May your year be filled with immense joy, love, and all your heart desires!"}</p>
+                <button
+                  type="button"
+                  className="btn small ghost"
+                  onClick={() => {
+                    setCandles([false, false, false]);
+                    setCakeCelebrated(false);
+                  }}
+                  style={{ marginTop: "10px" }}
+                >
+                  🕯️ Light candles again
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="heroTextWrap customScrollbar" style={{ position: "relative", zIndex: 20 }}>
+                  {isEditable ? (
+                    <button type="button" className="editableText heroText" style={getElementStyle(b, "body")} onClick={() => triggerSelect("body")}>
+                      {b.text || "Tap a candle to blow it out. Watch the flame flicker, fade and leave a soft trail of smoke."}
+                    </button>
+                  ) : (
+                    <p className="heroText" style={getElementStyle(b, "body")}>
+                      {b.text || "Tap a candle to blow it out. Watch the flame flicker, fade and leave a soft trail of smoke."}
+                    </p>
+                  )}
+                </div>
+                <button type="button" className="btn primary small" style={{ position: "relative", zIndex: 20 }} onClick={blowCandle}>
+                  🌬️ Blow a candle
+                </button>
+              </>
+            )}
+          </div>
 
           {nav}
         </div>
@@ -1267,22 +1276,22 @@ export default function GreetingView({
         {/* Hero Photo as Direct Media Layer (behind text, above wallpaper) */}
         {renderHeroPhoto(b)}
 
-        <div className="sectionContentLayer" style={{ position: "relative", zIndex: 5, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
           {isEditable ? (
             <>
-              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} onClick={() => triggerSelect("emoji")}>
+              <button type="button" className={`editableDecor emoji-anim-${emojiAnim}`} style={{ position: "relative", zIndex: 10 }} onClick={() => triggerSelect("emoji")}>
                 {b.emoji}
               </button>
-              <button type="button" className="editableText sectionKicker" style={getElementStyle(b, "title")} onClick={() => triggerSelect("kicker")}>
+              <button type="button" className="editableText sectionKicker" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "title") }} onClick={() => triggerSelect("kicker")}>
                 {b.title}
               </button>
-              <button type="button" className="editableText eyebrow" style={getElementStyle(b, "eyebrow")} onClick={() => triggerSelect("subtitle")}>
+              <button type="button" className="editableText eyebrow" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "eyebrow") }} onClick={() => triggerSelect("subtitle")}>
                 {b.subtitle}
               </button>
-              <button type="button" className="editableText heroTitle" style={getElementStyle(b, "heading")} onClick={() => triggerSelect("heading")}>
+              <button type="button" className="editableText heroTitle" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "heading") }} onClick={() => triggerSelect("heading")}>
                 {b.heading}
               </button>
-              <div className="heroTextWrap customScrollbar">
+              <div className="heroTextWrap customScrollbar" style={{ position: "relative", zIndex: 20 }}>
                 <button type="button" className="editableText heroText" style={getElementStyle(b, "body")} onClick={() => triggerSelect("body")}>
                   {b.text}
                 </button>
@@ -1290,11 +1299,11 @@ export default function GreetingView({
             </>
           ) : (
             <>
-              <div className={`publicEmoji emoji-anim-${emojiAnim}`}>{b.emoji}</div>
-              <div className="sectionKicker" style={getElementStyle(b, "title")}>{b.title}</div>
-              <div className="eyebrow" style={getElementStyle(b, "eyebrow")}>{b.subtitle}</div>
-              <h1 className="heroTitle" style={getElementStyle(b, "heading")}>{b.heading}</h1>
-              <div className="heroTextWrap customScrollbar">
+              <div className={`publicEmoji emoji-anim-${emojiAnim}`} style={{ position: "relative", zIndex: 10 }}>{b.emoji}</div>
+              <div className="sectionKicker" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "title") }}>{b.title}</div>
+              <div className="eyebrow" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "eyebrow") }}>{b.subtitle}</div>
+              <h1 className="heroTitle" style={{ position: "relative", zIndex: 20, ...getElementStyle(b, "heading") }}>{b.heading}</h1>
+              <div className="heroTextWrap customScrollbar" style={{ position: "relative", zIndex: 20 }}>
                 <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
               </div>
             </>
@@ -1329,7 +1338,7 @@ export default function GreetingView({
                 boxShadow: "none",
                 outline: "none",
                 position: "relative",
-                zIndex: 6,
+                zIndex: 20,
                 cursor: isEditable ? "pointer" : "default"
               }}
             />
@@ -1402,7 +1411,7 @@ export default function GreetingView({
       {/* Background Layers with Complete Cover & Rotation Support */}
       {activeCustomBg && (
         <>
-          <div className="customBgContainer">
+          <div className="customBgContainer" style={{ zIndex: 0 }}>
             <div
               className="customBgImage"
               style={{
@@ -1418,7 +1427,7 @@ export default function GreetingView({
           </div>
           <div
             className="backgroundOverlayLayer"
-            style={{ opacity: (activeBgOverlay ?? 18) / 100 }}
+            style={{ opacity: (activeBgOverlay ?? 18) / 100, zIndex: 0 }}
           />
         </>
       )}
