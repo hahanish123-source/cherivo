@@ -903,73 +903,88 @@ export default function GreetingView({
           {nav}
         </div>
       );
-    }    if (b.type === "memories" || b.type === "gallery") {
+    }
+
+    if (b.type === "memories" || b.type === "gallery") {
       const images = b.images && b.images.length > 0 ? b.images : b.image ? [b.image] : [];
       const layout = b.galleryLayout || "scattered";
       const isScattered = layout === "scattered";
       const isMobile = previewDevice === "mobile";
 
       const getScatteredPositions = (count: number, mobile: boolean) => {
-        if (count === 1) {
-          return [{ x: 50, y: 50, rotate: 0, width: mobile ? 65 : 48 }];
+        if (count <= 1) {
+          return [{ x: 50, y: 50, rotate: 0, width: mobile ? 65 : 46 }];
         }
         if (count === 2) {
           return [
-            { x: 30, y: 50, rotate: -4, width: mobile ? 48 : 38 },
-            { x: 70, y: 50, rotate: 4, width: mobile ? 48 : 38 }
+            { x: 30, y: 50, rotate: -4, width: mobile ? 46 : 38 },
+            { x: 70, y: 50, rotate: 4, width: mobile ? 46 : 38 }
           ];
         }
         if (count === 3) {
           return [
-            { x: 25, y: 40, rotate: -6, width: mobile ? 44 : 34 },
-            { x: 75, y: 40, rotate: 6, width: mobile ? 44 : 34 },
-            { x: 50, y: 68, rotate: -2, width: mobile ? 46 : 36 }
+            { x: 26, y: 38, rotate: -5, width: mobile ? 42 : 34 },
+            { x: 74, y: 38, rotate: 5, width: mobile ? 42 : 34 },
+            { x: 50, y: 68, rotate: -2, width: mobile ? 44 : 36 }
           ];
         }
         if (count === 4) {
           return [
-            { x: 25, y: 32, rotate: -5, width: mobile ? 42 : 32 },
-            { x: 75, y: 32, rotate: 5, width: mobile ? 42 : 32 },
-            { x: 26, y: 72, rotate: 4, width: mobile ? 42 : 32 },
-            { x: 74, y: 72, rotate: -4, width: mobile ? 42 : 32 }
+            { x: 25, y: 30, rotate: -5, width: mobile ? 40 : 32 },
+            { x: 75, y: 30, rotate: 5, width: mobile ? 40 : 32 },
+            { x: 26, y: 72, rotate: 4, width: mobile ? 40 : 32 },
+            { x: 74, y: 72, rotate: -4, width: mobile ? 40 : 32 }
           ];
         }
         if (count === 5) {
           return [
-            { x: 22, y: 30, rotate: -6, width: mobile ? 38 : 30 },
-            { x: 78, y: 30, rotate: 6, width: mobile ? 38 : 30 },
-            { x: 50, y: 50, rotate: 0, width: mobile ? 40 : 32 },
-            { x: 25, y: 74, rotate: 4, width: mobile ? 38 : 30 },
-            { x: 75, y: 74, rotate: -5, width: mobile ? 38 : 30 }
+            { x: 22, y: 28, rotate: -6, width: mobile ? 38 : 30 },
+            { x: 78, y: 28, rotate: 6, width: mobile ? 38 : 30 },
+            { x: 50, y: 50, rotate: 0, width: mobile ? 38 : 30 },
+            { x: 24, y: 74, rotate: 4, width: mobile ? 38 : 30 },
+            { x: 76, y: 74, rotate: -5, width: mobile ? 38 : 30 }
           ];
         }
         if (count === 6) {
           return [
-            { x: 20, y: 30, rotate: -5, width: mobile ? 36 : 28 },
-            { x: 50, y: 28, rotate: 3, width: mobile ? 36 : 28 },
-            { x: 80, y: 30, rotate: 5, width: mobile ? 36 : 28 },
+            { x: 20, y: 28, rotate: -5, width: mobile ? 36 : 28 },
+            { x: 50, y: 26, rotate: 3, width: mobile ? 36 : 28 },
+            { x: 80, y: 28, rotate: 5, width: mobile ? 36 : 28 },
             { x: 22, y: 74, rotate: 4, width: mobile ? 36 : 28 },
             { x: 50, y: 76, rotate: -3, width: mobile ? 36 : 28 },
             { x: 78, y: 74, rotate: -4, width: mobile ? 36 : 28 }
           ];
         }
-        // 7+ photos cyclic distribution inside dedicated photo area
-        return [
-          { x: 18, y: 28, rotate: -6, width: mobile ? 34 : 26 },
-          { x: 50, y: 26, rotate: 2, width: mobile ? 34 : 26 },
-          { x: 82, y: 28, rotate: 5, width: mobile ? 34 : 26 },
-          { x: 16, y: 74, rotate: 4, width: mobile ? 34 : 26 },
-          { x: 50, y: 76, rotate: -3, width: mobile ? 34 : 26 },
-          { x: 84, y: 74, rotate: -5, width: mobile ? 34 : 26 },
-          { x: 34, y: 52, rotate: 3, width: mobile ? 32 : 25 },
-          { x: 66, y: 52, rotate: -4, width: mobile ? 32 : 25 }
-        ];
+
+        // 7+ photos: multi-row responsive scatter distribution
+        const perRow = mobile ? 2 : 3;
+        const numRows = Math.ceil(count / perRow);
+        const positions = [];
+        for (let i = 0; i < count; i++) {
+          const row = Math.floor(i / perRow);
+          const col = i % perRow;
+          const itemsInThisRow = (row === numRows - 1 && count % perRow !== 0) ? (count % perRow) : perRow;
+          const x = itemsInThisRow === 1 ? 50 : (100 / (itemsInThisRow + 1)) * (col + 1);
+          const y = (100 / (numRows + 1)) * (row + 1);
+          const rotate = ((i * 7 + 3) % 13) - 6;
+          const width = mobile ? Math.max(32, 44 - count * 0.8) : Math.max(24, 34 - count * 0.5);
+          positions.push({ x, y, rotate, width });
+        }
+        return positions;
+      };
+
+      const calcPhotoAreaHeight = (count: number, mobile: boolean) => {
+        if (count <= 1) return mobile ? "240px" : "260px";
+        if (count <= 2) return mobile ? "260px" : "280px";
+        if (count <= 4) return mobile ? "320px" : "340px";
+        if (count <= 6) return mobile ? "380px" : "400px";
+        if (count <= 9) return mobile ? "480px" : "500px";
+        if (count <= 12) return mobile ? "600px" : "620px";
+        return mobile ? "720px" : "740px";
       };
 
       const scatteredPositions = getScatteredPositions(images.length, isMobile);
-      const photoAreaHeight = isMobile
-        ? (images.length <= 1 ? "220px" : images.length <= 3 ? "280px" : images.length <= 6 ? "340px" : "400px")
-        : (images.length <= 1 ? "240px" : images.length <= 3 ? "310px" : images.length <= 6 ? "380px" : "450px");
+      const photoAreaHeight = calcPhotoAreaHeight(images.length, isMobile);
 
       return (
         <div
