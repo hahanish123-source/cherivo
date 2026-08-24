@@ -913,50 +913,50 @@ export default function GreetingView({
 
       const getScatteredPositions = (count: number, mobile: boolean) => {
         if (count <= 1) {
-          return [{ x: 50, y: 50, rotate: 0, width: mobile ? 65 : 46 }];
+          return [{ x: 50, y: 50, rotate: 0, width: mobile ? 62 : 44 }];
         }
         if (count === 2) {
           return [
-            { x: 30, y: 50, rotate: -4, width: mobile ? 46 : 38 },
-            { x: 70, y: 50, rotate: 4, width: mobile ? 46 : 38 }
+            { x: 32, y: 50, rotate: -4, width: mobile ? 44 : 36 },
+            { x: 68, y: 50, rotate: 4, width: mobile ? 44 : 36 }
           ];
         }
         if (count === 3) {
           return [
-            { x: 26, y: 38, rotate: -5, width: mobile ? 42 : 34 },
-            { x: 74, y: 38, rotate: 5, width: mobile ? 42 : 34 },
-            { x: 50, y: 68, rotate: -2, width: mobile ? 44 : 36 }
+            { x: 28, y: 36, rotate: -5, width: mobile ? 40 : 32 },
+            { x: 72, y: 36, rotate: 5, width: mobile ? 40 : 32 },
+            { x: 50, y: 64, rotate: -2, width: mobile ? 42 : 34 }
           ];
         }
         if (count === 4) {
           return [
-            { x: 25, y: 30, rotate: -5, width: mobile ? 40 : 32 },
-            { x: 75, y: 30, rotate: 5, width: mobile ? 40 : 32 },
-            { x: 26, y: 72, rotate: 4, width: mobile ? 40 : 32 },
-            { x: 74, y: 72, rotate: -4, width: mobile ? 40 : 32 }
+            { x: 26, y: 32, rotate: -5, width: mobile ? 38 : 30 },
+            { x: 74, y: 32, rotate: 5, width: mobile ? 38 : 30 },
+            { x: 26, y: 68, rotate: 4, width: mobile ? 38 : 30 },
+            { x: 74, y: 68, rotate: -4, width: mobile ? 38 : 30 }
           ];
         }
         if (count === 5) {
           return [
-            { x: 22, y: 28, rotate: -6, width: mobile ? 38 : 30 },
-            { x: 78, y: 28, rotate: 6, width: mobile ? 38 : 30 },
-            { x: 50, y: 50, rotate: 0, width: mobile ? 38 : 30 },
-            { x: 24, y: 74, rotate: 4, width: mobile ? 38 : 30 },
-            { x: 76, y: 74, rotate: -5, width: mobile ? 38 : 30 }
+            { x: 24, y: 30, rotate: -6, width: mobile ? 36 : 28 },
+            { x: 76, y: 30, rotate: 6, width: mobile ? 36 : 28 },
+            { x: 50, y: 50, rotate: 0, width: mobile ? 36 : 28 },
+            { x: 25, y: 70, rotate: 4, width: mobile ? 36 : 28 },
+            { x: 75, y: 70, rotate: -5, width: mobile ? 36 : 28 }
           ];
         }
         if (count === 6) {
           return [
-            { x: 20, y: 28, rotate: -5, width: mobile ? 36 : 28 },
-            { x: 50, y: 26, rotate: 3, width: mobile ? 36 : 28 },
-            { x: 80, y: 28, rotate: 5, width: mobile ? 36 : 28 },
-            { x: 22, y: 74, rotate: 4, width: mobile ? 36 : 28 },
-            { x: 50, y: 76, rotate: -3, width: mobile ? 36 : 28 },
-            { x: 78, y: 74, rotate: -4, width: mobile ? 36 : 28 }
+            { x: 20, y: 30, rotate: -5, width: mobile ? 34 : 26 },
+            { x: 50, y: 28, rotate: 3, width: mobile ? 34 : 26 },
+            { x: 80, y: 30, rotate: 5, width: mobile ? 34 : 26 },
+            { x: 22, y: 70, rotate: 4, width: mobile ? 34 : 26 },
+            { x: 50, y: 72, rotate: -3, width: mobile ? 34 : 26 },
+            { x: 78, y: 70, rotate: -4, width: mobile ? 34 : 26 }
           ];
         }
 
-        // 7+ photos: multi-row responsive scatter distribution
+        // 7+ photos: multi-row responsive scatter distribution centered in gallery
         const perRow = mobile ? 2 : 3;
         const numRows = Math.ceil(count / perRow);
         const positions = [];
@@ -967,20 +967,20 @@ export default function GreetingView({
           const x = itemsInThisRow === 1 ? 50 : (100 / (itemsInThisRow + 1)) * (col + 1);
           const y = (100 / (numRows + 1)) * (row + 1);
           const rotate = ((i * 7 + 3) % 13) - 6;
-          const width = mobile ? Math.max(32, 44 - count * 0.8) : Math.max(24, 34 - count * 0.5);
+          const width = mobile ? Math.max(28, 38 - count * 0.7) : Math.max(20, 30 - count * 0.4);
           positions.push({ x, y, rotate, width });
         }
         return positions;
       };
 
       const calcPhotoAreaHeight = (count: number, mobile: boolean) => {
-        if (count <= 1) return mobile ? "240px" : "260px";
-        if (count <= 2) return mobile ? "260px" : "280px";
-        if (count <= 4) return mobile ? "320px" : "340px";
-        if (count <= 6) return mobile ? "380px" : "400px";
-        if (count <= 9) return mobile ? "480px" : "500px";
-        if (count <= 12) return mobile ? "600px" : "620px";
-        return mobile ? "720px" : "740px";
+        if (count <= 1) return mobile ? "190px" : "210px";
+        if (count <= 2) return mobile ? "210px" : "230px";
+        if (count <= 4) return mobile ? "260px" : "280px";
+        if (count <= 6) return mobile ? "300px" : "320px";
+        if (count <= 9) return mobile ? "380px" : "400px";
+        if (count <= 12) return mobile ? "460px" : "480px";
+        return mobile ? "540px" : "560px";
       };
 
       const scatteredPositions = getScatteredPositions(images.length, isMobile);
@@ -1049,26 +1049,31 @@ export default function GreetingView({
 
           {/* 2. DEDICATED PHOTO COMPOSITION AREA (BELOW TEXT, ABOVE NAVIGATION) */}
           <div
-            className="memoryPhotoArea"
+            className="memoryGallery"
             style={{
               position: "relative",
               width: "100%",
-              margin: "16px 0 0",
+              maxWidth: "800px",
+              margin: "12px auto 0",
               zIndex: 10,
-              minHeight: images.length > 0 ? (isScattered ? photoAreaHeight : "auto") : "auto"
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center"
             }}
           >
             {/* Scattered Image Layout */}
             {isScattered && images.length > 0 && (
               <div
-                className={`galleryStage gallery-count-${Math.min(images.length, 20)} gallery-bg-${
+                className={`scatteredGallery galleryStage gallery-count-${Math.min(images.length, 20)} gallery-bg-${
                   b.galleryBackground || "transparent"
                 } ${galleryScatter ? "scatter-active" : ""}`}
                 style={{
                   position: "relative",
-                  width: "100%",
+                  width: isMobile ? "96%" : "90%",
+                  maxWidth: "680px",
                   height: photoAreaHeight,
-                  overflow: "visible"
+                  overflow: "visible",
+                  margin: "0 auto"
                 }}
               >
                 <canvas ref={dustCanvasRef} className="galleryDustCanvas" style={{ zIndex: 12, pointerEvents: "none" }} />
@@ -1097,7 +1102,7 @@ export default function GreetingView({
                   return (
                     <button
                       type="button"
-                      className={`galleryPhoto galleryPhoto-${i + 1} ${
+                      className={`galleryPhoto scatteredPhoto galleryPhoto-${i + 1} ${
                         isDusted ? "photo-dusted" : ""
                       }`}
                       key={`${i}-${src.slice(-10)}`}
@@ -1105,10 +1110,10 @@ export default function GreetingView({
                         position: "absolute",
                         left: `${posX}%`,
                         top: `${posY}%`,
-                        width: `min(${widthPct}%, 280px)`,
-                        maxWidth: "280px",
+                        width: `min(${widthPct}%, 260px)`,
+                        maxWidth: "260px",
                         height: "auto",
-                        maxHeight: "220px",
+                        maxHeight: "200px",
                         transform: `translate(-50%, -50%) rotate(${rotVal}deg) scale(${scaleVal})`,
                         transformOrigin: "center center",
                         zIndex: (adjustment.zIndex ?? i) + 5,
@@ -1141,7 +1146,7 @@ export default function GreetingView({
                         style={{
                           width: "100%",
                           height: fitMode === "cover" ? "100%" : "auto",
-                          maxHeight: "220px",
+                          maxHeight: "200px",
                           objectFit: fitMode,
                           borderRadius: `${radiusPx}px`,
                           display: "block",
@@ -1237,28 +1242,30 @@ export default function GreetingView({
                 </p>
               </div>
             )}
+
+            {/* Interactive Tap Hint Directly Below Images */}
+            {isScattered && images.length > 0 && (
+              <div className="memoryTapHint" style={{ position: "relative", zIndex: 20, margin: "14px 0 0", textAlign: "center" }}>
+                <p className="scatteredTapHint" style={{ margin: 0 }}>
+                  Tap a photo to explore the memory ❤️
+                </p>
+              </div>
+            )}
+
+            {isScattered && dustedPhotos.length > 0 && (
+              <button
+                type="button"
+                className="btn ghost small restoreMemories"
+                onClick={() => setDustedPhotos([])}
+                style={{ position: "relative", zIndex: 20, margin: "10px 0 0" }}
+              >
+                <Sparkles size={14} /> Restore Photos
+              </button>
+            )}
           </div>
 
-          {/* Interactive Hint */}
-          {isScattered && images.length > 0 && (
-            <p className="scatteredTapHint" style={{ position: "relative", zIndex: 20, margin: "8px 0 0" }}>
-              Tap a photo to explore the memory 💗
-            </p>
-          )}
-
-          {isScattered && dustedPhotos.length > 0 && (
-            <button
-              type="button"
-              className="btn ghost small restoreMemories"
-              onClick={() => setDustedPhotos([])}
-              style={{ position: "relative", zIndex: 20, margin: "8px 0 0" }}
-            >
-              <Sparkles size={14} /> Restore Photos
-            </button>
-          )}
-
-          {/* LAYER 100: Topmost Navigation Buttons */}
-          <div style={{ position: "relative", zIndex: 30, width: "100%", marginTop: "16px" }}>
+          {/* 3. NAVIGATION (ALWAYS BELOW GALLERY) */}
+          <div style={{ position: "relative", zIndex: 100, width: "100%", marginTop: "18px" }}>
             {nav}
           </div>
         </div>
