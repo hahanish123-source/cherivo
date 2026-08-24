@@ -913,50 +913,50 @@ export default function GreetingView({
 
       const getScatteredPositions = (count: number, mobile: boolean) => {
         if (count <= 1) {
-          return [{ x: 50, y: 50, rotate: 0, width: mobile ? 62 : 44 }];
+          return [{ x: 50, y: 50, rotate: 0, widthPx: mobile ? 220 : 270, heightPx: mobile ? 170 : 200 }];
         }
         if (count === 2) {
           return [
-            { x: 32, y: 50, rotate: -4, width: mobile ? 44 : 36 },
-            { x: 68, y: 50, rotate: 4, width: mobile ? 44 : 36 }
+            { x: 28, y: 50, rotate: -5, widthPx: mobile ? 180 : 230, heightPx: mobile ? 140 : 175 },
+            { x: 72, y: 50, rotate: 4, widthPx: mobile ? 180 : 230, heightPx: mobile ? 140 : 175 }
           ];
         }
         if (count === 3) {
           return [
-            { x: 28, y: 36, rotate: -5, width: mobile ? 40 : 32 },
-            { x: 72, y: 36, rotate: 5, width: mobile ? 40 : 32 },
-            { x: 50, y: 64, rotate: -2, width: mobile ? 42 : 34 }
+            { x: 22, y: 28, rotate: -6, widthPx: mobile ? 170 : 210, heightPx: mobile ? 130 : 160 },
+            { x: 78, y: 30, rotate: 6, widthPx: mobile ? 170 : 210, heightPx: mobile ? 130 : 160 },
+            { x: 50, y: 72, rotate: -2, widthPx: mobile ? 180 : 220, heightPx: mobile ? 135 : 165 }
           ];
         }
         if (count === 4) {
           return [
-            { x: 26, y: 32, rotate: -5, width: mobile ? 38 : 30 },
-            { x: 74, y: 32, rotate: 5, width: mobile ? 38 : 30 },
-            { x: 26, y: 68, rotate: 4, width: mobile ? 38 : 30 },
-            { x: 74, y: 68, rotate: -4, width: mobile ? 38 : 30 }
+            { x: 22, y: 24, rotate: -6, widthPx: mobile ? 160 : 200, heightPx: mobile ? 125 : 155 },
+            { x: 78, y: 24, rotate: 5, widthPx: mobile ? 160 : 200, heightPx: mobile ? 125 : 155 },
+            { x: 22, y: 76, rotate: 4, widthPx: mobile ? 160 : 200, heightPx: mobile ? 125 : 155 },
+            { x: 78, y: 76, rotate: -5, widthPx: mobile ? 160 : 200, heightPx: mobile ? 125 : 155 }
           ];
         }
         if (count === 5) {
           return [
-            { x: 24, y: 30, rotate: -6, width: mobile ? 36 : 28 },
-            { x: 76, y: 30, rotate: 6, width: mobile ? 36 : 28 },
-            { x: 50, y: 50, rotate: 0, width: mobile ? 36 : 28 },
-            { x: 25, y: 70, rotate: 4, width: mobile ? 36 : 28 },
-            { x: 75, y: 70, rotate: -5, width: mobile ? 36 : 28 }
+            { x: 18, y: 22, rotate: -6, widthPx: mobile ? 150 : 190, heightPx: mobile ? 115 : 145 },
+            { x: 82, y: 22, rotate: 6, widthPx: mobile ? 150 : 190, heightPx: mobile ? 115 : 145 },
+            { x: 50, y: 50, rotate: 0, widthPx: mobile ? 160 : 195, heightPx: mobile ? 120 : 150 },
+            { x: 20, y: 78, rotate: 5, widthPx: mobile ? 150 : 190, heightPx: mobile ? 115 : 145 },
+            { x: 80, y: 78, rotate: -5, widthPx: mobile ? 150 : 190, heightPx: mobile ? 115 : 145 }
           ];
         }
         if (count === 6) {
           return [
-            { x: 20, y: 30, rotate: -5, width: mobile ? 34 : 26 },
-            { x: 50, y: 28, rotate: 3, width: mobile ? 34 : 26 },
-            { x: 80, y: 30, rotate: 5, width: mobile ? 34 : 26 },
-            { x: 22, y: 70, rotate: 4, width: mobile ? 34 : 26 },
-            { x: 50, y: 72, rotate: -3, width: mobile ? 34 : 26 },
-            { x: 78, y: 70, rotate: -4, width: mobile ? 34 : 26 }
+            { x: 16, y: 24, rotate: -5, widthPx: mobile ? 145 : 180, heightPx: mobile ? 110 : 140 },
+            { x: 50, y: 20, rotate: 3, widthPx: mobile ? 145 : 180, heightPx: mobile ? 110 : 140 },
+            { x: 84, y: 24, rotate: 6, widthPx: mobile ? 145 : 180, heightPx: mobile ? 110 : 140 },
+            { x: 16, y: 76, rotate: 4, widthPx: mobile ? 145 : 180, heightPx: mobile ? 110 : 140 },
+            { x: 50, y: 80, rotate: -3, widthPx: mobile ? 145 : 180, heightPx: mobile ? 110 : 140 },
+            { x: 84, y: 76, rotate: -4, widthPx: mobile ? 145 : 180, heightPx: mobile ? 110 : 140 }
           ];
         }
 
-        // 7+ photos: multi-row responsive scatter distribution centered in gallery
+        // 7+ photos: multi-row responsive scatter distribution across the card
         const perRow = mobile ? 2 : 3;
         const numRows = Math.ceil(count / perRow);
         const positions = [];
@@ -964,23 +964,27 @@ export default function GreetingView({
           const row = Math.floor(i / perRow);
           const col = i % perRow;
           const itemsInThisRow = (row === numRows - 1 && count % perRow !== 0) ? (count % perRow) : perRow;
-          const x = itemsInThisRow === 1 ? 50 : (100 / (itemsInThisRow + 1)) * (col + 1);
-          const y = (100 / (numRows + 1)) * (row + 1);
+          const x = itemsInThisRow === 1 ? 50 : Math.round((100 / (itemsInThisRow + 1)) * (col + 1));
+          const y = Math.round((100 / (numRows + 1)) * (row + 1));
           const rotate = ((i * 7 + 3) % 13) - 6;
-          const width = mobile ? Math.max(28, 38 - count * 0.7) : Math.max(20, 30 - count * 0.4);
-          positions.push({ x, y, rotate, width });
+          const widthPx = mobile ? Math.max(120, 150 - count * 2) : Math.max(150, 185 - count * 2);
+          const heightPx = Math.round(widthPx * 0.75);
+          positions.push({ x, y, rotate, widthPx, heightPx });
         }
         return positions;
       };
 
       const calcPhotoAreaHeight = (count: number, mobile: boolean) => {
-        if (count <= 1) return mobile ? "190px" : "210px";
-        if (count <= 2) return mobile ? "210px" : "230px";
-        if (count <= 4) return mobile ? "260px" : "280px";
-        if (count <= 6) return mobile ? "300px" : "320px";
-        if (count <= 9) return mobile ? "380px" : "400px";
-        if (count <= 12) return mobile ? "460px" : "480px";
-        return mobile ? "540px" : "560px";
+        if (count <= 1) return mobile ? "230px" : "260px";
+        if (count <= 2) return mobile ? "270px" : "300px";
+        if (count <= 3) return mobile ? "350px" : "380px";
+        if (count <= 4) return mobile ? "410px" : "440px";
+        if (count <= 5) return mobile ? "470px" : "500px";
+        if (count <= 6) return mobile ? "510px" : "540px";
+        if (count <= 8) return mobile ? "610px" : "640px";
+        if (count <= 10) return mobile ? "710px" : "740px";
+        const rows = Math.ceil(count / (mobile ? 2 : 3));
+        return `${rows * (mobile ? 170 : 190) + 60}px`;
       };
 
       const scatteredPositions = getScatteredPositions(images.length, isMobile);
@@ -1053,8 +1057,8 @@ export default function GreetingView({
             style={{
               position: "relative",
               width: "100%",
-              maxWidth: "800px",
-              margin: "12px auto 0",
+              maxWidth: "860px",
+              margin: "14px auto 0",
               zIndex: 15,
               display: "flex",
               flexDirection: "column",
@@ -1069,8 +1073,8 @@ export default function GreetingView({
                 } ${galleryScatter ? "scatter-active" : ""}`}
                 style={{
                   position: "relative",
-                  width: isMobile ? "96%" : "90%",
-                  maxWidth: "680px",
+                  width: "100%",
+                  maxWidth: isMobile ? "98%" : images.length <= 1 ? "420px" : images.length <= 2 ? "620px" : "840px",
                   height: photoAreaHeight,
                   overflow: "visible",
                   margin: "0 auto"
@@ -1093,13 +1097,14 @@ export default function GreetingView({
                   const posX = Math.max(10, Math.min(90, defPos.x + offsetX));
                   const posY = Math.max(10, Math.min(90, defPos.y + offsetY));
                   const rotVal = (typeof adjustment.rotation === "number" ? adjustment.rotation : 0) + defPos.rotate;
-                  const widthPct = typeof adjustment.width === "number" ? adjustment.width : defPos.width;
                   const scaleVal = (adjustment.scale ?? 100) / 100;
                   const opacityVal = (adjustment.opacity ?? b.imageOpacity ?? 100) / 100;
                   const radiusPx = adjustment.cornerRadius ?? 12;
                   const fitMode = (adjustment.fit || b.imageFit || "contain") as "cover" | "contain" | "natural" | "fill";
                   const isCover = fitMode === "cover";
                   const isNatural = fitMode === "natural";
+                  const widthVal = typeof adjustment.width === "number" ? `${adjustment.width}%` : `${defPos.widthPx}px`;
+                  const maxHeightVal = `${defPos.heightPx}px`;
 
                   return (
                     <button
@@ -1112,17 +1117,17 @@ export default function GreetingView({
                         position: "absolute",
                         left: `${posX}%`,
                         top: `${posY}%`,
-                        width: isNatural ? "auto" : `min(${widthPct}%, 280px)`,
-                        maxWidth: "280px",
-                        height: isCover ? "180px" : "auto",
-                        maxHeight: "220px",
+                        width: isNatural ? "auto" : widthVal,
+                        maxWidth: "320px",
+                        height: isCover ? maxHeightVal : "auto",
+                        maxHeight: maxHeightVal,
                         transform: `translate(-50%, -50%) rotate(${rotVal}deg)`,
                         transformOrigin: "center center",
                         zIndex: (adjustment.zIndex ?? i) + 5,
                         opacity: opacityVal,
                         borderRadius: `${radiusPx}px`,
                         overflow: "hidden",
-                        border: "2px solid rgba(255, 255, 255, 0.3)",
+                        border: "2px solid rgba(255, 255, 255, 0.35)",
                         boxShadow: "0 8px 24px rgba(0, 0, 0, 0.45)",
                         padding: 0,
                         background: "transparent",
@@ -1149,7 +1154,7 @@ export default function GreetingView({
                           width: isNatural ? "auto" : "100%",
                           maxWidth: "100%",
                           height: isCover ? "100%" : "auto",
-                          maxHeight: "220px",
+                          maxHeight: maxHeightVal,
                           objectFit: isNatural ? "scale-down" : isCover ? "cover" : "contain",
                           borderRadius: `${radiusPx}px`,
                           transform: `scale(${scaleVal}) translate(${isCover ? ((adjustment.x ?? 50) - 50) * 0.8 : 0}%, ${isCover ? ((adjustment.y ?? 50) - 50) * 0.8 : 0}%)`,
