@@ -1049,22 +1049,22 @@ export default function GreetingView({
 
           {/* 2. DEDICATED PHOTO COMPOSITION AREA (BELOW TEXT, ABOVE NAVIGATION) */}
           <div
-            className="memoryGallery"
+            className="memoryGalleryStage"
             style={{
               position: "relative",
               width: "100%",
               maxWidth: "800px",
               margin: "12px auto 0",
-              zIndex: 10,
+              zIndex: 15,
               display: "flex",
               flexDirection: "column",
               alignItems: "center"
             }}
           >
-            {/* Scattered Image Layout */}
+            {/* Scattered Images Layout */}
             {isScattered && images.length > 0 && (
               <div
-                className={`scatteredGallery galleryStage gallery-count-${Math.min(images.length, 20)} gallery-bg-${
+                className={`memoryGallery scatteredGallery galleryStage gallery-count-${Math.min(images.length, 20)} gallery-bg-${
                   b.galleryBackground || "transparent"
                 } ${galleryScatter ? "scatter-active" : ""}`}
                 style={{
@@ -1165,7 +1165,7 @@ export default function GreetingView({
             {/* Non-Scattered Layouts (Collage, Grid, Masonry, Polaroid, Filmstrip) */}
             {!isScattered && images.length > 0 && (
               <div
-                className={`galleryStage gallery-count-${Math.min(images.length, 20)} gallery-bg-${
+                className={`memoryGallery galleryStage gallery-count-${Math.min(images.length, 20)} gallery-bg-${
                   b.galleryBackground || "transparent"
                 }`}
                 style={{
@@ -1265,7 +1265,7 @@ export default function GreetingView({
           </div>
 
           {/* 3. NAVIGATION (ALWAYS BELOW GALLERY) */}
-          <div style={{ position: "relative", zIndex: 100, width: "100%", marginTop: "18px" }}>
+          <div className="memoryNavigationWrap" style={{ position: "relative", zIndex: 40, width: "100%", marginTop: "18px" }}>
             {nav}
           </div>
         </div>
