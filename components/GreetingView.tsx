@@ -595,62 +595,75 @@ export default function GreetingView({
 
     const renderForegroundPhoto = (targetBlock: Block) => {
       if (!targetBlock.image) return null;
-      const bAdj = targetBlock.imageAdjustments?.["hero"] ?? targetBlock.imageAdjustments?.["0"] ?? { scale: 100, x: 50, y: 28, opacity: 100, rotation: 0 };
+      const bAdj = targetBlock.imageAdjustments?.["hero"] ?? targetBlock.imageAdjustments?.["0"] ?? { scale: 100, x: 50, y: 50, opacity: 100, rotation: 0 };
       const fitMode = (targetBlock.imageFit === "cover" || (bAdj as any).fit === "cover") ? "cover" : "contain";
       const isCover = fitMode === "cover";
 
+      const scaleVal = (bAdj.scale ?? 100) / 100;
+      const opacityVal = (bAdj.opacity ?? targetBlock.imageOpacity ?? 100) / 100;
+      const rotVal = bAdj.rotation ?? 0;
+      const offsetX = ((bAdj.x ?? 50) - 50) * 1.5;
+      const offsetY = ((bAdj.y ?? 50) - 50) * 1.5;
+
       return (
         <div
-          className="foregroundPhotoLayer sectionPhotoMediaWrap"
+          className="foregroundPhotoSectionWrap"
           onClick={() => isEditable && triggerSelect("photo", 0)}
           style={{
-            position: "absolute",
-            left: `${bAdj.x ?? 50}%`,
-            top: `${bAdj.y ?? 28}%`,
-            transform: `translate(-50%, -50%) scale(${(bAdj.scale ?? 100) / 100}) rotate(${bAdj.rotation ?? 0}deg)`,
-            transformOrigin: "center center",
-            width: isCover ? "min(65%, 280px)" : "auto",
-            height: isCover ? "auto" : "auto",
-            aspectRatio: isCover ? "4 / 3" : "auto",
-            maxWidth: "min(65%, 280px)",
-            maxHeight: isCover ? "240px" : "260px",
-            overflow: isCover ? "hidden" : "visible",
-            zIndex: 5,
-            opacity: (bAdj.opacity ?? targetBlock.imageOpacity ?? 100) / 100,
-            background: "transparent",
-            border: "none",
-            boxShadow: "none",
-            padding: 0,
-            margin: 0,
-            borderRadius: 0,
+            position: "relative",
+            width: "100%",
             display: "flex",
-            alignItems: "center",
             justifyContent: "center",
-            cursor: isEditable ? "pointer" : "default",
-            pointerEvents: isEditable ? "auto" : "none"
+            alignItems: "center",
+            margin: "14px auto 10px",
+            zIndex: 25,
+            cursor: isEditable ? "pointer" : "default"
           }}
         >
-          <img
-            className="foregroundPhotoImage sectionPhoto heroPhotoImage"
-            src={targetBlock.image}
-            alt=""
+          <div
+            className="foregroundPhotoMediaBox sectionPhotoMediaWrap"
             style={{
-              width: isCover ? "100%" : "auto",
-              height: isCover ? "100%" : "auto",
-              maxWidth: "min(65%, 280px)",
-              maxHeight: isCover ? "240px" : "260px",
-              objectFit: fitMode,
-              objectPosition: "center center",
-              display: "block",
-              border: "none",
+              position: "relative",
+              width: isCover ? "min(75%, 320px)" : "auto",
+              maxWidth: "min(75%, 320px)",
+              maxHeight: "260px",
+              aspectRatio: isCover ? "4 / 3" : "auto",
+              overflow: isCover ? "hidden" : "visible",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transform: `translate(${offsetX}%, ${offsetY}%) scale(${scaleVal}) rotate(${rotVal}deg)`,
+              transformOrigin: "center center",
+              opacity: opacityVal,
               background: "transparent",
+              border: "none",
               boxShadow: "none",
-              borderRadius: 0,
               padding: 0,
-              margin: 0,
-              pointerEvents: "none"
+              margin: 0
             }}
-          />
+          >
+            <img
+              className="foregroundPhotoImage sectionPhoto heroPhotoImage"
+              src={targetBlock.image}
+              alt=""
+              style={{
+                width: isCover ? "100%" : "auto",
+                height: isCover ? "100%" : "auto",
+                maxWidth: "min(75%, 320px)",
+                maxHeight: "260px",
+                objectFit: fitMode,
+                objectPosition: "center center",
+                display: "block",
+                border: "none",
+                background: "transparent",
+                boxShadow: "none",
+                borderRadius: 0,
+                padding: 0,
+                margin: 0,
+                pointerEvents: "none"
+              }}
+            />
+          </div>
         </div>
       );
     };
@@ -723,7 +736,6 @@ export default function GreetingView({
       return (
         <div className="sceneInner" style={style}>
           {editBadge}
-          {renderForegroundPhoto(b)}
           <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {isEditable ? (
               <>
@@ -756,6 +768,9 @@ export default function GreetingView({
                 </div>
               </>
             )}
+
+            {/* Foreground Photo below text */}
+            {renderForegroundPhoto(b)}
 
             <div className="cards" style={{ position: "relative", zIndex: 20, width: "100%" }}>
               {(b.items ?? []).map((r, i) => (
@@ -795,7 +810,6 @@ export default function GreetingView({
       return (
         <div className="sceneInner incidentsScene" style={style}>
           {editBadge}
-          {renderForegroundPhoto(b)}
           <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {isEditable ? (
               <>
@@ -828,6 +842,9 @@ export default function GreetingView({
                 </div>
               </>
             )}
+
+            {/* Foreground Photo below text */}
+            {renderForegroundPhoto(b)}
 
             <div className="incidentCards" style={{ position: "relative", zIndex: 20, width: "100%" }}>
               {(b.incidents ?? []).map((inc, i) => (
@@ -1029,7 +1046,6 @@ export default function GreetingView({
       return (
         <div className="sceneInner letterScene" style={style}>
           {editBadge}
-          {renderForegroundPhoto(b)}
           <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {isEditable ? (
               <>
@@ -1066,6 +1082,9 @@ export default function GreetingView({
                 </article>
               </>
             )}
+
+            {/* Foreground Photo below letter */}
+            {renderForegroundPhoto(b)}
           </div>
           {nav}
         </div>
@@ -1076,7 +1095,6 @@ export default function GreetingView({
       return (
         <div className="sceneInner secretScene" style={style}>
           {editBadge}
-          {renderForegroundPhoto(b)}
           <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {isEditable ? (
               <>
@@ -1113,6 +1131,8 @@ export default function GreetingView({
                     <p className="heroText" style={getElementStyle(b, "body")}>{b.text}</p>
                   )}
                 </div>
+                {/* Foreground Photo below message */}
+                {renderForegroundPhoto(b)}
                 <button
                   type="button"
                   className="btn primary revealBtn"
@@ -1126,6 +1146,8 @@ export default function GreetingView({
               <div className="secretReveal" style={{ position: "relative", zIndex: 20 }} onClick={() => isEditable && triggerSelect("secret")}>
                 <span className="secretSparkle">✦</span>
                 <h2 style={getElementStyle(b, "secretMessage")}>{b.text}</h2>
+                {/* Foreground Photo in reveal */}
+                {renderForegroundPhoto(b)}
                 {b.secretImage && (
                   <div className="secretPhotoMount" onClick={(e) => { e.stopPropagation(); isEditable && triggerSelect("photo", 0); }}>
                     <img src={b.secretImage} alt="Secret memory" style={{ opacity: (b.imageOpacity ?? 100) / 100 }} />
@@ -1182,7 +1204,6 @@ export default function GreetingView({
       return (
         <div className="sceneInner cakeScene" style={style}>
           {editBadge}
-          {renderForegroundPhoto(b)}
           <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {isEditable ? (
               <>
@@ -1225,6 +1246,9 @@ export default function GreetingView({
                 ))}
               </div>
             </div>
+
+            {/* Foreground Photo below cake */}
+            {renderForegroundPhoto(b)}
 
             {cakeCelebrated ? (
               <div className="cakeCelebrationCard" style={{ position: "relative", zIndex: 20 }} onClick={() => isEditable && triggerSelect("cake")}>
@@ -1273,9 +1297,6 @@ export default function GreetingView({
       <div className="sceneInner" style={style}>
         {editBadge}
 
-        {/* Foreground Photo Layer (behind text, above wallpaper) */}
-        {renderForegroundPhoto(b)}
-
         <div className="sectionContentLayer" style={{ position: "relative", zIndex: 20, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
           {isEditable ? (
             <>
@@ -1308,6 +1329,9 @@ export default function GreetingView({
               </div>
             </>
           )}
+
+          {/* Foreground Photo Layer (Dedicated media area BELOW the text) */}
+          {renderForegroundPhoto(b)}
 
           {(b.memoryVideo || b.video || resolvedVideo) && (
             <video
