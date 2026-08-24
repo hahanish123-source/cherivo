@@ -171,6 +171,7 @@ export default function CreatePage() {
   const sectionBgInputRef = useRef<HTMLInputElement | null>(null);
   const incidentPhotoInputRef = useRef<HTMLInputElement | null>(null);
   const [activeIncidentIdx, setActiveIncidentIdx] = useState<number | null>(null);
+  const [replacePhotoIndex, setReplacePhotoIndex] = useState<number | null>(null);
   const inspectorBodyRef = useRef<HTMLDivElement | null>(null);
 
   // Font options helper
@@ -530,11 +531,22 @@ export default function CreatePage() {
     if (!file) return;
     const result = await handleMediaUpload(file, "image");
     if (result) {
+      const url = result.previewUrl || result.media;
+      const curImgs = Array.isArray(current.images) && current.images.length > 0 ? [...current.images] : current.image ? [current.image] : [];
+      if (replacePhotoIndex !== null && replacePhotoIndex >= 0 && replacePhotoIndex < curImgs.length) {
+        curImgs[replacePhotoIndex] = url;
+      } else {
+        curImgs.push(url);
+        setSelectedPhotoIdx(curImgs.length - 1);
+      }
       updateCurrent({
-        image: result.previewUrl || result.media
+        images: curImgs,
+        image: curImgs[0] || ""
       });
+      setReplacePhotoIndex(null);
       setActiveElementCategory("photo");
       setDraftStatus("unsaved");
+      if (e.target) e.target.value = "";
     }
   }
 
@@ -809,9 +821,13 @@ export default function CreatePage() {
   }
 
   // Photo adjustment helper for current block
-  const heroAdj = current.imageAdjustments?.["hero"] ?? current.imageAdjustments?.["0"] ?? { scale: 100, x: 50, y: 50, opacity: 100, rotation: 0 };
+  const heroAdj = current.imageAdjustments?.["hero"] ?? current.imageAdjustments?.["0"] ?? { scale: 100, x: 50, y: 50, opacity: 100, rotation: 0, width: 60, cornerRadius: 0 };
   const galleryImages = Array.isArray(current.images) && current.images.length > 0 ? current.images : current.image ? [current.image] : [];
-  const selectedPhotoAdj: ImageAdjustment = current.imageAdjustments?.[String(selectedPhotoIdx)] ?? current.imageAdjustments?.[`photo_${selectedPhotoIdx}`] ?? { scale: 100, x: 50, y: 50, opacity: 100, rotation: 0 };
+  const selectedPhotoAdj: ImageAdjustment =
+    current.imageAdjustments?.[String(selectedPhotoIdx)] ??
+    current.imageAdjustments?.[`photo_${selectedPhotoIdx}`] ??
+    (selectedPhotoIdx === 0 ? current.imageAdjustments?.["hero"] ?? current.imageAdjustments?.["0"] : undefined) ??
+    { scale: 100, x: 50, y: 50, opacity: 100, rotation: 0, width: 60, cornerRadius: 0 };
 
   return (
     <main className={`studioRoot theme-${theme} motion-${globalMotion}`}>
@@ -1954,302 +1970,303 @@ export default function CreatePage() {
             )}
 
             {/* ------------------------------------------------------------------- */}
-            {/* 2. PHOTOS & GALLERY INSPECTOR                                       */}
+            {/* 2. PHOTO INSPECTOR                                                  */}
             {/* ------------------------------------------------------------------- */}
             {activeElementCategory === "photo" && (
               <div className="inspectorSectionGroup">
-                {/* For Gallery / Memories with multiple photos */}
-                {(current.type === "gallery" || current.type === "memories") ? (
-                  <div className="controlCard">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span className="controlGroupTitle">📸 Photos in Gallery ({galleryImages.length})</span>
-                      <button
-                        type="button"
-                        className="btn small"
-                        onClick={() => galleryInputRef.current?.click()}
-                      >
-                        <Plus size={12} /> Add Photos
-                      </button>
-                    </div>
+                <div className="controlCard">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <span className="controlGroupTitle" style={{ margin: 0 }}>📸 Section Photos ({galleryImages.length})</span>
+                    <button
+                      type="button"
+                      className="btn small primary"
+                      onClick={() => {
+                        setReplacePhotoIndex(null);
+                        heroPhotoInputRef.current?.click();
+                      }}
+                    >
+                      + Add Photo
+                    </button>
+                  </div>
 
-                    {/* Photo SubTabs */}
-                    {galleryImages.length > 0 && (
-                      <div className="photoSubTabs">
-                        {galleryImages.map((_, pIdx) => (
+                  {galleryImages.length === 0 ? (
+                    <button
+                      type="button"
+                      className="btn small primary full"
+                      onClick={() => {
+                        setReplacePhotoIndex(null);
+                        heroPhotoInputRef.current?.click();
+                      }}
+                    >
+                      📸 Upload Photo (up to 15 MB)
+                    </button>
+                  ) : (
+                    <>
+                      {/* Photo Selector Strip */}
+                      <div className="galleryPhotoListStrip" style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "8px", marginBottom: "12px" }}>
+                        {galleryImages.map((src, i) => (
                           <button
-                            key={pIdx}
+                            key={i}
                             type="button"
-                            className={`photoSubTabBtn ${selectedPhotoIdx === pIdx ? "active" : ""}`}
-                            onClick={() => setSelectedPhotoIdx(pIdx)}
+                            className={`galleryThumbnailBtn ${selectedPhotoIdx === i ? "active" : ""}`}
+                            onClick={() => setSelectedPhotoIdx(i)}
+                            style={{
+                              position: "relative",
+                              width: "56px",
+                              height: "56px",
+                              borderRadius: "8px",
+                              overflow: "hidden",
+                              border: selectedPhotoIdx === i ? "2px solid var(--accent, #ff4f8b)" : "1px solid rgba(255,255,255,0.15)",
+                              padding: 0,
+                              background: "#111",
+                              cursor: "pointer",
+                              flexShrink: 0
+                            }}
                           >
-                            Photo {pIdx + 1}
+                            <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, fontSize: "10px", background: "rgba(0,0,0,0.7)", color: "#fff", textAlign: "center" }}>
+                              #{i + 1}
+                            </span>
                           </button>
                         ))}
                       </div>
-                    )}
 
-                    {/* Layout Selector */}
-                    <label className="fieldLabel">
-                      Gallery Display Layout
-                      <select
-                        value={current.galleryLayout || "collage"}
-                        onChange={(e) => updateCurrent({ galleryLayout: e.target.value })}
-                      >
-                        <option value="collage">Collage Flow</option>
-                        <option value="grid">Clean Photo Grid</option>
-                        <option value="masonry">Masonry Wall</option>
-                        <option value="scattered">Scattered Memories (Tap to Disintegrate)</option>
-                      </select>
-                    </label>
-
-                    {/* Current Selected Photo Controls */}
-                    {galleryImages[selectedPhotoIdx] && (
-                      <div className="nestedItemCard" style={{ marginTop: "8px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>
-                            Editing Photo {selectedPhotoIdx + 1}
-                          </span>
+                      {/* Selected Photo Actions */}
+                      <div className="miniMediaRow" style={{ marginBottom: "12px" }}>
+                        <span style={{ fontSize: "12px", color: "var(--text)" }}>Photo #{selectedPhotoIdx + 1} Selected</span>
+                        <div style={{ display: "flex", gap: "6px" }}>
                           <button
                             type="button"
-                            className="dangerIconBtn"
-                            title="Remove this photo"
+                            className="btn small"
                             onClick={() => {
-                              const updated = galleryImages.filter((_, idx) => idx !== selectedPhotoIdx);
-                              updateCurrent({ images: updated, image: updated[0] || "" });
-                              setSelectedPhotoIdx(Math.max(0, selectedPhotoIdx - 1));
+                              setReplacePhotoIndex(selectedPhotoIdx);
+                              heroPhotoInputRef.current?.click();
                             }}
                           >
-                            <Trash2 size={13} />
+                            Replace
+                          </button>
+                          <button
+                            type="button"
+                            className="btn small danger"
+                            onClick={() => {
+                              const newImgs = galleryImages.filter((_, idx) => idx !== selectedPhotoIdx);
+                              const newAdjustments = { ...(current.imageAdjustments || {}) };
+                              delete newAdjustments[String(selectedPhotoIdx)];
+                              delete newAdjustments[`photo_${selectedPhotoIdx}`];
+                              if (selectedPhotoIdx === 0) delete newAdjustments["hero"];
+                              setSelectedPhotoIdx(Math.max(0, selectedPhotoIdx - 1));
+                              updateCurrent({
+                                images: newImgs,
+                                image: newImgs[0] || "",
+                                imageAdjustments: newAdjustments
+                              });
+                            }}
+                          >
+                            Remove
                           </button>
                         </div>
+                      </div>
 
-                        <div className="fieldRow">
-                          <label className="fieldLabel">
-                            <div className="sliderHeader">
-                              <span>Scale / Zoom</span>
-                              <span className="valueBadge">{selectedPhotoAdj.scale ?? 100}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="50"
-                              max="200"
-                              value={selectedPhotoAdj.scale ?? 100}
-                              onChange={(e) => {
-                                const adjustments = { ...(current.imageAdjustments || {}) };
-                                adjustments[String(selectedPhotoIdx)] = {
-                                  ...selectedPhotoAdj,
-                                  scale: Number(e.target.value)
-                                };
-                                updateCurrent({ imageAdjustments: adjustments });
-                              }}
-                            />
-                          </label>
-                          <label className="fieldLabel">
-                            <div className="sliderHeader">
-                              <span>Opacity</span>
-                              <span className="valueBadge">{selectedPhotoAdj.opacity ?? 100}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="10"
-                              max="100"
-                              value={selectedPhotoAdj.opacity ?? 100}
-                              onChange={(e) => {
-                                const adjustments = { ...(current.imageAdjustments || {}) };
-                                adjustments[String(selectedPhotoIdx)] = {
-                                  ...selectedPhotoAdj,
-                                  opacity: Number(e.target.value)
-                                };
-                                updateCurrent({ imageAdjustments: adjustments });
-                              }}
-                            />
-                          </label>
+                      {/* Fit Mode */}
+                      <label className="fieldLabel">
+                        Fit / Display Mode
+                        <div className="fitModeToggleGroup">
+                          <button
+                            type="button"
+                            className={`fitModeToggleBtn ${selectedPhotoAdj.fit === "contain" || (!selectedPhotoAdj.fit && current.imageFit !== "cover") ? "active" : ""}`}
+                            onClick={() => {
+                              const adjustments = { ...(current.imageAdjustments || {}) };
+                              adjustments[String(selectedPhotoIdx)] = { ...selectedPhotoAdj, fit: "contain" };
+                              if (selectedPhotoIdx === 0) adjustments["hero"] = { ...selectedPhotoAdj, fit: "contain" };
+                              updateCurrent({ imageAdjustments: adjustments });
+                            }}
+                          >
+                            Contain (Full Image)
+                          </button>
+                          <button
+                            type="button"
+                            className={`fitModeToggleBtn ${selectedPhotoAdj.fit === "cover" || (!selectedPhotoAdj.fit && current.imageFit === "cover") ? "active" : ""}`}
+                            onClick={() => {
+                              const adjustments = { ...(current.imageAdjustments || {}) };
+                              adjustments[String(selectedPhotoIdx)] = { ...selectedPhotoAdj, fit: "cover" };
+                              if (selectedPhotoIdx === 0) adjustments["hero"] = { ...selectedPhotoAdj, fit: "cover" };
+                              updateCurrent({ imageAdjustments: adjustments });
+                            }}
+                          >
+                            Cover
+                          </button>
                         </div>
+                      </label>
 
-                        <div className="fieldRow">
-                          <label className="fieldLabel">
-                            <div className="sliderHeader">
-                              <span>Position X</span>
-                              <span className="valueBadge">{selectedPhotoAdj.x ?? 50}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              value={selectedPhotoAdj.x ?? 50}
-                              onChange={(e) => {
+                      {/* Width & Scale */}
+                      <div className="fieldRow">
+                        <label className="fieldLabel">
+                          <div className="sliderHeader">
+                            <span>Width</span>
+                            <span className="valueBadge">{selectedPhotoAdj.width ?? 60}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="20"
+                            max="100"
+                            value={selectedPhotoAdj.width ?? 60}
+                            onChange={(e) => {
+                              const adjustments = { ...(current.imageAdjustments || {}) };
+                              const val = Number(e.target.value);
+                              adjustments[String(selectedPhotoIdx)] = { ...selectedPhotoAdj, width: val };
+                              if (selectedPhotoIdx === 0) adjustments["hero"] = { ...selectedPhotoAdj, width: val };
+                              updateCurrent({ imageAdjustments: adjustments });
+                            }}
+                          />
+                        </label>
+                        <label className="fieldLabel">
+                          <div className="sliderHeader">
+                            <span>Scale / Zoom</span>
+                            <span className="valueBadge">{selectedPhotoAdj.scale ?? 100}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="30"
+                            max="200"
+                            value={selectedPhotoAdj.scale ?? 100}
+                            onChange={(e) => {
+                              const adjustments = { ...(current.imageAdjustments || {}) };
+                              const val = Number(e.target.value);
+                              adjustments[String(selectedPhotoIdx)] = { ...selectedPhotoAdj, scale: val };
+                              if (selectedPhotoIdx === 0) adjustments["hero"] = { ...selectedPhotoAdj, scale: val };
+                              updateCurrent({ imageAdjustments: adjustments });
+                            }}
+                          />
+                        </label>
+                      </div>
+
+                      {/* Opacity & Corner Radius */}
+                      <div className="fieldRow">
+                        <label className="fieldLabel">
+                          <div className="sliderHeader">
+                            <span>Opacity</span>
+                            <span className="valueBadge">{selectedPhotoAdj.opacity ?? 100}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="10"
+                            max="100"
+                            value={selectedPhotoAdj.opacity ?? 100}
+                            onChange={(e) => {
+                              const adjustments = { ...(current.imageAdjustments || {}) };
+                              const val = Number(e.target.value);
+                              adjustments[String(selectedPhotoIdx)] = { ...selectedPhotoAdj, opacity: val };
+                              if (selectedPhotoIdx === 0) adjustments["hero"] = { ...selectedPhotoAdj, opacity: val };
+                              updateCurrent({ imageAdjustments: adjustments });
+                            }}
+                          />
+                        </label>
+                        <label className="fieldLabel">
+                          <div className="sliderHeader">
+                            <span>Corner Radius</span>
+                            <span className="valueBadge">{selectedPhotoAdj.cornerRadius ?? 0}px</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="50"
+                            value={selectedPhotoAdj.cornerRadius ?? 0}
+                            onChange={(e) => {
+                              const adjustments = { ...(current.imageAdjustments || {}) };
+                              const val = Number(e.target.value);
+                              adjustments[String(selectedPhotoIdx)] = { ...selectedPhotoAdj, cornerRadius: val };
+                              if (selectedPhotoIdx === 0) adjustments["hero"] = { ...selectedPhotoAdj, cornerRadius: val };
+                              updateCurrent({ imageAdjustments: adjustments });
+                            }}
+                          />
+                        </label>
+                      </div>
+
+                      {/* Corner Position Presets (3x3 Grid) */}
+                      <div className="presetPositionSection" style={{ marginTop: "12px", marginBottom: "8px" }}>
+                        <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: "6px" }}>
+                          Position Presets
+                        </span>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px" }}>
+                          {[
+                            { label: "↖ Top L", x: 20, y: 20 },
+                            { label: "↑ Top C", x: 50, y: 20 },
+                            { label: "↗ Top R", x: 80, y: 20 },
+                            { label: "← Mid L", x: 20, y: 50 },
+                            { label: "● Center", x: 50, y: 50 },
+                            { label: "→ Mid R", x: 80, y: 50 },
+                            { label: "↙ Bot L", x: 20, y: 80 },
+                            { label: "↓ Bot C", x: 50, y: 80 },
+                            { label: "↘ Bot R", x: 80, y: 80 }
+                          ].map((preset, pIdx) => (
+                            <button
+                              key={pIdx}
+                              type="button"
+                              className="btn small ghost"
+                              style={{
+                                fontSize: "11px",
+                                padding: "6px 2px",
+                                borderRadius: "6px",
+                                border: (selectedPhotoAdj.x === preset.x && selectedPhotoAdj.y === preset.y) ? "1px solid var(--accent, #ff4f8b)" : "1px solid rgba(255,255,255,0.08)",
+                                background: (selectedPhotoAdj.x === preset.x && selectedPhotoAdj.y === preset.y) ? "rgba(255,79,139,0.15)" : "transparent"
+                              }}
+                              onClick={() => {
                                 const adjustments = { ...(current.imageAdjustments || {}) };
-                                adjustments[String(selectedPhotoIdx)] = {
-                                  ...selectedPhotoAdj,
-                                  x: Number(e.target.value)
-                                };
+                                adjustments[String(selectedPhotoIdx)] = { ...selectedPhotoAdj, x: preset.x, y: preset.y };
+                                if (selectedPhotoIdx === 0) adjustments["hero"] = { ...selectedPhotoAdj, x: preset.x, y: preset.y };
                                 updateCurrent({ imageAdjustments: adjustments });
                               }}
-                            />
-                          </label>
-                          <label className="fieldLabel">
-                            <div className="sliderHeader">
-                              <span>Position Y</span>
-                              <span className="valueBadge">{selectedPhotoAdj.y ?? 50}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              value={selectedPhotoAdj.y ?? 50}
-                              onChange={(e) => {
-                                const adjustments = { ...(current.imageAdjustments || {}) };
-                                adjustments[String(selectedPhotoIdx)] = {
-                                  ...selectedPhotoAdj,
-                                  y: Number(e.target.value)
-                                };
-                                updateCurrent({ imageAdjustments: adjustments });
-                              }}
-                            />
-                          </label>
+                            >
+                              {preset.label}
+                            </button>
+                          ))}
                         </div>
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  /* Single Photo Section (Hero, Letter, Secret, Incident, Welcome) */
-                  <div className="controlCard">
-                    <span className="controlGroupTitle">📸 Section Photo</span>
-                    {current.image ? (
-                      <>
-                        <div className="miniMediaRow">
-                          <span style={{ fontSize: "12px", color: "var(--text)" }}>Photo Attached</span>
-                          <div style={{ display: "flex", gap: "6px" }}>
-                            <button
-                              type="button"
-                              className="btn small"
-                              onClick={() => heroPhotoInputRef.current?.click()}
-                            >
-                              Replace
-                            </button>
-                            <button
-                              type="button"
-                              className="btn small danger"
-                              onClick={() => updateCurrent({ image: "" })}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </div>
+
+                      {/* Position X & Position Y Sliders */}
+                      <div className="fieldRow">
                         <label className="fieldLabel">
-                          Fit / Display Mode
-                          <div className="fitModeToggleGroup">
-                            <button
-                              type="button"
-                              className={`fitModeToggleBtn ${(current.imageFit === "cover" || (heroAdj as any).fit === "cover") ? "active" : ""}`}
-                              onClick={() => {
-                                const adjustments = { ...(current.imageAdjustments || {}) };
-                                adjustments["hero"] = { ...heroAdj, fit: "cover" as any };
-                                updateCurrent({ imageFit: "cover", imageAdjustments: adjustments });
-                              }}
-                            >
-                              Cover
-                            </button>
-                            <button
-                              type="button"
-                              className={`fitModeToggleBtn ${(!current.imageFit || current.imageFit === "contain" || (heroAdj as any).fit === "contain") ? "active" : ""}`}
-                              onClick={() => {
-                                const adjustments = { ...(current.imageAdjustments || {}) };
-                                adjustments["hero"] = { ...heroAdj, fit: "contain" as any };
-                                updateCurrent({ imageFit: "contain", imageAdjustments: adjustments });
-                              }}
-                            >
-                              Contain
-                            </button>
+                          <div className="sliderHeader">
+                            <span>Position X</span>
+                            <span className="valueBadge">{selectedPhotoAdj.x ?? 50}%</span>
                           </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={selectedPhotoAdj.x ?? 50}
+                            onChange={(e) => {
+                              const adjustments = { ...(current.imageAdjustments || {}) };
+                              const val = Number(e.target.value);
+                              adjustments[String(selectedPhotoIdx)] = { ...selectedPhotoAdj, x: val };
+                              if (selectedPhotoIdx === 0) adjustments["hero"] = { ...selectedPhotoAdj, x: val };
+                              updateCurrent({ imageAdjustments: adjustments });
+                            }}
+                          />
                         </label>
-
-                        <div className="fieldRow">
-                          <label className="fieldLabel">
-                            <div className="sliderHeader">
-                              <span>Scale / Zoom</span>
-                              <span className="valueBadge">{heroAdj.scale ?? 100}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="50"
-                              max="200"
-                              value={heroAdj.scale ?? 100}
-                              onChange={(e) => {
-                                const adjustments = { ...(current.imageAdjustments || {}) };
-                                adjustments["hero"] = { ...heroAdj, scale: Number(e.target.value) };
-                                updateCurrent({ imageAdjustments: adjustments });
-                              }}
-                            />
-                          </label>
-                          <label className="fieldLabel">
-                            <div className="sliderHeader">
-                              <span>Opacity</span>
-                              <span className="valueBadge">{heroAdj.opacity ?? current.imageOpacity ?? 100}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="10"
-                              max="100"
-                              value={heroAdj.opacity ?? current.imageOpacity ?? 100}
-                              onChange={(e) => {
-                                const val = Number(e.target.value);
-                                const adjustments = { ...(current.imageAdjustments || {}) };
-                                adjustments["hero"] = { ...heroAdj, opacity: val };
-                                updateCurrent({ imageOpacity: val, imageAdjustments: adjustments });
-                              }}
-                            />
-                          </label>
-                        </div>
-
-                        <div className="fieldRow">
-                          <label className="fieldLabel">
-                            <div className="sliderHeader">
-                              <span>Position X</span>
-                              <span className="valueBadge">{heroAdj.x ?? 50}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              value={heroAdj.x ?? 50}
-                              onChange={(e) => {
-                                const adjustments = { ...(current.imageAdjustments || {}) };
-                                adjustments["hero"] = { ...heroAdj, x: Number(e.target.value) };
-                                updateCurrent({ imageAdjustments: adjustments });
-                              }}
-                            />
-                          </label>
-                          <label className="fieldLabel">
-                            <div className="sliderHeader">
-                              <span>Position Y</span>
-                              <span className="valueBadge">{heroAdj.y ?? 50}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              value={heroAdj.y ?? 50}
-                              onChange={(e) => {
-                                const adjustments = { ...(current.imageAdjustments || {}) };
-                                adjustments["hero"] = { ...heroAdj, y: Number(e.target.value) };
-                                updateCurrent({ imageAdjustments: adjustments });
-                              }}
-                            />
-                          </label>
-                        </div>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn small primary full"
-                        onClick={() => heroPhotoInputRef.current?.click()}
-                      >
-                        📸 Upload Section Photo (up to 15 MB)
-                      </button>
-                    )}
-                  </div>
-                )}
+                        <label className="fieldLabel">
+                          <div className="sliderHeader">
+                            <span>Position Y</span>
+                            <span className="valueBadge">{selectedPhotoAdj.y ?? 50}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={selectedPhotoAdj.y ?? 50}
+                            onChange={(e) => {
+                              const adjustments = { ...(current.imageAdjustments || {}) };
+                              const val = Number(e.target.value);
+                              adjustments[String(selectedPhotoIdx)] = { ...selectedPhotoAdj, y: val };
+                              if (selectedPhotoIdx === 0) adjustments["hero"] = { ...selectedPhotoAdj, y: val };
+                              updateCurrent({ imageAdjustments: adjustments });
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             )}
 

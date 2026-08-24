@@ -4614,5 +4614,43 @@ select:focus {
   }
 }
 
+/* Foreground Media System */
+.foregroundMediaLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.foregroundMediaItem {
+  position: absolute;
+  pointer-events: auto;
+  user-select: none;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.foregroundMediaImage {
+  display: block;
+  pointer-events: none;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.galleryPhotoListStrip::-webkit-scrollbar {
+  height: 4px;
+}
+
+.galleryPhotoListStrip::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+
 
 

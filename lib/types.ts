@@ -51,6 +51,10 @@ export type ImageAdjustment = {
   opacity?: number;
   rotation?: number;
   fit?: "cover" | "contain" | "fill";
+  width?: number;
+  cornerRadius?: number;
+  zIndex?: number;
+  visible?: boolean;
 };
 
 export type ElementTextStyle = {
