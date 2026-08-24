@@ -1965,12 +1965,9 @@ button {
 }
 
 .galleryPage.layout-scattered .galleryStage {
-  display: block !important;
-  height: 560px !important;
-  min-height: 560px;
-  width: min(760px, 94vw) !important;
-  margin: 20px auto 0 !important;
-  position: relative !important;
+  display: block;
+  position: relative;
+  margin: 0 auto;
 }
 
 .galleryDustCanvas {
@@ -1983,40 +1980,15 @@ button {
 }
 
 .galleryPage.layout-scattered .galleryPhoto {
-  position: absolute !important;
-  width: 28%;
-  height: 155px;
-  cursor: pointer !important;
+  position: absolute;
+  cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, opacity 0.25s ease;
 }
 
 .galleryPage.layout-scattered .galleryPhoto:hover {
-  transform: scale(1.08) rotate(0deg) !important;
   z-index: 30 !important;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6) !important;
 }
-
-/* 20 deterministic scattered positions */
-.galleryPage.layout-scattered .galleryPhoto-1  { left: 3%;  top: 2%;  transform: rotate(-5deg); z-index: 1; }
-.galleryPage.layout-scattered .galleryPhoto-2  { left: 36%; top: 0%;  transform: rotate(3deg);  z-index: 2; }
-.galleryPage.layout-scattered .galleryPhoto-3  { right: 4%; top: 4%;  transform: rotate(-4deg); z-index: 1; }
-.galleryPage.layout-scattered .galleryPhoto-4  { left: 1%;  top: 28%; transform: rotate(4deg);  z-index: 3; }
-.galleryPage.layout-scattered .galleryPhoto-5  { left: 34%; top: 25%; transform: rotate(-3deg); z-index: 4; }
-.galleryPage.layout-scattered .galleryPhoto-6  { right: 2%; top: 29%; transform: rotate(5deg);  z-index: 2; }
-.galleryPage.layout-scattered .galleryPhoto-7  { left: 6%;  top: 54%; transform: rotate(-6deg); z-index: 3; }
-.galleryPage.layout-scattered .galleryPhoto-8  { left: 38%; top: 52%; transform: rotate(2deg);  z-index: 5; }
-.galleryPage.layout-scattered .galleryPhoto-9  { right: 5%; top: 55%; transform: rotate(-4deg); z-index: 4; }
-.galleryPage.layout-scattered .galleryPhoto-10 { left: 18%; top: 76%; transform: rotate(5deg);  z-index: 6; }
-.galleryPage.layout-scattered .galleryPhoto-11 { right: 16%; top: 75%; transform: rotate(-3deg); z-index: 5; }
-.galleryPage.layout-scattered .galleryPhoto-12 { left: 52%; top: 74%; transform: rotate(4deg);  z-index: 6; }
-.galleryPage.layout-scattered .galleryPhoto-13 { left: 12%; top: 12%; transform: rotate(2deg);  z-index: 2; }
-.galleryPage.layout-scattered .galleryPhoto-14 { right: 20%; top: 15%; transform: rotate(-5deg); z-index: 3; }
-.galleryPage.layout-scattered .galleryPhoto-15 { left: 22%; top: 38%; transform: rotate(3deg);  z-index: 4; }
-.galleryPage.layout-scattered .galleryPhoto-16 { right: 12%; top: 42%; transform: rotate(-2deg); z-index: 3; }
-.galleryPage.layout-scattered .galleryPhoto-17 { left: 8%;  top: 65%; transform: rotate(4deg);  z-index: 4; }
-.galleryPage.layout-scattered .galleryPhoto-18 { right: 8%; top: 68%; transform: rotate(-5deg); z-index: 5; }
-.galleryPage.layout-scattered .galleryPhoto-19 { left: 45%; top: 14%; transform: rotate(-3deg); z-index: 2; }
-.galleryPage.layout-scattered .galleryPhoto-20 { left: 30%; top: 62%; transform: rotate(3deg);  z-index: 4; }
 
 .photo-dusted {
   opacity: 0 !important;
