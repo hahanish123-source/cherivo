@@ -555,27 +555,50 @@ export default function CreatePage() {
     }
   }
 
-  // Specific Upload Triggers
+  // Specific Upload Triggers (Full Multi-Photo Upload Support)
   async function uploadHeroPhoto(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const result = await handleMediaUpload(file, "image");
-    if (result) {
-      const url = result.previewUrl || result.media;
-      const curImgs = Array.isArray(current.images) && current.images.length > 0 ? [...current.images] : current.image ? [current.image] : [];
-      if (replacePhotoIndex !== null && replacePhotoIndex >= 0 && replacePhotoIndex < curImgs.length) {
-        curImgs[replacePhotoIndex] = url;
-      } else {
-        curImgs.push(url);
-        setSelectedPhotoIdx(curImgs.length - 1);
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setMediaUploading(true);
+    const uploadedUrls: string[] = [];
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (files.length > 1) {
+          setUploadProgressMsg(`Uploading photo ${i + 1} of ${files.length} (${(file.size / (1024 * 1024)).toFixed(1)} MB)...`);
+        }
+        const result = await handleMediaUpload(file, "image");
+        if (result) {
+          const url = result.previewUrl || result.media;
+          if (url) uploadedUrls.push(url);
+        }
       }
-      updateCurrent({
-        images: curImgs,
-        image: curImgs[0] || ""
-      });
-      setReplacePhotoIndex(null);
-      setActiveElementCategory("photo");
-      setDraftStatus("unsaved");
+
+      if (uploadedUrls.length > 0) {
+        const curImgs = Array.isArray(current.images) && current.images.length > 0 ? [...current.images] : current.image ? [current.image] : [];
+        if (replacePhotoIndex !== null && replacePhotoIndex >= 0 && replacePhotoIndex < curImgs.length) {
+          curImgs[replacePhotoIndex] = uploadedUrls[0];
+          if (uploadedUrls.length > 1) {
+            curImgs.push(...uploadedUrls.slice(1));
+          }
+        } else {
+          curImgs.push(...uploadedUrls);
+          setSelectedPhotoIdx(curImgs.length - 1);
+        }
+
+        updateCurrent({
+          images: curImgs,
+          image: curImgs[0] || ""
+        });
+        setReplacePhotoIndex(null);
+        setActiveElementCategory("photo");
+        setDraftStatus("unsaved");
+        setToast(`Added ${uploadedUrls.length} photo${uploadedUrls.length > 1 ? "s" : ""}! 📸✨`);
+      }
+    } finally {
+      setMediaUploading(false);
+      setUploadProgressMsg("");
       if (e.target) e.target.value = "";
     }
   }
@@ -625,19 +648,7 @@ export default function CreatePage() {
   }
 
   async function uploadGalleryPhotos(e: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    for (const file of files) {
-      const result = await handleMediaUpload(file, "image");
-      if (result) {
-        const photoUrl = result.previewUrl || result.media;
-        const currentImages = Array.isArray(current.images) ? [...current.images] : current.image ? [current.image] : [];
-        currentImages.push(photoUrl);
-        updateCurrent({ images: currentImages, image: currentImages[0] });
-      }
-    }
-    setActiveElementCategory("photo");
+    await uploadHeroPhoto(e);
   }
 
   async function uploadVideoTrack(e: ChangeEvent<HTMLInputElement>) {
@@ -878,7 +889,7 @@ export default function CreatePage() {
       )}
 
       {/* Hidden File Inputs */}
-      <input ref={heroPhotoInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={uploadHeroPhoto} />
+      <input ref={heroPhotoInputRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={uploadHeroPhoto} />
       <input ref={wallpaperInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={uploadWallpaper} />
       <input ref={sectionBgInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={uploadSectionWallpaper} />
       <input ref={audioInputRef} type="file" accept="audio/mpeg,audio/mp3" style={{ display: "none" }} onChange={uploadAudioTrack} />
