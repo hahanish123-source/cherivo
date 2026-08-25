@@ -2543,28 +2543,24 @@ button {
 
 /* Scattered Layout */
 .galleryPage.layout-scattered .galleryStage {
-  position: relative !important;
-  width: 100% !important;
-  min-height: 480px !important;
-  height: 500px !important;
-  margin: 16px 0 !important;
-  overflow: hidden !important;
+  position: relative;
+  width: 100%;
+  margin: 10px auto;
+  overflow: visible;
 }
 
 .galleryPage.layout-scattered .galleryPhoto {
-  position: absolute !important;
-  aspect-ratio: 4 / 3;
-  height: 140px;
-  border-radius: 14px;
+  position: absolute;
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  border: 2px solid rgba(255, 255, 255, 0.3) !important;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease !important;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
   cursor: pointer;
 }
 
 .galleryPage.layout-scattered .galleryPhoto:hover {
-  transform: scale(1.06) rotate(0deg) !important;
+  transform: scale(1.05) rotate(0deg) !important;
   z-index: 50 !important;
   box-shadow: 0 16px 36px rgba(255, 61, 120, 0.4) !important;
   border-color: var(--accent) !important;
@@ -2940,27 +2936,6 @@ button {
   .galleryPage.layout-masonry .galleryStage {
     column-count: 2;
   }
-  .galleryPage.layout-scattered .galleryStage {
-    height: 480px !important;
-    min-height: 480px !important;
-    width: 100% !important;
-  }
-  .galleryPage.layout-scattered .galleryPhoto {
-    width: 44% !important;
-    height: 130px !important;
-  }
-  .galleryPage.layout-scattered .galleryPhoto-1  { left: 3% !important;  top: 2% !important; right: auto !important; }
-  .galleryPage.layout-scattered .galleryPhoto-2  { right: 3% !important; top: 1% !important; left: auto !important; }
-  .galleryPage.layout-scattered .galleryPhoto-3  { left: 4% !important;  top: 25% !important; right: auto !important; }
-  .galleryPage.layout-scattered .galleryPhoto-4  { right: 3% !important; top: 24% !important; left: auto !important; }
-  .galleryPage.layout-scattered .galleryPhoto-5  { left: 3% !important;  top: 48% !important; right: auto !important; }
-  .galleryPage.layout-scattered .galleryPhoto-6  { right: 3% !important; top: 49% !important; left: auto !important; }
-  .galleryPage.layout-scattered .galleryPhoto-7  { left: 4% !important;  top: 72% !important; right: auto !important; }
-  .galleryPage.layout-scattered .galleryPhoto-8  { right: 4% !important; top: 71% !important; left: auto !important; }
-  .galleryPage.layout-scattered .galleryPhoto-9  { left: 10% !important; top: 12% !important; right: auto !important; }
-  .galleryPage.layout-scattered .galleryPhoto-10 { right: 10% !important; top: 36% !important; left: auto !important; }
-  .galleryPage.layout-scattered .galleryPhoto-11 { left: 12% !important; top: 60% !important; right: auto !important; }
-  .galleryPage.layout-scattered .galleryPhoto-12 { right: 12% !important; top: 80% !important; left: auto !important; }
   .candles {
     gap: 32px;
   }

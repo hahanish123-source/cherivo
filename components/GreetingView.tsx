@@ -911,81 +911,164 @@ export default function GreetingView({
       const isScattered = layout === "scattered";
       const isMobile = previewDevice === "mobile";
 
-      const getScatteredPositions = (count: number, mobile: boolean) => {
-        if (count <= 1) {
-          return [{ left: "20%", top: "10%", rotate: "-2deg", width: "60%" }];
-        }
-        if (count === 2) {
-          return [
-            { left: "6%", top: "10%", rotate: "-6deg", width: "48%" },
-            { left: "48%", top: "14%", rotate: "6deg", width: "48%" }
-          ];
-        }
-        if (count === 3) {
-          return [
-            { left: "5%", top: "4%", rotate: "-6deg", width: "48%" },
-            { left: "49%", top: "8%", rotate: "7deg", width: "47%" },
-            { left: "26%", top: "52%", rotate: "-4deg", width: "50%" }
-          ];
-        }
-        if (count === 4) {
-          return [
-            { left: "4%", top: "3%", rotate: "-6deg", width: "48%" },
-            { left: "50%", top: "6%", rotate: "6deg", width: "47%" },
-            { left: "6%", top: "52%", rotate: "5deg", width: "47%" },
-            { left: "48%", top: "54%", rotate: "-5deg", width: "48%" }
-          ];
-        }
-        if (count === 5) {
-          return [
-            { left: "4%", top: "2%", rotate: "-6deg", width: "46%" },
-            { left: "50%", top: "4%", rotate: "6deg", width: "46%" },
-            { left: "26%", top: "34%", rotate: "3deg", width: "48%" },
-            { left: "6%", top: "64%", rotate: "-4deg", width: "46%" },
-            { left: "48%", top: "66%", rotate: "5deg", width: "46%" }
-          ];
-        }
-        if (count === 6) {
-          return [
-            { left: "4%", top: "2%", rotate: "-6deg", width: "46%" },
-            { left: "50%", top: "4%", rotate: "6deg", width: "46%" },
-            { left: "8%", top: "34%", rotate: "4deg", width: "45%" },
-            { left: "48%", top: "36%", rotate: "-5deg", width: "46%" },
-            { left: "5%", top: "68%", rotate: "-4deg", width: "46%" },
-            { left: "50%", top: "70%", rotate: "6deg", width: "46%" }
-          ];
+      // Pure mathematical calculation for compact, content-aware bounding box & group centering
+      const computeScatteredLayout = (imagesList: string[], isMobileView: boolean) => {
+        const count = imagesList.length;
+        if (count === 0) {
+          return {
+            items: [],
+            stageWidth: isMobileView ? "100%" : "400px",
+            stageHeight: "0px"
+          };
         }
 
-        // 7+ photos: multi-row organic staggered scatter
-        const positions = [
-          { left: "5%", top: "2%", rotate: "-6deg", width: "46%" },
-          { left: "50%", top: "4%", rotate: "6deg", width: "46%" },
-          { left: "10%", top: "24%", rotate: "4deg", width: "44%" },
-          { left: "48%", top: "28%", rotate: "-5deg", width: "46%" },
-          { left: "4%", top: "48%", rotate: "-4deg", width: "45%" },
-          { left: "52%", top: "52%", rotate: "7deg", width: "45%" },
-          { left: "12%", top: "70%", rotate: "-6deg", width: "44%" },
-          { left: "48%", top: "74%", rotate: "5deg", width: "46%" },
-          { left: "8%", top: "88%", rotate: "3deg", width: "44%" },
-          { left: "52%", top: "90%", rotate: "-4deg", width: "44%" }
-        ];
-        return Array.from({ length: count }, (_, i) => positions[i % positions.length]);
+        // Base slot configurations for compact, centered, organic scatter
+        const getBaseSlots = (n: number, mobile: boolean) => {
+          if (n <= 1) {
+            return [{ x: 50, y: 50, rot: 0, w: mobile ? 220 : 260, h: mobile ? 165 : 195 }];
+          }
+          if (n === 2) {
+            return [
+              { x: 30, y: 50, rot: -5, w: mobile ? 175 : 215, h: mobile ? 130 : 160 },
+              { x: 70, y: 50, rot: 5, w: mobile ? 175 : 215, h: mobile ? 130 : 160 }
+            ];
+          }
+          if (n === 3) {
+            return [
+              { x: 28, y: 34, rot: -6, w: mobile ? 155 : 190, h: mobile ? 115 : 145 },
+              { x: 72, y: 36, rot: 6, w: mobile ? 155 : 190, h: mobile ? 115 : 145 },
+              { x: 50, y: 68, rot: -2, w: mobile ? 160 : 195, h: mobile ? 120 : 150 }
+            ];
+          }
+          if (n === 4) {
+            return [
+              { x: 26, y: 28, rot: -6, w: mobile ? 150 : 180, h: mobile ? 110 : 135 },
+              { x: 74, y: 28, rot: 5, w: mobile ? 150 : 180, h: mobile ? 110 : 135 },
+              { x: 26, y: 72, rot: 4, w: mobile ? 150 : 180, h: mobile ? 110 : 135 },
+              { x: 74, y: 72, rot: -5, w: mobile ? 150 : 180, h: mobile ? 110 : 135 }
+            ];
+          }
+          if (n === 5) {
+            return [
+              { x: 24, y: 26, rot: -6, w: mobile ? 140 : 170, h: mobile ? 105 : 125 },
+              { x: 76, y: 26, rot: 6, w: mobile ? 140 : 170, h: mobile ? 105 : 125 },
+              { x: 50, y: 50, rot: 0, w: mobile ? 145 : 175, h: mobile ? 110 : 130 },
+              { x: 24, y: 74, rot: 5, w: mobile ? 140 : 170, h: mobile ? 105 : 125 },
+              { x: 76, y: 74, rot: -5, w: mobile ? 140 : 170, h: mobile ? 105 : 125 }
+            ];
+          }
+          if (n === 6) {
+            return [
+              { x: 20, y: 26, rot: -5, w: mobile ? 135 : 165, h: mobile ? 100 : 120 },
+              { x: 50, y: 24, rot: 3, w: mobile ? 135 : 165, h: mobile ? 100 : 120 },
+              { x: 80, y: 26, rot: 5, w: mobile ? 135 : 165, h: mobile ? 100 : 120 },
+              { x: 20, y: 74, rot: 4, w: mobile ? 135 : 165, h: mobile ? 100 : 120 },
+              { x: 50, y: 76, rot: -3, w: mobile ? 135 : 165, h: mobile ? 100 : 120 },
+              { x: 80, y: 74, rot: -4, w: mobile ? 135 : 165, h: mobile ? 100 : 120 }
+            ];
+          }
+
+          // 7+ photos: multi-row responsive scatter
+          const perRow = mobile ? 2 : 3;
+          const numRows = Math.ceil(n / perRow);
+          const slots = [];
+          for (let i = 0; i < n; i++) {
+            const row = Math.floor(i / perRow);
+            const col = i % perRow;
+            const itemsInThisRow = (row === numRows - 1 && n % perRow !== 0) ? (n % perRow) : perRow;
+            const x = itemsInThisRow === 1 ? 50 : Math.round((100 / (itemsInThisRow + 1)) * (col + 1));
+            const y = Math.round((100 / (numRows + 1)) * (row + 1));
+            const rot = ((i * 7 + 3) % 13) - 6;
+            const w = mobile ? Math.max(120, 145 - n * 1.5) : Math.max(145, 175 - n * 1.5);
+            const h = Math.round(w * 0.74);
+            slots.push({ x, y, rot, w, h });
+          }
+          return slots;
+        };
+
+        const baseSlots = getBaseSlots(count, isMobileView);
+
+        // Stage physical dimensions
+        const maxStageWidthPx = isMobileView ? 340 : count <= 1 ? 380 : count <= 2 ? 540 : 700;
+        const baseStageHeightPx = isMobileView
+          ? (count <= 1 ? 180 : count <= 2 ? 200 : count <= 3 ? 230 : count <= 4 ? 250 : count <= 5 ? 270 : count <= 6 ? 290 : count <= 8 ? 350 : 410)
+          : (count <= 1 ? 210 : count <= 2 ? 230 : count <= 3 ? 265 : count <= 4 ? 285 : count <= 5 ? 310 : count <= 6 ? 330 : count <= 8 ? 390 : 450);
+
+        // Calculate occupied bounds factoring per-photo scale & pan
+        let minXRelative = 100;
+        let maxXRelative = 0;
+        let maxBottomPx = baseStageHeightPx;
+
+        const calculatedItems = imagesList.map((src, i) => {
+          const slot = baseSlots[i % baseSlots.length];
+          const adjustment: ImageAdjustment = b.imageAdjustments?.[String(i)] ?? b.imageAdjustments?.[`photo_${i}`] ?? {
+            scale: 100,
+            x: 50,
+            y: 50,
+            opacity: 100,
+            rotation: 0
+          };
+
+          const scaleVal = (adjustment.scale ?? 100) / 100;
+          const photoWPx = slot.w * scaleVal;
+          const photoHPx = slot.h * scaleVal;
+
+          const panXPct = typeof adjustment.x === "number" ? (adjustment.x - 50) * 0.8 : 0;
+          const panYPct = typeof adjustment.y === "number" ? (adjustment.y - 50) * 0.8 : 0;
+
+          const rawX = Math.max(8, Math.min(92, slot.x + panXPct));
+          const rawY = Math.max(8, Math.min(92, slot.y + panYPct));
+          const rotVal = (adjustment.rotation ?? 0) + slot.rot;
+
+          // Relative horizontal bounds in stage percentage space
+          const halfWPct = ((photoWPx / 2) / maxStageWidthPx) * 100;
+          const leftBound = rawX - halfWPct;
+          const rightBound = rawX + halfWPct;
+
+          if (leftBound < minXRelative) minXRelative = leftBound;
+          if (rightBound > maxXRelative) maxXRelative = rightBound;
+
+          // Vertical physical bottom edge
+          const centerYPx = (rawY / 100) * baseStageHeightPx;
+          const bottomPx = centerYPx + (photoHPx / 2);
+          if (bottomPx > maxBottomPx) maxBottomPx = bottomPx;
+
+          return {
+            src,
+            index: i,
+            rawX,
+            rawY,
+            rotVal,
+            photoWPx,
+            photoHPx,
+            adjustment,
+            scaleVal
+          };
+        });
+
+        // Group Centering offset: ensure the entire photo cluster is centered horizontally
+        const groupCenterPct = (minXRelative + maxXRelative) / 2;
+        const shiftXPct = 50 - groupCenterPct;
+
+        // Controlled padding around bounding box
+        const finalStageHeightPx = Math.round(maxBottomPx + 16);
+
+        const positionedItems = calculatedItems.map((item) => {
+          const finalX = Math.max(5, Math.min(95, item.rawX + shiftXPct));
+          return {
+            ...item,
+            finalX
+          };
+        });
+
+        return {
+          items: positionedItems,
+          stageWidth: `${maxStageWidthPx}px`,
+          stageHeight: `${finalStageHeightPx}px`
+        };
       };
 
-      const calcPhotoAreaHeight = (count: number, mobile: boolean) => {
-        if (count <= 1) return mobile ? "240px" : "260px";
-        if (count <= 2) return mobile ? "280px" : "300px";
-        if (count <= 3) return mobile ? "360px" : "380px";
-        if (count <= 4) return mobile ? "420px" : "440px";
-        if (count <= 5) return mobile ? "480px" : "500px";
-        if (count <= 6) return mobile ? "540px" : "560px";
-        if (count <= 8) return mobile ? "680px" : "700px";
-        if (count <= 10) return mobile ? "820px" : "840px";
-        return `${Math.ceil(count / 2) * (mobile ? 160 : 180) + 80}px`;
-      };
-
-      const scatteredPositions = getScatteredPositions(images.length, isMobile);
-      const photoAreaHeight = calcPhotoAreaHeight(images.length, isMobile);
+      const scatterLayout = computeScatteredLayout(images, isMobile);
 
       return (
         <div
@@ -997,7 +1080,10 @@ export default function GreetingView({
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "flex-start",
-            boxSizing: "border-box"
+            boxSizing: "border-box",
+            height: "auto",
+            minHeight: "auto",
+            padding: isMobile ? "24px 16px 20px" : "28px 24px 24px"
           }}
         >
           {editBadge}
@@ -1054,8 +1140,8 @@ export default function GreetingView({
             style={{
               position: "relative",
               width: "100%",
-              maxWidth: "860px",
-              margin: "14px auto 0",
+              maxWidth: scatterLayout.stageWidth,
+              margin: "10px auto 0",
               zIndex: 15,
               display: "flex",
               flexDirection: "column",
@@ -1071,38 +1157,21 @@ export default function GreetingView({
                 style={{
                   position: "relative",
                   width: "100%",
-                  maxWidth: isMobile ? "98%" : "780px",
-                  height: photoAreaHeight,
+                  height: scatterLayout.stageHeight,
                   overflow: "visible",
                   margin: "0 auto"
                 }}
               >
                 <canvas ref={dustCanvasRef} className="galleryDustCanvas" style={{ zIndex: 12, pointerEvents: "none" }} />
 
-                {images.map((src, i) => {
-                  const adjustment: ImageAdjustment = b.imageAdjustments?.[String(i)] ?? b.imageAdjustments?.[`photo_${i}`] ?? {
-                    scale: 100,
-                    x: 50,
-                    y: 50,
-                    opacity: 100,
-                    rotation: 0
-                  };
+                {scatterLayout.items.map((item) => {
+                  const { src, index: i, finalX, rawY, rotVal, photoWPx, photoHPx, adjustment, scaleVal } = item;
                   const isDusted = dustedPhotos.includes(i);
-                  const defPos = scatteredPositions[i % scatteredPositions.length];
-                  const baseLeft = parseFloat(defPos.left);
-                  const baseTop = parseFloat(defPos.top);
-                  const offsetX = typeof adjustment.x === "number" ? (adjustment.x - 50) * 0.8 : 0;
-                  const offsetY = typeof adjustment.y === "number" ? (adjustment.y - 50) * 0.8 : 0;
-                  const posX = Math.max(2, Math.min(94, baseLeft + offsetX));
-                  const posY = Math.max(2, Math.min(94, baseTop + offsetY));
-                  const rotVal = (typeof adjustment.rotation === "number" ? adjustment.rotation : 0) + parseFloat(defPos.rotate);
-                  const scaleVal = (adjustment.scale ?? 100) / 100;
                   const opacityVal = (adjustment.opacity ?? b.imageOpacity ?? 100) / 100;
                   const radiusPx = adjustment.cornerRadius ?? 12;
                   const fitMode = (adjustment.fit || b.imageFit || "contain") as "cover" | "contain" | "natural" | "fill";
                   const isCover = fitMode === "cover";
                   const isNatural = fitMode === "natural";
-                  const widthVal = typeof adjustment.width === "number" ? `${adjustment.width}%` : defPos.width;
 
                   return (
                     <button
@@ -1113,13 +1182,13 @@ export default function GreetingView({
                       key={`${i}-${src.slice(-10)}`}
                       style={{
                         position: "absolute",
-                        left: `${posX}%`,
-                        top: `${posY}%`,
-                        width: isNatural ? "auto" : widthVal,
-                        maxWidth: "340px",
-                        height: isCover ? "180px" : "auto",
-                        maxHeight: "220px",
-                        transform: `rotate(${rotVal}deg)`,
+                        left: `${finalX}%`,
+                        top: `${rawY}%`,
+                        width: isNatural ? "auto" : `${Math.round(photoWPx)}px`,
+                        maxWidth: "320px",
+                        height: isCover ? `${Math.round(photoHPx)}px` : "auto",
+                        maxHeight: `${Math.round(photoHPx)}px`,
+                        transform: `translate(-50%, -50%) rotate(${rotVal}deg)`,
                         transformOrigin: "center center",
                         zIndex: (adjustment.zIndex ?? i) + 5,
                         opacity: opacityVal,
@@ -1152,7 +1221,7 @@ export default function GreetingView({
                           width: isNatural ? "auto" : "100%",
                           maxWidth: "100%",
                           height: isCover ? "100%" : "auto",
-                          maxHeight: "220px",
+                          maxHeight: `${Math.round(photoHPx)}px`,
                           objectFit: isNatural ? "scale-down" : isCover ? "cover" : "contain",
                           borderRadius: `${radiusPx}px`,
                           transform: `scale(${scaleVal}) translate(${isCover ? ((adjustment.x ?? 50) - 50) * 0.8 : 0}%, ${isCover ? ((adjustment.y ?? 50) - 50) * 0.8 : 0}%)`,
@@ -1257,7 +1326,7 @@ export default function GreetingView({
 
             {/* Interactive Tap Hint Directly Below Images */}
             {isScattered && images.length > 0 && (
-              <div className="memoryTapHint" style={{ position: "relative", zIndex: 20, margin: "14px 0 0", textAlign: "center" }}>
+              <div className="memoryTapHint" style={{ position: "relative", zIndex: 20, margin: "10px 0 0", textAlign: "center" }}>
                 <p className="scatteredTapHint" style={{ margin: 0 }}>
                   Tap a photo to explore the memory ❤️
                 </p>
@@ -1269,7 +1338,7 @@ export default function GreetingView({
                 type="button"
                 className="btn ghost small restoreMemories"
                 onClick={() => setDustedPhotos([])}
-                style={{ position: "relative", zIndex: 20, margin: "10px 0 0" }}
+                style={{ position: "relative", zIndex: 20, margin: "8px 0 0" }}
               >
                 <Sparkles size={14} /> Restore Photos
               </button>
@@ -1277,7 +1346,7 @@ export default function GreetingView({
           </div>
 
           {/* 3. NAVIGATION (ALWAYS BELOW GALLERY) */}
-          <div className="memoryNavigationWrap" style={{ position: "relative", zIndex: 40, width: "100%", marginTop: "18px" }}>
+          <div className="memoryNavigationWrap" style={{ position: "relative", zIndex: 40, width: "100%", marginTop: "14px" }}>
             {nav}
           </div>
         </div>
