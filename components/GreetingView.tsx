@@ -635,6 +635,11 @@ export default function GreetingView({
             const offsetX = ((bAdj.x ?? 50) - 50) * 1.5;
             const offsetY = ((bAdj.y ?? 50) - 50) * 1.5;
 
+            // Dedicated inner crop & framing parameters
+            const cropX = bAdj.cropX ?? bAdj.crop?.cropX ?? 50;
+            const cropY = bAdj.cropY ?? bAdj.crop?.cropY ?? 50;
+            const cropScale = (bAdj.cropScale ?? bAdj.crop?.scale ?? 100) / 100;
+
             return (
               <div
                 key={`${idx}-${src.slice(-15)}`}
@@ -671,8 +676,10 @@ export default function GreetingView({
                     width: isCover ? "100%" : "100%",
                     height: isCover ? "100%" : "auto",
                     maxHeight: "380px",
-                    objectFit: fitMode,
-                    objectPosition: "center center",
+                    objectFit: isCover ? "cover" : fitMode,
+                    objectPosition: isCover ? `${cropX}% ${cropY}%` : "center center",
+                    transform: isCover ? `scale(${cropScale}) translate(${(cropX - 50) * 0.8}%, ${(cropY - 50) * 0.8}%)` : "none",
+                    transformOrigin: "center center",
                     borderRadius: `${radiusPx}px`,
                     display: "block",
                     border: "none",
@@ -1172,6 +1179,9 @@ export default function GreetingView({
                   const isCover = adjustment.isCustomCropped ? true : (adjustment.fit === "cover");
                   const fitMode = isCover ? "cover" : ((adjustment.fit || b.imageFit || "contain") as "cover" | "contain" | "natural" | "fill");
                   const isNatural = fitMode === "natural";
+                  const cropX = adjustment.cropX ?? adjustment.crop?.cropX ?? 50;
+                  const cropY = adjustment.cropY ?? adjustment.crop?.cropY ?? 50;
+                  const cropScale = (adjustment.cropScale ?? adjustment.crop?.scale ?? 100) / 100;
 
                   return (
                     <button
@@ -1224,8 +1234,9 @@ export default function GreetingView({
                           height: isCover ? "100%" : "auto",
                           maxHeight: `${Math.round(photoHPx)}px`,
                           objectFit: isNatural ? "scale-down" : isCover ? "cover" : "contain",
+                          objectPosition: isCover ? `${cropX}% ${cropY}%` : "center center",
                           borderRadius: `${radiusPx}px`,
-                          transform: `scale(${scaleVal}) translate(${isCover ? ((adjustment.x ?? 50) - 50) * 0.8 : 0}%, ${isCover ? ((adjustment.y ?? 50) - 50) * 0.8 : 0}%)`,
+                          transform: isCover ? `scale(${cropScale}) translate(${(cropX - 50) * 0.8}%, ${(cropY - 50) * 0.8}%)` : `scale(${scaleVal})`,
                           transformOrigin: "center center",
                           display: "block",
                           pointerEvents: "none"
@@ -1268,6 +1279,10 @@ export default function GreetingView({
                   const fitMode = isCover ? "cover" : ((adjustment.fit || b.imageFit || "contain") as "cover" | "contain" | "natural" | "fill");
                   const isNatural = fitMode === "natural";
 
+                  const cropX = adjustment.cropX ?? adjustment.crop?.cropX ?? 50;
+                  const cropY = adjustment.cropY ?? adjustment.crop?.cropY ?? 50;
+                  const cropScale = (adjustment.cropScale ?? adjustment.crop?.scale ?? 100) / 100;
+
                   return (
                     <button
                       type="button"
@@ -1305,8 +1320,9 @@ export default function GreetingView({
                           height: isCover ? "100%" : "auto",
                           maxHeight: "100%",
                           objectFit: isNatural ? "scale-down" : isCover ? "cover" : "contain",
+                          objectPosition: isCover ? `${cropX}% ${cropY}%` : "center center",
                           borderRadius: `${radiusPx}px`,
-                          transform: `scale(${scaleVal}) translate(${isCover ? ((adjustment.x ?? 50) - 50) * 0.8 : 0}%, ${isCover ? ((adjustment.y ?? 50) - 50) * 0.8 : 0}%) rotate(${rotVal}deg)`,
+                          transform: isCover ? `scale(${cropScale}) translate(${(cropX - 50) * 0.8}%, ${(cropY - 50) * 0.8}%) rotate(${rotVal}deg)` : `scale(${scaleVal}) rotate(${rotVal}deg)`,
                           transformOrigin: "center center",
                           display: "block",
                           pointerEvents: "none"

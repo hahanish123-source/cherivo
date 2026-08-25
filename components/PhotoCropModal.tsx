@@ -33,10 +33,10 @@ export default function PhotoCropModal({
   onSave,
   onClose
 }: PhotoCropModalProps) {
-  const [scale, setScale] = useState<number>(initialAdjustment?.scale ?? 100);
-  const [panX, setPanX] = useState<number>(initialAdjustment?.x ?? 50);
-  const [panY, setPanY] = useState<number>(initialAdjustment?.y ?? 50);
-  const [ratio, setRatio] = useState<CropRatio>(initialAdjustment?.cropRatio ?? "original");
+  const [scale, setScale] = useState<number>(initialAdjustment?.cropScale ?? initialAdjustment?.crop?.scale ?? 100);
+  const [panX, setPanX] = useState<number>(initialAdjustment?.cropX ?? initialAdjustment?.crop?.cropX ?? 50);
+  const [panY, setPanY] = useState<number>(initialAdjustment?.cropY ?? initialAdjustment?.crop?.cropY ?? 50);
+  const [ratio, setRatio] = useState<CropRatio>(initialAdjustment?.cropRatio ?? (initialAdjustment?.crop?.aspectRatio as CropRatio) ?? "original");
   const [naturalAspect, setNaturalAspect] = useState<number>(1);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number; initPanX: number; initPanY: number } | null>(null);
@@ -47,10 +47,10 @@ export default function PhotoCropModal({
   // Sync initial state when modal opens
   useEffect(() => {
     if (isOpen) {
-      setScale(initialAdjustment?.scale ?? 100);
-      setPanX(initialAdjustment?.x ?? 50);
-      setPanY(initialAdjustment?.y ?? 50);
-      setRatio(initialAdjustment?.cropRatio ?? "original");
+      setScale(initialAdjustment?.cropScale ?? initialAdjustment?.crop?.scale ?? 100);
+      setPanX(initialAdjustment?.cropX ?? initialAdjustment?.crop?.cropX ?? 50);
+      setPanY(initialAdjustment?.cropY ?? initialAdjustment?.crop?.cropY ?? 50);
+      setRatio(initialAdjustment?.cropRatio ?? (initialAdjustment?.crop?.aspectRatio as CropRatio) ?? "original");
     }
   }, [isOpen, initialAdjustment]);
 
@@ -124,9 +124,11 @@ export default function PhotoCropModal({
   const handleRestore = () => {
     const restored: ImageAdjustment = {
       ...(initialAdjustment || { scale: 100, x: 50, y: 50 }),
-      scale: 100,
-      x: 50,
-      y: 50,
+      // Keep outer card composition position & scale untouched!
+      scale: initialAdjustment?.scale ?? 100,
+      x: initialAdjustment?.x ?? 50,
+      y: initialAdjustment?.y ?? 50,
+      // Reset internal crop parameters to full uncropped original image
       cropRatio: "original",
       cropScale: 100,
       cropX: 50,
@@ -161,9 +163,11 @@ export default function PhotoCropModal({
   const handleApply = () => {
     const updated: ImageAdjustment = {
       ...(initialAdjustment || { scale: 100, x: 50, y: 50 }),
-      scale,
-      x: panX,
-      y: panY,
+      // Keep outer card composition position & scale untouched!
+      scale: initialAdjustment?.scale ?? 100,
+      x: initialAdjustment?.x ?? 50,
+      y: initialAdjustment?.y ?? 50,
+      // Save internal crop parameters explicitly
       cropRatio: ratio,
       cropScale: scale,
       cropX: panX,
