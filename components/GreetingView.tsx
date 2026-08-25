@@ -913,78 +913,75 @@ export default function GreetingView({
 
       const getScatteredPositions = (count: number, mobile: boolean) => {
         if (count <= 1) {
-          return [{ x: 50, y: 50, rotate: 0, widthPx: mobile ? 220 : 270, heightPx: mobile ? 170 : 200 }];
+          return [{ left: "20%", top: "10%", rotate: "-2deg", width: "60%" }];
         }
         if (count === 2) {
           return [
-            { x: 28, y: 50, rotate: -5, widthPx: mobile ? 180 : 230, heightPx: mobile ? 140 : 175 },
-            { x: 72, y: 50, rotate: 4, widthPx: mobile ? 180 : 230, heightPx: mobile ? 140 : 175 }
+            { left: "6%", top: "10%", rotate: "-6deg", width: "48%" },
+            { left: "48%", top: "14%", rotate: "6deg", width: "48%" }
           ];
         }
         if (count === 3) {
           return [
-            { x: 22, y: 28, rotate: -6, widthPx: mobile ? 170 : 210, heightPx: mobile ? 130 : 160 },
-            { x: 78, y: 30, rotate: 6, widthPx: mobile ? 170 : 210, heightPx: mobile ? 130 : 160 },
-            { x: 50, y: 72, rotate: -2, widthPx: mobile ? 180 : 220, heightPx: mobile ? 135 : 165 }
+            { left: "5%", top: "4%", rotate: "-6deg", width: "48%" },
+            { left: "49%", top: "8%", rotate: "7deg", width: "47%" },
+            { left: "26%", top: "52%", rotate: "-4deg", width: "50%" }
           ];
         }
         if (count === 4) {
           return [
-            { x: 22, y: 24, rotate: -6, widthPx: mobile ? 160 : 200, heightPx: mobile ? 125 : 155 },
-            { x: 78, y: 24, rotate: 5, widthPx: mobile ? 160 : 200, heightPx: mobile ? 125 : 155 },
-            { x: 22, y: 76, rotate: 4, widthPx: mobile ? 160 : 200, heightPx: mobile ? 125 : 155 },
-            { x: 78, y: 76, rotate: -5, widthPx: mobile ? 160 : 200, heightPx: mobile ? 125 : 155 }
+            { left: "4%", top: "3%", rotate: "-6deg", width: "48%" },
+            { left: "50%", top: "6%", rotate: "6deg", width: "47%" },
+            { left: "6%", top: "52%", rotate: "5deg", width: "47%" },
+            { left: "48%", top: "54%", rotate: "-5deg", width: "48%" }
           ];
         }
         if (count === 5) {
           return [
-            { x: 18, y: 22, rotate: -6, widthPx: mobile ? 150 : 190, heightPx: mobile ? 115 : 145 },
-            { x: 82, y: 22, rotate: 6, widthPx: mobile ? 150 : 190, heightPx: mobile ? 115 : 145 },
-            { x: 50, y: 50, rotate: 0, widthPx: mobile ? 160 : 195, heightPx: mobile ? 120 : 150 },
-            { x: 20, y: 78, rotate: 5, widthPx: mobile ? 150 : 190, heightPx: mobile ? 115 : 145 },
-            { x: 80, y: 78, rotate: -5, widthPx: mobile ? 150 : 190, heightPx: mobile ? 115 : 145 }
+            { left: "4%", top: "2%", rotate: "-6deg", width: "46%" },
+            { left: "50%", top: "4%", rotate: "6deg", width: "46%" },
+            { left: "26%", top: "34%", rotate: "3deg", width: "48%" },
+            { left: "6%", top: "64%", rotate: "-4deg", width: "46%" },
+            { left: "48%", top: "66%", rotate: "5deg", width: "46%" }
           ];
         }
         if (count === 6) {
           return [
-            { x: 16, y: 24, rotate: -5, widthPx: mobile ? 145 : 180, heightPx: mobile ? 110 : 140 },
-            { x: 50, y: 20, rotate: 3, widthPx: mobile ? 145 : 180, heightPx: mobile ? 110 : 140 },
-            { x: 84, y: 24, rotate: 6, widthPx: mobile ? 145 : 180, heightPx: mobile ? 110 : 140 },
-            { x: 16, y: 76, rotate: 4, widthPx: mobile ? 145 : 180, heightPx: mobile ? 110 : 140 },
-            { x: 50, y: 80, rotate: -3, widthPx: mobile ? 145 : 180, heightPx: mobile ? 110 : 140 },
-            { x: 84, y: 76, rotate: -4, widthPx: mobile ? 145 : 180, heightPx: mobile ? 110 : 140 }
+            { left: "4%", top: "2%", rotate: "-6deg", width: "46%" },
+            { left: "50%", top: "4%", rotate: "6deg", width: "46%" },
+            { left: "8%", top: "34%", rotate: "4deg", width: "45%" },
+            { left: "48%", top: "36%", rotate: "-5deg", width: "46%" },
+            { left: "5%", top: "68%", rotate: "-4deg", width: "46%" },
+            { left: "50%", top: "70%", rotate: "6deg", width: "46%" }
           ];
         }
 
-        // 7+ photos: multi-row responsive scatter distribution across the card
-        const perRow = mobile ? 2 : 3;
-        const numRows = Math.ceil(count / perRow);
-        const positions = [];
-        for (let i = 0; i < count; i++) {
-          const row = Math.floor(i / perRow);
-          const col = i % perRow;
-          const itemsInThisRow = (row === numRows - 1 && count % perRow !== 0) ? (count % perRow) : perRow;
-          const x = itemsInThisRow === 1 ? 50 : Math.round((100 / (itemsInThisRow + 1)) * (col + 1));
-          const y = Math.round((100 / (numRows + 1)) * (row + 1));
-          const rotate = ((i * 7 + 3) % 13) - 6;
-          const widthPx = mobile ? Math.max(120, 150 - count * 2) : Math.max(150, 185 - count * 2);
-          const heightPx = Math.round(widthPx * 0.75);
-          positions.push({ x, y, rotate, widthPx, heightPx });
-        }
-        return positions;
+        // 7+ photos: multi-row organic staggered scatter
+        const positions = [
+          { left: "5%", top: "2%", rotate: "-6deg", width: "46%" },
+          { left: "50%", top: "4%", rotate: "6deg", width: "46%" },
+          { left: "10%", top: "24%", rotate: "4deg", width: "44%" },
+          { left: "48%", top: "28%", rotate: "-5deg", width: "46%" },
+          { left: "4%", top: "48%", rotate: "-4deg", width: "45%" },
+          { left: "52%", top: "52%", rotate: "7deg", width: "45%" },
+          { left: "12%", top: "70%", rotate: "-6deg", width: "44%" },
+          { left: "48%", top: "74%", rotate: "5deg", width: "46%" },
+          { left: "8%", top: "88%", rotate: "3deg", width: "44%" },
+          { left: "52%", top: "90%", rotate: "-4deg", width: "44%" }
+        ];
+        return Array.from({ length: count }, (_, i) => positions[i % positions.length]);
       };
 
       const calcPhotoAreaHeight = (count: number, mobile: boolean) => {
-        if (count <= 1) return mobile ? "230px" : "260px";
-        if (count <= 2) return mobile ? "270px" : "300px";
-        if (count <= 3) return mobile ? "350px" : "380px";
-        if (count <= 4) return mobile ? "410px" : "440px";
-        if (count <= 5) return mobile ? "470px" : "500px";
-        if (count <= 6) return mobile ? "510px" : "540px";
-        if (count <= 8) return mobile ? "610px" : "640px";
-        if (count <= 10) return mobile ? "710px" : "740px";
-        const rows = Math.ceil(count / (mobile ? 2 : 3));
-        return `${rows * (mobile ? 170 : 190) + 60}px`;
+        if (count <= 1) return mobile ? "240px" : "260px";
+        if (count <= 2) return mobile ? "280px" : "300px";
+        if (count <= 3) return mobile ? "360px" : "380px";
+        if (count <= 4) return mobile ? "420px" : "440px";
+        if (count <= 5) return mobile ? "480px" : "500px";
+        if (count <= 6) return mobile ? "540px" : "560px";
+        if (count <= 8) return mobile ? "680px" : "700px";
+        if (count <= 10) return mobile ? "820px" : "840px";
+        return `${Math.ceil(count / 2) * (mobile ? 160 : 180) + 80}px`;
       };
 
       const scatteredPositions = getScatteredPositions(images.length, isMobile);
@@ -1074,7 +1071,7 @@ export default function GreetingView({
                 style={{
                   position: "relative",
                   width: "100%",
-                  maxWidth: isMobile ? "98%" : images.length <= 1 ? "420px" : images.length <= 2 ? "620px" : "840px",
+                  maxWidth: isMobile ? "98%" : "780px",
                   height: photoAreaHeight,
                   overflow: "visible",
                   margin: "0 auto"
@@ -1092,19 +1089,20 @@ export default function GreetingView({
                   };
                   const isDusted = dustedPhotos.includes(i);
                   const defPos = scatteredPositions[i % scatteredPositions.length];
+                  const baseLeft = parseFloat(defPos.left);
+                  const baseTop = parseFloat(defPos.top);
                   const offsetX = typeof adjustment.x === "number" ? (adjustment.x - 50) * 0.8 : 0;
                   const offsetY = typeof adjustment.y === "number" ? (adjustment.y - 50) * 0.8 : 0;
-                  const posX = Math.max(10, Math.min(90, defPos.x + offsetX));
-                  const posY = Math.max(10, Math.min(90, defPos.y + offsetY));
-                  const rotVal = (typeof adjustment.rotation === "number" ? adjustment.rotation : 0) + defPos.rotate;
+                  const posX = Math.max(2, Math.min(94, baseLeft + offsetX));
+                  const posY = Math.max(2, Math.min(94, baseTop + offsetY));
+                  const rotVal = (typeof adjustment.rotation === "number" ? adjustment.rotation : 0) + parseFloat(defPos.rotate);
                   const scaleVal = (adjustment.scale ?? 100) / 100;
                   const opacityVal = (adjustment.opacity ?? b.imageOpacity ?? 100) / 100;
                   const radiusPx = adjustment.cornerRadius ?? 12;
                   const fitMode = (adjustment.fit || b.imageFit || "contain") as "cover" | "contain" | "natural" | "fill";
                   const isCover = fitMode === "cover";
                   const isNatural = fitMode === "natural";
-                  const widthVal = typeof adjustment.width === "number" ? `${adjustment.width}%` : `${defPos.widthPx}px`;
-                  const maxHeightVal = `${defPos.heightPx}px`;
+                  const widthVal = typeof adjustment.width === "number" ? `${adjustment.width}%` : defPos.width;
 
                   return (
                     <button
@@ -1118,10 +1116,10 @@ export default function GreetingView({
                         left: `${posX}%`,
                         top: `${posY}%`,
                         width: isNatural ? "auto" : widthVal,
-                        maxWidth: "320px",
-                        height: isCover ? maxHeightVal : "auto",
-                        maxHeight: maxHeightVal,
-                        transform: `translate(-50%, -50%) rotate(${rotVal}deg)`,
+                        maxWidth: "340px",
+                        height: isCover ? "180px" : "auto",
+                        maxHeight: "220px",
+                        transform: `rotate(${rotVal}deg)`,
                         transformOrigin: "center center",
                         zIndex: (adjustment.zIndex ?? i) + 5,
                         opacity: opacityVal,
@@ -1154,7 +1152,7 @@ export default function GreetingView({
                           width: isNatural ? "auto" : "100%",
                           maxWidth: "100%",
                           height: isCover ? "100%" : "auto",
-                          maxHeight: maxHeightVal,
+                          maxHeight: "220px",
                           objectFit: isNatural ? "scale-down" : isCover ? "cover" : "contain",
                           borderRadius: `${radiusPx}px`,
                           transform: `scale(${scaleVal}) translate(${isCover ? ((adjustment.x ?? 50) - 50) * 0.8 : 0}%, ${isCover ? ((adjustment.y ?? 50) - 50) * 0.8 : 0}%)`,
