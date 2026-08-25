@@ -1194,8 +1194,9 @@ export default function GreetingView({
                         opacity: opacityVal,
                         borderRadius: `${radiusPx}px`,
                         overflow: "hidden",
-                        border: "2px solid rgba(255, 255, 255, 0.35)",
-                        boxShadow: "0 8px 24px rgba(0, 0, 0, 0.45)",
+                        border: "none",
+                        outline: "none",
+                        boxShadow: "none",
                         padding: 0,
                         background: "transparent",
                         pointerEvents: "auto",
@@ -1278,7 +1279,12 @@ export default function GreetingView({
                         borderRadius: `${radiusPx}px`,
                         opacity: opacityVal,
                         zIndex: (adjustment.zIndex ?? i) + 5,
-                        pointerEvents: "auto"
+                        pointerEvents: "auto",
+                        border: "none",
+                        outline: "none",
+                        boxShadow: "none",
+                        background: "transparent",
+                        padding: 0
                       }}
                       aria-label={`Open memory photo ${i + 1}`}
                       onClick={(e) => {

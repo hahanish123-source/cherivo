@@ -1642,8 +1642,11 @@ button {
   overflow: hidden;
   border-radius: var(--card-radius, 21px);
   margin: 20px auto 0;
-  border: 1px dashed rgba(255, 255, 255, 0.18);
-  background: transparent;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
 }
 
 .photoFrame .photo {
@@ -1774,10 +1777,11 @@ button {
   height: 170px;
   overflow: hidden;
   border-radius: var(--card-radius, 21px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
   padding: 0 !important;
-  background: #09070f;
+  background: transparent !important;
   z-index: 3;
   cursor: zoom-in;
 }
@@ -1900,20 +1904,26 @@ button {
 
 /* Gallery Frame Backgrounds */
 .galleryStage.gallery-bg-black .galleryPhoto {
-  background: #0d0a14 !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
   color: #fff;
 }
 
 .galleryStage.gallery-bg-white .galleryPhoto {
-  background: #ffffff !important;
-  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
   color: #1a1520;
 }
 
 .galleryStage.gallery-bg-transparent .galleryPhoto {
   background: transparent !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 .galleryPage.layout-polaroid .galleryStage.gallery-bg-black .galleryPhoto {
