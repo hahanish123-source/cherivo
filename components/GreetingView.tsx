@@ -93,6 +93,7 @@ export default function GreetingView({
   const [galleryScatter, setGalleryScatter] = useState(false);
   const [confettiActive, setConfettiActive] = useState(false);
   const [imageAspects, setImageAspects] = useState<Record<string, number>>({});
+  const [hoveredPhotoIndex, setHoveredPhotoIndex] = useState<number | null>(null);
 
   const handleImageLoad = (src: string, e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
@@ -1297,6 +1298,8 @@ export default function GreetingView({
                   const cropY = adjustment.cropY ?? adjustment.crop?.cropY ?? 50;
                   const cropScale = (adjustment.cropScale ?? adjustment.crop?.scale ?? 100) / 100;
 
+                  const isHovered = hoveredPhotoIndex === i;
+
                   return (
                     <button
                       type="button"
@@ -1313,23 +1316,30 @@ export default function GreetingView({
                         height: isCover ? `${Math.round(photoHPx)}px` : "auto",
                         maxHeight: `${Math.round(photoHPx)}px`,
                         aspectRatio: `${aspect}`,
-                        transform: `translate(-50%, -50%) rotate(${rotVal}deg)`,
+                        transform: isDusted
+                          ? `translate(-50%, -50%) rotate(${rotVal}deg) scale(1.15)`
+                          : isHovered
+                          ? `translate(-50%, -50%) rotate(${rotVal}deg) scale(1.12)`
+                          : `translate(-50%, -50%) rotate(${rotVal}deg) scale(1)`,
                         transformOrigin: "center center",
-                        zIndex: (adjustment.zIndex ?? i) + 5,
+                        zIndex: isHovered ? 60 : (adjustment.zIndex ?? i) + 5,
                         opacity: opacityVal,
                         borderRadius: `${radiusPx}px`,
                         overflow: "hidden",
                         border: "none",
                         outline: "none",
-                        boxShadow: "none",
+                        boxShadow: isHovered ? "0 18px 45px rgba(0, 0, 0, 0.6)" : "none",
                         padding: 0,
                         background: "transparent",
                         pointerEvents: "auto",
                         cursor: "pointer",
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center"
+                        justifyContent: "center",
+                        transition: "transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 0.28s ease, opacity 0.25s ease"
                       }}
+                      onMouseEnter={() => setHoveredPhotoIndex(i)}
+                      onMouseLeave={() => setHoveredPhotoIndex(null)}
                       aria-label={`Tap to dissolve memory ${i + 1}`}
                       onClick={(e) => {
                         if (isEditable) {

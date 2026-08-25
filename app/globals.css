@@ -1998,19 +1998,13 @@ button {
 .galleryPage.layout-scattered .galleryPhoto {
   position: absolute;
   cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, opacity 0.25s ease;
-}
-
-.galleryPage.layout-scattered .galleryPhoto:hover {
-  z-index: 30 !important;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6) !important;
+  transform-origin: center center;
 }
 
 .photo-dusted {
   opacity: 0 !important;
   pointer-events: none !important;
-  transform: scale(0.92) !important;
-  transition: opacity 0.22s ease, transform 0.22s ease !important;
+  transition: opacity 0.28s ease, transform 0.28s ease !important;
 }
 
 .restoreMemories {
