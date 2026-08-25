@@ -1143,27 +1143,24 @@ export default function GreetingView({
 
           {/* 2. DEDICATED PHOTO COMPOSITION AREA (BELOW TEXT, ABOVE NAVIGATION) */}
           <div
-            className="memoryGalleryStage"
+            className="memoryGallery"
             style={{
               position: "relative",
-              width: "100%",
-              maxWidth: scatterLayout.stageWidth,
-              margin: "10px auto 0",
-              zIndex: 15,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center"
+              width: "min(760px, 100%)",
+              margin: "16px auto 0",
+              zIndex: 5
             }}
           >
             {/* Scattered Images Layout */}
             {isScattered && images.length > 0 && (
               <div
-                className={`memoryGallery scatteredGallery galleryStage gallery-count-${Math.min(images.length, 20)} gallery-bg-${
+                className={`scatteredGallery galleryStage gallery-count-${Math.min(images.length, 20)} gallery-bg-${
                   b.galleryBackground || "transparent"
                 } ${galleryScatter ? "scatter-active" : ""}`}
                 style={{
                   position: "relative",
                   width: "100%",
+                  maxWidth: scatterLayout.stageWidth,
                   height: scatterLayout.stageHeight,
                   overflow: "visible",
                   margin: "0 auto"
@@ -1251,16 +1248,17 @@ export default function GreetingView({
               </div>
             )}
 
-            {/* Non-Scattered Layouts (Collage, Grid, Masonry, Polaroid, Filmstrip) */}
+            {/* Non-Scattered Layouts (Collage, Grid, Masonry, Polaroid, Filmstrip, Hero) */}
             {!isScattered && images.length > 0 && (
               <div
-                className={`memoryGallery galleryStage gallery-count-${Math.min(images.length, 20)} gallery-bg-${
+                className={`galleryStage gallery-count-${Math.min(images.length, 20)} layout-${layout} gallery-bg-${
                   b.galleryBackground || "transparent"
                 }`}
                 style={{
                   position: "relative",
-                  zIndex: 10,
-                  width: "100%"
+                  zIndex: 5,
+                  width: "100%",
+                  margin: "0 auto"
                 }}
               >
                 {images.map((src, i) => {
@@ -1345,29 +1343,29 @@ export default function GreetingView({
                 </p>
               </div>
             )}
-
-            {/* Interactive Tap Hint Directly Below Images */}
-            {isScattered && images.length > 0 && (
-              <div className="memoryTapHint" style={{ position: "relative", zIndex: 20, margin: "10px 0 0", textAlign: "center" }}>
-                <p className="scatteredTapHint" style={{ margin: 0 }}>
-                  Tap a photo to explore the memory ❤️
-                </p>
-              </div>
-            )}
-
-            {isScattered && dustedPhotos.length > 0 && (
-              <button
-                type="button"
-                className="btn ghost small restoreMemories"
-                onClick={() => setDustedPhotos([])}
-                style={{ position: "relative", zIndex: 20, margin: "8px 0 0" }}
-              >
-                <Sparkles size={14} /> Restore Photos
-              </button>
-            )}
           </div>
 
-          {/* 3. NAVIGATION (ALWAYS BELOW GALLERY) */}
+          {/* 3. Tap Hint Directly Below Images */}
+          {images.length > 0 && (
+            <div className="galleryHint memoryTapHint" style={{ position: "relative", zIndex: 20, margin: "10px 0 0", textAlign: "center" }}>
+              <p className="scatteredTapHint" style={{ margin: 0 }}>
+                Tap a photo to explore the memory ❤️
+              </p>
+            </div>
+          )}
+
+          {isScattered && dustedPhotos.length > 0 && (
+            <button
+              type="button"
+              className="btn ghost small restoreMemories"
+              onClick={() => setDustedPhotos([])}
+              style={{ position: "relative", zIndex: 20, margin: "8px 0 0" }}
+            >
+              <Sparkles size={14} /> Restore Photos
+            </button>
+          )}
+
+          {/* 4. NAVIGATION (ALWAYS BELOW GALLERY) */}
           <div className="memoryNavigationWrap" style={{ position: "relative", zIndex: 40, width: "100%", marginTop: "14px" }}>
             {nav}
           </div>
