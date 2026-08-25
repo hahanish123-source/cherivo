@@ -1368,9 +1368,11 @@ export default function GreetingView({
                           pointerEvents: "none"
                         }}
                       />
-                      <span className="galleryPhotoHint">
-                        {isEditable ? `Photo ${i + 1}` : "✦ Disintegrate"}
-                      </span>
+                      {isEditable && (
+                        <span className="galleryPhotoHint">
+                          Photo {i + 1}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -1456,9 +1458,11 @@ export default function GreetingView({
                           pointerEvents: "none"
                         }}
                       />
-                      <span className="galleryPhotoHint">
-                        {isEditable ? `Photo ${i + 1}` : "🔍 Zoom"}
-                      </span>
+                      {isEditable && (
+                        <span className="galleryPhotoHint">
+                          Photo {i + 1}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
