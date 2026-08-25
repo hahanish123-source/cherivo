@@ -1658,13 +1658,45 @@ export default function CreatePage() {
                 {/* ACTIVE ROLE: LETTER */}
                 {activeTextRole === "letter" && (
                   <div className="controlCard">
-                    <span className="controlGroupTitle">💌 Long Letter Styling</span>
+                    <span className="controlGroupTitle">💌 Personal Letter Content</span>
+                    <label className="fieldLabel">
+                      Letter Message (Multiline)
+                      <textarea
+                        rows={8}
+                        value={current.text ?? ""}
+                        onChange={(e) => {
+                          updateCurrent({ text: e.target.value });
+                          setDraftStatus("unsaved");
+                        }}
+                        placeholder="Write your personal letter here... Write anything from your heart ❤️"
+                        style={{
+                          width: "100%",
+                          minHeight: "160px",
+                          padding: "12px",
+                          borderRadius: "10px",
+                          background: "#161220",
+                          color: "#fff",
+                          border: "1px solid var(--line)",
+                          fontSize: "14px",
+                          lineHeight: "1.6",
+                          fontFamily: "inherit",
+                          resize: "vertical",
+                          marginTop: "6px"
+                        }}
+                      />
+                    </label>
+
                     <div className="fieldRow">
                       <label className="fieldLabel">
                         Letter Font
                         <select
-                          value={current.letterFont || "serif"}
-                          onChange={(e) => updateCurrent({ letterFont: e.target.value as FontName })}
+                          value={current.letterFont || current.bodyFont || current.font || "serif"}
+                          onChange={(e) => {
+                            const font = e.target.value as FontName;
+                            updateCurrent({ letterFont: font, bodyFont: font });
+                            updateElementStyle("letter", { font });
+                            updateElementStyle("letterBody", { font });
+                          }}
                         >
                           {fontOptions}
                         </select>
@@ -1672,24 +1704,34 @@ export default function CreatePage() {
                       <label className="fieldLabel">
                         <div className="sliderHeader">
                           <span>Font Size</span>
-                          <span className="valueBadge">{current.letterSize ?? 17}px</span>
+                          <span className="valueBadge">{current.letterSize ?? current.bodySize ?? 17}px</span>
                         </div>
                         <input
                           type="range"
                           min="12"
-                          max="32"
-                          value={current.letterSize ?? 17}
-                          onChange={(e) => updateCurrent({ letterSize: Number(e.target.value) })}
+                          max="36"
+                          value={current.letterSize ?? current.bodySize ?? 17}
+                          onChange={(e) => {
+                            const size = Number(e.target.value);
+                            updateCurrent({ letterSize: size, bodySize: size });
+                            updateElementStyle("letter", { size });
+                            updateElementStyle("letterBody", { size });
+                          }}
                         />
                       </label>
                     </div>
+
                     <div className="fieldRow">
                       <label className="fieldLabel">
                         Font Weight
                         <select
                           value={getRoleStyle("letter").weight || "400"}
-                          onChange={(e) => updateElementStyle("letter", { weight: e.target.value })}
+                          onChange={(e) => {
+                            updateElementStyle("letter", { weight: e.target.value });
+                            updateElementStyle("letterBody", { weight: e.target.value });
+                          }}
                         >
+                          <option value="300">300 Light</option>
                           <option value="400">400 Regular</option>
                           <option value="500">500 Medium</option>
                           <option value="600">600 SemiBold</option>
@@ -1705,16 +1747,23 @@ export default function CreatePage() {
                             const val = e.target.value;
                             updateCurrent({ letterColor: val });
                             updateElementStyle("letter", { color: val });
+                            updateElementStyle("letterBody", { color: val });
                           }}
                         />
                       </label>
                     </div>
+
                     <div className="fieldRow">
                       <label className="fieldLabel">
                         Text Align
                         <select
                           value={current.letterAlign || "left"}
-                          onChange={(e) => updateCurrent({ letterAlign: e.target.value as "left" | "center" | "right" })}
+                          onChange={(e) => {
+                            const align = e.target.value as "left" | "center" | "right";
+                            updateCurrent({ letterAlign: align });
+                            updateElementStyle("letter", { align });
+                            updateElementStyle("letterBody", { align });
+                          }}
                         >
                           <option value="left">Left Align</option>
                           <option value="center">Center Align</option>
@@ -1731,7 +1780,11 @@ export default function CreatePage() {
                           min="10"
                           max="100"
                           value={getRoleStyle("letter").opacity ?? 100}
-                          onChange={(e) => updateElementStyle("letter", { opacity: Number(e.target.value) })}
+                          onChange={(e) => {
+                            const opacity = Number(e.target.value);
+                            updateElementStyle("letter", { opacity });
+                            updateElementStyle("letterBody", { opacity });
+                          }}
                         />
                       </label>
                     </div>

@@ -494,11 +494,13 @@ export default function GreetingView({
       };
     } else if (role === "letter" || role === "letterBody") {
       baseStyle = {
-        fontFamily: getFont(b.letterFont || b.font || project.globalFont),
-        fontSize: `${b.letterSize ?? 17}px`,
+        fontFamily: getFont(b.letterFont || b.bodyFont || b.font || project.globalFont),
+        fontSize: `${b.letterSize ?? b.bodySize ?? 17}px`,
         color: letterColor,
         lineHeight: b.letterLineHeight ?? 1.8,
         textAlign: b.letterAlign ?? "left",
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
         ...fallback
       };
     } else if (role === "button" || role === "buttons" || role === "backButton" || role === "keepGoingButton" || role === "revealButton") {
@@ -1445,7 +1447,9 @@ export default function GreetingView({
                 <button type="button" className="letter editableLetter" style={{ position: "relative", zIndex: 20 }} onClick={() => triggerSelect("letter")}>
                   <h2 style={getElementStyle(b, "letterHeading")}>{b.heading}</h2>
                   <div className="letterBodyWrap customScrollbar">
-                    <p style={getElementStyle(b, "letterBody")}>{b.text}</p>
+                    <p style={getElementStyle(b, "letterBody")}>
+                      {b.text || (isEditable ? "Tap here to write your personal letter... ✍️" : "")}
+                    </p>
                   </div>
                 </button>
               </>
