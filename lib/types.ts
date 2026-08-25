@@ -52,6 +52,10 @@ export type ImageAdjustment = {
   rotation?: number;
   fit?: "cover" | "contain" | "natural" | "fill";
   width?: number;
+  cropRatio?: "free" | "original" | "1:1" | "4:5" | "16:9" | "3:4" | "4:3";
+  cropX?: number;
+  cropY?: number;
+  cropScale?: number;
   cornerRadius?: number;
   zIndex?: number;
   visible?: boolean;

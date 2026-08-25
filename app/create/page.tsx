@@ -25,6 +25,7 @@ import {
   uid
 } from "@/lib/greetingConfig";
 import GreetingView from "@/components/GreetingView";
+import PhotoCropModal from "@/components/PhotoCropModal";
 import {
   getSupabaseClient,
   signInWithGoogle,
@@ -41,6 +42,7 @@ import {
   ChevronDown,
   ChevronUp,
   Copy,
+  Crop,
   ExternalLink,
   Eye,
   EyeOff,
@@ -159,6 +161,34 @@ export default function CreatePage() {
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Photo Crop Modal State
+  const [cropModalData, setCropModalData] = useState<{
+    isOpen: boolean;
+    imageSrc: string;
+    photoTitle: string;
+    photoKey: string;
+    initialAdjustment?: ImageAdjustment;
+  }>({
+    isOpen: false,
+    imageSrc: "",
+    photoTitle: "",
+    photoKey: ""
+  });
+
+  const handleSaveCrop = (adjustment: ImageAdjustment) => {
+    const adjustments = { ...(current.imageAdjustments || {}) };
+    adjustments[cropModalData.photoKey] = adjustment;
+    if (cropModalData.photoKey === "0" || cropModalData.photoKey === "hero") {
+      adjustments["0"] = adjustment;
+      adjustments["hero"] = adjustment;
+    }
+    updateCurrent({
+      imageAdjustments: adjustments,
+      imageFit: adjustment.fit || "cover"
+    });
+    setToast("Photo crop & framing saved! ✂️");
+  };
 
   // File Inputs
   const heroPhotoInputRef = useRef<HTMLInputElement | null>(null);
@@ -2059,8 +2089,8 @@ export default function CreatePage() {
                       </div>
 
                       {/* Selected Photo Actions */}
-                      <div className="miniMediaRow" style={{ marginBottom: "12px" }}>
-                        <span style={{ fontSize: "12px", color: "var(--text)" }}>Photo #{selectedPhotoIdx + 1} Selected</span>
+                      <div className="miniMediaRow" style={{ marginBottom: "10px" }}>
+                        <span style={{ fontSize: "12px", color: "var(--text)", fontWeight: 500 }}>Photo #{selectedPhotoIdx + 1} Selected</span>
                         <div style={{ display: "flex", gap: "6px" }}>
                           <button
                             type="button"
@@ -2093,6 +2123,34 @@ export default function CreatePage() {
                           </button>
                         </div>
                       </div>
+
+                      {/* Prominent PicsArt-Style Crop & Frame Action */}
+                      <button
+                        type="button"
+                        className="btn small primary full"
+                        style={{
+                          marginBottom: "14px",
+                          gap: "8px",
+                          fontWeight: 600,
+                          padding: "10px 14px",
+                          borderRadius: "10px",
+                          boxShadow: "0 4px 14px rgba(255, 61, 120, 0.35)"
+                        }}
+                        onClick={() => {
+                          const src = galleryImages[selectedPhotoIdx];
+                          if (src) {
+                            setCropModalData({
+                              isOpen: true,
+                              imageSrc: src,
+                              photoTitle: `Photo #${selectedPhotoIdx + 1}`,
+                              photoKey: String(selectedPhotoIdx),
+                              initialAdjustment: selectedPhotoAdj
+                            });
+                          }
+                        }}
+                      >
+                        <Crop size={15} /> ✂️ Edit Crop & Framing
+                      </button>
 
                       {/* Fit Mode */}
                       <label className="fieldLabel">
@@ -3567,6 +3625,18 @@ export default function CreatePage() {
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: PICSART-STYLE PHOTO CROP & FRAMING EDITOR                          */}
+      {/* ========================================================================= */}
+      <PhotoCropModal
+        isOpen={cropModalData.isOpen}
+        imageSrc={cropModalData.imageSrc}
+        photoTitle={cropModalData.photoTitle}
+        initialAdjustment={cropModalData.initialAdjustment}
+        onSave={handleSaveCrop}
+        onClose={() => setCropModalData((prev) => ({ ...prev, isOpen: false }))}
+      />
     </main>
   );
 }
