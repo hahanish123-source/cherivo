@@ -92,6 +92,39 @@ export default function GreetingView({
   const [dustedPhotos, setDustedPhotos] = useState<number[]>([]);
   const [galleryScatter, setGalleryScatter] = useState(false);
   const [confettiActive, setConfettiActive] = useState(false);
+  const [imageAspects, setImageAspects] = useState<Record<string, number>>({});
+
+  const handleImageLoad = (src: string, e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth && img.naturalHeight) {
+      const ratio = img.naturalWidth / img.naturalHeight;
+      setImageAspects((prev) => {
+        if (prev[src] === ratio) return prev;
+        return { ...prev, [src]: ratio };
+      });
+    }
+  };
+
+  // Preload image aspect ratios for all images across blocks
+  useEffect(() => {
+    visibleBlocks.forEach((b) => {
+      const imgList = Array.isArray(b.images) && b.images.length > 0 ? b.images : b.image ? [b.image] : [];
+      imgList.forEach((src) => {
+        if (!src || imageAspects[src]) return;
+        const img = new Image();
+        img.onload = () => {
+          if (img.naturalWidth && img.naturalHeight) {
+            const ratio = img.naturalWidth / img.naturalHeight;
+            setImageAspects((prev) => {
+              if (prev[src] === ratio) return prev;
+              return { ...prev, [src]: ratio };
+            });
+          }
+        };
+        img.src = src;
+      });
+    });
+  }, [visibleBlocks]);
 
   // Audio player state
   const [playing, setPlaying] = useState(false);
@@ -641,6 +674,9 @@ export default function GreetingView({
             const cropX = bAdj.cropX ?? bAdj.crop?.cropX ?? 50;
             const cropY = bAdj.cropY ?? bAdj.crop?.cropY ?? 50;
             const cropScale = (bAdj.cropScale ?? bAdj.crop?.scale ?? 100) / 100;
+            const rawAspect = imageAspects[src];
+            const cropRatio = bAdj.cropRatio;
+            const aspect = rawAspect || (cropRatio === "1:1" ? 1 : cropRatio === "16:9" ? 16 / 9 : cropRatio === "4:5" ? 4 / 5 : cropRatio === "3:4" ? 3 / 4 : cropRatio === "9:16" ? 9 / 16 : undefined);
 
             return (
               <div
@@ -651,9 +687,9 @@ export default function GreetingView({
                   position: "relative",
                   width: `min(${widthPct}%, 500px)`,
                   maxWidth: "500px",
-                  height: isCover ? "240px" : "auto",
-                  maxHeight: isCover ? "260px" : "380px",
-                  aspectRatio: isCover ? "4 / 3" : "auto",
+                  height: "auto",
+                  maxHeight: "380px",
+                  aspectRatio: isCover ? (aspect ? `${aspect}` : "4 / 3") : (aspect ? `${aspect}` : "auto"),
                   overflow: isCover ? "hidden" : "visible",
                   display: "flex",
                   alignItems: "center",
@@ -674,8 +710,9 @@ export default function GreetingView({
                   className="foregroundPhotoImage sectionPhoto heroPhotoImage"
                   src={src}
                   alt=""
+                  onLoad={(e) => handleImageLoad(src, e)}
                   style={{
-                    width: isCover ? "100%" : "100%",
+                    width: "100%",
                     height: isCover ? "100%" : "auto",
                     maxHeight: "380px",
                     objectFit: isCover ? "cover" : fitMode,
@@ -1069,8 +1106,35 @@ export default function GreetingView({
           };
 
           const scaleVal = (adjustment.scale ?? 100) / 100;
-          const photoWPx = slot.w * scaleVal;
-          const photoHPx = slot.h * scaleVal;
+
+          // Intrinsic or custom dynamic aspect ratio for this specific photo
+          const rawAspect = imageAspects[src];
+          const cropRatio = adjustment.cropRatio;
+          const aspect = rawAspect || (cropRatio === "1:1" ? 1 : cropRatio === "16:9" ? 16 / 9 : cropRatio === "4:5" ? 4 / 5 : cropRatio === "3:4" ? 3 / 4 : cropRatio === "9:16" ? 9 / 16 : undefined) || 1.33;
+
+          // Calculate dynamic width and height tailored directly to each photo's size and aspect ratio
+          const baseDim = slot.w * scaleVal;
+          let photoWPx = baseDim;
+          let photoHPx = baseDim / aspect;
+
+          if (aspect < 0.85) {
+            // Tall Portrait (e.g. 9:16, 3:4, tall notes / mobile screenshots)
+            photoWPx = Math.round(baseDim * 0.82);
+            photoHPx = Math.round(photoWPx / aspect);
+            const maxHPx = isMobileView ? 230 : 280;
+            if (photoHPx > maxHPx) {
+              photoHPx = maxHPx;
+              photoWPx = Math.round(photoHPx * aspect);
+            }
+          } else if (aspect > 1.35) {
+            // Wide Landscape (e.g. 16:9, 4:3)
+            photoWPx = Math.round(baseDim * 1.15);
+            photoHPx = Math.round(photoWPx / aspect);
+          } else {
+            // Square or Balanced
+            photoWPx = Math.round(baseDim * 0.95);
+            photoHPx = Math.round(photoWPx / aspect);
+          }
 
           const panXPct = typeof adjustment.x === "number" ? (adjustment.x - 50) * 0.8 : 0;
           const panYPct = typeof adjustment.y === "number" ? (adjustment.y - 50) * 0.8 : 0;
@@ -1100,6 +1164,7 @@ export default function GreetingView({
             rotVal,
             photoWPx,
             photoHPx,
+            aspect,
             adjustment,
             scaleVal
           };
@@ -1221,7 +1286,7 @@ export default function GreetingView({
                 <canvas ref={dustCanvasRef} className="galleryDustCanvas" style={{ zIndex: 12, pointerEvents: "none" }} />
 
                 {scatterLayout.items.map((item) => {
-                  const { src, index: i, finalX, rawY, rotVal, photoWPx, photoHPx, adjustment, scaleVal } = item;
+                  const { src, index: i, finalX, rawY, rotVal, photoWPx, photoHPx, aspect, adjustment, scaleVal } = item;
                   const isDusted = dustedPhotos.includes(i);
                   const opacityVal = (adjustment.opacity ?? b.imageOpacity ?? 100) / 100;
                   const radiusPx = adjustment.cornerRadius ?? 12;
@@ -1244,9 +1309,10 @@ export default function GreetingView({
                         left: `${finalX}%`,
                         top: `${rawY}%`,
                         width: isNatural ? "auto" : `${Math.round(photoWPx)}px`,
-                        maxWidth: "320px",
+                        maxWidth: "340px",
                         height: isCover ? `${Math.round(photoHPx)}px` : "auto",
                         maxHeight: `${Math.round(photoHPx)}px`,
+                        aspectRatio: `${aspect}`,
                         transform: `translate(-50%, -50%) rotate(${rotVal}deg)`,
                         transformOrigin: "center center",
                         zIndex: (adjustment.zIndex ?? i) + 5,
@@ -1277,10 +1343,11 @@ export default function GreetingView({
                       <img
                         src={src}
                         alt={`Memory ${i + 1}`}
+                        onLoad={(e) => handleImageLoad(src, e)}
                         style={{
                           width: isNatural ? "auto" : "100%",
                           maxWidth: "100%",
-                          height: isCover ? "100%" : "auto",
+                          height: isCover ? "100%" : "100%",
                           maxHeight: `${Math.round(photoHPx)}px`,
                           objectFit: isNatural ? "scale-down" : isCover ? "cover" : "contain",
                           objectPosition: isCover ? `${cropX}% ${cropY}%` : "center center",
@@ -1364,6 +1431,7 @@ export default function GreetingView({
                       <img
                         src={src}
                         alt={`Memory ${i + 1}`}
+                        onLoad={(e) => handleImageLoad(src, e)}
                         style={{
                           width: isNatural ? "auto" : "100%",
                           maxWidth: "100%",

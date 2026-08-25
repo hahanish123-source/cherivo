@@ -52,7 +52,7 @@ export type PhotoCrop = {
   cropY: number;
   cropWidth?: number;
   cropHeight?: number;
-  aspectRatio?: "free" | "original" | "1:1" | "4:5" | "16:9" | "3:4" | "4:3";
+  aspectRatio?: "free" | "original" | "1:1" | "4:5" | "16:9" | "3:4" | "4:3" | "9:16";
   isCustomCropped?: boolean;
 };
 
@@ -64,7 +64,7 @@ export type ImageAdjustment = {
   rotation?: number;
   fit?: "cover" | "contain" | "natural" | "fill";
   width?: number;
-  cropRatio?: "free" | "original" | "1:1" | "4:5" | "16:9" | "3:4" | "4:3";
+  cropRatio?: "free" | "original" | "1:1" | "4:5" | "16:9" | "3:4" | "4:3" | "9:16";
   cropX?: number;
   cropY?: number;
   cropScale?: number;

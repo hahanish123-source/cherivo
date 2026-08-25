@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { X, Check, RotateCcw, ZoomIn, ZoomOut, Crop, Move } from "lucide-react";
 import { ImageAdjustment } from "@/lib/types";
 
-export type CropRatio = "free" | "original" | "1:1" | "4:5" | "16:9" | "3:4" | "4:3";
+export type CropRatio = "free" | "original" | "1:1" | "4:5" | "16:9" | "3:4" | "4:3" | "9:16";
 
 interface PhotoCropModalProps {
   isOpen: boolean;
@@ -19,6 +19,7 @@ const RATIO_OPTIONS: { id: CropRatio; label: string; value: number | null }[] = 
   { id: "original", label: "Original", value: null },
   { id: "1:1", label: "1:1 Square", value: 1 / 1 },
   { id: "4:5", label: "4:5 Portrait", value: 4 / 5 },
+  { id: "9:16", label: "9:16 Story", value: 9 / 16 },
   { id: "16:9", label: "16:9 Landscape", value: 16 / 9 },
   { id: "3:4", label: "3:4 Classic", value: 3 / 4 },
   { id: "4:3", label: "4:3 Standard", value: 4 / 3 },
