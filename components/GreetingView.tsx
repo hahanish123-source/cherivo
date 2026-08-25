@@ -936,79 +936,92 @@ export default function GreetingView({
           }
           if (n === 2) {
             return [
-              { x: 30, y: 50, rot: -5, w: mobile ? 165 : 205, h: mobile ? 125 : 155 },
-              { x: 70, y: 50, rot: 5, w: mobile ? 165 : 205, h: mobile ? 125 : 155 }
+              { x: 30, y: 50, rot: -5, w: mobile ? 175 : 215, h: mobile ? 130 : 160 },
+              { x: 70, y: 50, rot: 5, w: mobile ? 175 : 215, h: mobile ? 130 : 160 }
             ];
           }
           if (n === 3) {
             return [
-              { x: 26, y: 34, rot: -6, w: mobile ? 150 : 185, h: mobile ? 112 : 140 },
-              { x: 74, y: 34, rot: 6, w: mobile ? 150 : 185, h: mobile ? 112 : 140 },
-              { x: 50, y: 68, rot: -2, w: mobile ? 155 : 190, h: mobile ? 116 : 145 }
+              { x: 50, y: 30, rot: 0, w: mobile ? 160 : 195, h: mobile ? 120 : 150 },
+              { x: 26, y: 70, rot: -6, w: mobile ? 155 : 190, h: mobile ? 115 : 145 },
+              { x: 74, y: 70, rot: 6, w: mobile ? 155 : 190, h: mobile ? 115 : 145 }
             ];
           }
           if (n === 4) {
             return [
-              { x: 25, y: 30, rot: -6, w: mobile ? 140 : 170, h: mobile ? 105 : 128 },
-              { x: 75, y: 30, rot: 5, w: mobile ? 140 : 170, h: mobile ? 105 : 128 },
-              { x: 28, y: 70, rot: 4, w: mobile ? 140 : 170, h: mobile ? 105 : 128 },
-              { x: 72, y: 70, rot: -5, w: mobile ? 140 : 170, h: mobile ? 105 : 128 }
+              { x: 26, y: 30, rot: -6, w: mobile ? 150 : 180, h: mobile ? 110 : 135 },
+              { x: 74, y: 30, rot: 5, w: mobile ? 150 : 180, h: mobile ? 110 : 135 },
+              { x: 28, y: 70, rot: 4, w: mobile ? 150 : 180, h: mobile ? 110 : 135 },
+              { x: 72, y: 70, rot: -5, w: mobile ? 150 : 180, h: mobile ? 110 : 135 }
             ];
           }
           if (n === 5) {
             return [
-              { x: 22, y: 28, rot: -6, w: mobile ? 130 : 160, h: mobile ? 98 : 120 },
-              { x: 78, y: 28, rot: 6, w: mobile ? 130 : 160, h: mobile ? 98 : 120 },
-              { x: 50, y: 48, rot: 0, w: mobile ? 135 : 165, h: mobile ? 100 : 124 },
-              { x: 25, y: 72, rot: 5, w: mobile ? 130 : 160, h: mobile ? 98 : 120 },
-              { x: 75, y: 72, rot: -5, w: mobile ? 130 : 160, h: mobile ? 98 : 120 }
+              { x: 24, y: 26, rot: -6, w: mobile ? 140 : 170, h: mobile ? 105 : 125 },
+              { x: 76, y: 26, rot: 6, w: mobile ? 140 : 170, h: mobile ? 105 : 125 },
+              { x: 50, y: 50, rot: 0, w: mobile ? 145 : 175, h: mobile ? 110 : 130 },
+              { x: 26, y: 74, rot: 5, w: mobile ? 140 : 170, h: mobile ? 105 : 125 },
+              { x: 74, y: 74, rot: -5, w: mobile ? 140 : 170, h: mobile ? 105 : 125 }
             ];
           }
           if (n === 6) {
             return [
-              { x: 20, y: 28, rot: -5, w: mobile ? 125 : 150, h: mobile ? 94 : 112 },
-              { x: 50, y: 24, rot: 3, w: mobile ? 125 : 150, h: mobile ? 94 : 112 },
-              { x: 80, y: 28, rot: 5, w: mobile ? 125 : 150, h: mobile ? 94 : 112 },
-              { x: 20, y: 72, rot: 4, w: mobile ? 125 : 150, h: mobile ? 94 : 112 },
-              { x: 50, y: 76, rot: -3, w: mobile ? 125 : 150, h: mobile ? 94 : 112 },
-              { x: 80, y: 72, rot: -4, w: mobile ? 125 : 150, h: mobile ? 94 : 112 }
+              { x: 22, y: 26, rot: -5, w: mobile ? 135 : 165, h: mobile ? 100 : 120 },
+              { x: 78, y: 26, rot: 5, w: mobile ? 135 : 165, h: mobile ? 100 : 120 },
+              { x: 34, y: 50, rot: 3, w: mobile ? 135 : 165, h: mobile ? 100 : 120 },
+              { x: 66, y: 50, rot: -3, w: mobile ? 135 : 165, h: mobile ? 100 : 120 },
+              { x: 22, y: 74, rot: 4, w: mobile ? 135 : 165, h: mobile ? 100 : 120 },
+              { x: 78, y: 74, rot: -4, w: mobile ? 135 : 165, h: mobile ? 100 : 120 }
             ];
           }
           if (n === 7) {
             return [
-              { x: 18, y: 24, rot: -5, w: mobile ? 120 : 145, h: mobile ? 90 : 108 },
-              { x: 50, y: 20, rot: 2, w: mobile ? 120 : 145, h: mobile ? 90 : 108 },
-              { x: 82, y: 24, rot: 5, w: mobile ? 120 : 145, h: mobile ? 90 : 108 },
-              { x: 50, y: 48, rot: -2, w: mobile ? 125 : 150, h: mobile ? 94 : 112 },
-              { x: 20, y: 76, rot: 4, w: mobile ? 120 : 145, h: mobile ? 90 : 108 },
-              { x: 50, y: 80, rot: -3, w: mobile ? 120 : 145, h: mobile ? 90 : 108 },
-              { x: 80, y: 76, rot: -4, w: mobile ? 120 : 145, h: mobile ? 90 : 108 }
+              { x: 20, y: 24, rot: -5, w: mobile ? 125 : 155, h: mobile ? 95 : 115 },
+              { x: 50, y: 22, rot: 2, w: mobile ? 125 : 155, h: mobile ? 95 : 115 },
+              { x: 80, y: 24, rot: 5, w: mobile ? 125 : 155, h: mobile ? 95 : 115 },
+              { x: 50, y: 50, rot: -2, w: mobile ? 130 : 160, h: mobile ? 98 : 120 },
+              { x: 20, y: 76, rot: 4, w: mobile ? 125 : 155, h: mobile ? 95 : 115 },
+              { x: 50, y: 78, rot: -3, w: mobile ? 125 : 155, h: mobile ? 95 : 115 },
+              { x: 80, y: 76, rot: -4, w: mobile ? 125 : 155, h: mobile ? 95 : 115 }
             ];
           }
           if (n === 8) {
             return [
-              { x: 18, y: 24, rot: -6, w: mobile ? 115 : 140, h: mobile ? 86 : 105 },
-              { x: 50, y: 20, rot: 3, w: mobile ? 115 : 140, h: mobile ? 86 : 105 },
-              { x: 82, y: 24, rot: 6, w: mobile ? 115 : 140, h: mobile ? 86 : 105 },
-              { x: 32, y: 48, rot: -3, w: mobile ? 115 : 140, h: mobile ? 86 : 105 },
-              { x: 68, y: 48, rot: 3, w: mobile ? 115 : 140, h: mobile ? 86 : 105 },
-              { x: 18, y: 76, rot: 5, w: mobile ? 115 : 140, h: mobile ? 86 : 105 },
-              { x: 50, y: 80, rot: -2, w: mobile ? 115 : 140, h: mobile ? 86 : 105 },
-              { x: 82, y: 76, rot: -5, w: mobile ? 115 : 140, h: mobile ? 86 : 105 }
+              { x: 18, y: 22, rot: -6, w: mobile ? 120 : 145, h: mobile ? 90 : 110 },
+              { x: 50, y: 20, rot: 3, w: mobile ? 120 : 145, h: mobile ? 90 : 110 },
+              { x: 82, y: 22, rot: 6, w: mobile ? 120 : 145, h: mobile ? 90 : 110 },
+              { x: 30, y: 50, rot: -3, w: mobile ? 120 : 145, h: mobile ? 90 : 110 },
+              { x: 70, y: 50, rot: 3, w: mobile ? 120 : 145, h: mobile ? 90 : 110 },
+              { x: 18, y: 78, rot: 5, w: mobile ? 120 : 145, h: mobile ? 90 : 110 },
+              { x: 50, y: 80, rot: -2, w: mobile ? 120 : 145, h: mobile ? 90 : 110 },
+              { x: 82, y: 78, rot: -5, w: mobile ? 120 : 145, h: mobile ? 90 : 110 }
             ];
           }
-          if (n >= 9) {
+          if (n === 9) {
             return [
-              { x: 18, y: 22, rot: -6, w: mobile ? 110 : 135, h: mobile ? 82 : 100 },
-              { x: 50, y: 18, rot: 2, w: mobile ? 110 : 135, h: mobile ? 82 : 100 },
-              { x: 82, y: 22, rot: 6, w: mobile ? 110 : 135, h: mobile ? 82 : 100 },
-              { x: 22, y: 48, rot: -3, w: mobile ? 110 : 135, h: mobile ? 82 : 100 },
-              { x: 50, y: 48, rot: 0, w: mobile ? 110 : 135, h: mobile ? 82 : 100 },
-              { x: 78, y: 48, rot: 3, w: mobile ? 110 : 135, h: mobile ? 82 : 100 },
-              { x: 18, y: 78, rot: 5, w: mobile ? 110 : 135, h: mobile ? 82 : 100 },
-              { x: 50, y: 82, rot: -2, w: mobile ? 110 : 135, h: mobile ? 82 : 100 },
-              { x: 82, y: 78, rot: -5, w: mobile ? 110 : 135, h: mobile ? 82 : 100 },
-              { x: 35, y: 64, rot: 2, w: mobile ? 110 : 135, h: mobile ? 82 : 100 }
+              { x: 18, y: 22, rot: -6, w: mobile ? 115 : 140, h: mobile ? 85 : 105 },
+              { x: 50, y: 20, rot: 2, w: mobile ? 115 : 140, h: mobile ? 85 : 105 },
+              { x: 82, y: 22, rot: 6, w: mobile ? 115 : 140, h: mobile ? 85 : 105 },
+              { x: 20, y: 50, rot: -3, w: mobile ? 115 : 140, h: mobile ? 85 : 105 },
+              { x: 50, y: 50, rot: 0, w: mobile ? 115 : 140, h: mobile ? 85 : 105 },
+              { x: 80, y: 50, rot: 3, w: mobile ? 115 : 140, h: mobile ? 85 : 105 },
+              { x: 18, y: 78, rot: 5, w: mobile ? 115 : 140, h: mobile ? 85 : 105 },
+              { x: 50, y: 80, rot: -2, w: mobile ? 115 : 140, h: mobile ? 85 : 105 },
+              { x: 82, y: 78, rot: -5, w: mobile ? 115 : 140, h: mobile ? 85 : 105 }
+            ];
+          }
+          if (n >= 10) {
+            return [
+              { x: 18, y: 20, rot: -6, w: mobile ? 110 : 135, h: mobile ? 80 : 100 },
+              { x: 40, y: 18, rot: 2, w: mobile ? 110 : 135, h: mobile ? 80 : 100 },
+              { x: 62, y: 18, rot: -2, w: mobile ? 110 : 135, h: mobile ? 80 : 100 },
+              { x: 84, y: 20, rot: 6, w: mobile ? 110 : 135, h: mobile ? 80 : 100 },
+              { x: 30, y: 50, rot: -3, w: mobile ? 110 : 135, h: mobile ? 80 : 100 },
+              { x: 70, y: 50, rot: 3, w: mobile ? 110 : 135, h: mobile ? 80 : 100 },
+              { x: 18, y: 80, rot: 5, w: mobile ? 110 : 135, h: mobile ? 80 : 100 },
+              { x: 40, y: 82, rot: -2, w: mobile ? 110 : 135, h: mobile ? 80 : 100 },
+              { x: 62, y: 82, rot: 2, w: mobile ? 110 : 135, h: mobile ? 80 : 100 },
+              { x: 84, y: 80, rot: -5, w: mobile ? 110 : 135, h: mobile ? 80 : 100 }
             ];
           }
 
@@ -1023,7 +1036,7 @@ export default function GreetingView({
             const x = itemsInThisRow === 1 ? 50 : Math.round((100 / (itemsInThisRow + 1)) * (col + 1));
             const y = Math.round((100 / (numRows + 1)) * (row + 1));
             const rot = ((i * 7 + 3) % 13) - 6;
-            const w = mobile ? Math.max(110, 140 - n * 1.5) : Math.max(135, 165 - n * 1.5);
+            const w = mobile ? Math.max(120, 145 - n * 1.5) : Math.max(145, 175 - n * 1.5);
             const h = Math.round(w * 0.74);
             slots.push({ x, y, rot, w, h });
           }
@@ -1035,8 +1048,8 @@ export default function GreetingView({
         // Stage physical dimensions
         const maxStageWidthPx = isMobileView ? 340 : count <= 1 ? 380 : count <= 2 ? 540 : 700;
         const baseStageHeightPx = isMobileView
-          ? (count <= 1 ? 190 : count <= 2 ? 210 : count <= 3 ? 240 : count <= 4 ? 265 : count <= 5 ? 290 : count <= 6 ? 315 : count <= 8 ? 350 : 390)
-          : (count <= 1 ? 220 : count <= 2 ? 245 : count <= 3 ? 280 : count <= 4 ? 310 : count <= 5 ? 335 : count <= 6 ? 360 : count <= 8 ? 400 : 440);
+          ? (count <= 1 ? 180 : count <= 2 ? 200 : count <= 3 ? 230 : count <= 4 ? 250 : count <= 5 ? 270 : count <= 6 ? 290 : count <= 8 ? 350 : 410)
+          : (count <= 1 ? 210 : count <= 2 ? 230 : count <= 3 ? 265 : count <= 4 ? 285 : count <= 5 ? 310 : count <= 6 ? 330 : count <= 8 ? 390 : 450);
 
         // Calculate occupied bounds factoring per-photo scale & pan
         let minXRelative = 100;

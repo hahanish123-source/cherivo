@@ -1757,28 +1757,38 @@ button {
 
 .galleryPage .galleryStage {
   position: relative;
-  width: 100%;
-  margin: 0 auto;
+  width: min(760px, 100%);
+  margin: 12px auto 0;
   padding: 0;
+}
+
+.galleryPage.layout-scattered .galleryStage,
+.scatteredGallery {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  margin: 0 auto !important;
 }
 
 .galleryPage .galleryShape {
   display: none;
 }
 
-.galleryPage:not(.layout-scattered) .galleryPhoto {
-  position: relative;
-  width: 100%;
-  height: 170px;
-  overflow: hidden;
+.galleryPage .galleryPhoto {
   border-radius: var(--card-radius, 21px);
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
   padding: 0 !important;
   background: transparent !important;
-  z-index: 3;
   cursor: zoom-in;
+}
+
+.galleryPage .galleryPhoto.scatteredPhoto {
+  position: absolute !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .galleryPage .galleryPhoto img {
