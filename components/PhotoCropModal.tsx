@@ -121,7 +121,37 @@ export default function PhotoCropModal({
     setScale((prev) => Math.max(50, Math.min(300, prev + delta)));
   };
 
-  const handleReset = () => {
+  const handleRestore = () => {
+    const restored: ImageAdjustment = {
+      ...(initialAdjustment || { scale: 100, x: 50, y: 50 }),
+      scale: 100,
+      x: 50,
+      y: 50,
+      cropRatio: "original",
+      cropScale: 100,
+      cropX: 50,
+      cropY: 50,
+      isCustomCropped: false,
+      fit: "contain",
+      crop: {
+        scale: 100,
+        offsetX: 0,
+        offsetY: 0,
+        cropX: 50,
+        cropY: 50,
+        aspectRatio: "original",
+        isCustomCropped: false
+      }
+    };
+    setScale(100);
+    setPanX(50);
+    setPanY(50);
+    setRatio("original");
+    onSave(restored);
+    onClose();
+  };
+
+  const handleResetPreview = () => {
     setScale(100);
     setPanX(50);
     setPanY(50);
@@ -138,7 +168,17 @@ export default function PhotoCropModal({
       cropScale: scale,
       cropX: panX,
       cropY: panY,
-      fit: "cover" // Framing active
+      isCustomCropped: true,
+      fit: "cover",
+      crop: {
+        scale,
+        offsetX: panX - 50,
+        offsetY: panY - 50,
+        cropX: panX,
+        cropY: panY,
+        aspectRatio: ratio,
+        isCustomCropped: true
+      }
     };
     onSave(updated);
     onClose();
@@ -409,10 +449,11 @@ export default function PhotoCropModal({
             <button
               type="button"
               className="btn small ghost"
-              onClick={handleReset}
+              onClick={handleRestore}
               style={{ gap: "6px", color: "var(--muted, #c8bacb)" }}
+              title="Restore full original uncropped photo"
             >
-              <RotateCcw size={13} /> Reset
+              <RotateCcw size={13} /> Restore Full Image
             </button>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <button type="button" className="btn small" onClick={onClose} style={{ padding: "8px 16px" }}>
@@ -424,7 +465,7 @@ export default function PhotoCropModal({
                 onClick={handleApply}
                 style={{ padding: "8px 18px", gap: "6px", fontWeight: 600 }}
               >
-                <Check size={14} /> Done
+                <Check size={14} /> Apply Crop
               </button>
             </div>
           </div>

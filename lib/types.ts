@@ -44,6 +44,18 @@ export type IncidentItem = {
   image?: string;
 };
 
+export type PhotoCrop = {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  cropX: number;
+  cropY: number;
+  cropWidth?: number;
+  cropHeight?: number;
+  aspectRatio?: "free" | "original" | "1:1" | "4:5" | "16:9" | "3:4" | "4:3";
+  isCustomCropped?: boolean;
+};
+
 export type ImageAdjustment = {
   scale: number;
   x: number;
@@ -56,6 +68,8 @@ export type ImageAdjustment = {
   cropX?: number;
   cropY?: number;
   cropScale?: number;
+  isCustomCropped?: boolean;
+  crop?: PhotoCrop;
   cornerRadius?: number;
   zIndex?: number;
   visible?: boolean;

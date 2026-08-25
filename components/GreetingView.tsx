@@ -625,8 +625,8 @@ export default function GreetingView({
               (idx === 0 ? targetBlock.imageAdjustments?.["hero"] ?? targetBlock.imageAdjustments?.["0"] : undefined) ??
               { scale: 100, x: 50, y: 50, opacity: 100, rotation: 0, width: 65, cornerRadius: 0 };
 
-            const fitMode = (bAdj.fit || targetBlock.imageFit || "contain") as "cover" | "contain" | "fill";
-            const isCover = fitMode === "cover";
+            const isCover = bAdj.isCustomCropped ? true : (bAdj.fit === "cover");
+            const fitMode = isCover ? "cover" : ((bAdj.fit || targetBlock.imageFit || "contain") as "cover" | "contain" | "fill");
             const scaleVal = (bAdj.scale ?? 100) / 100;
             const opacityVal = (bAdj.opacity ?? targetBlock.imageOpacity ?? 100) / 100;
             const rotVal = bAdj.rotation ?? 0;
@@ -1169,8 +1169,8 @@ export default function GreetingView({
                   const isDusted = dustedPhotos.includes(i);
                   const opacityVal = (adjustment.opacity ?? b.imageOpacity ?? 100) / 100;
                   const radiusPx = adjustment.cornerRadius ?? 12;
-                  const fitMode = (adjustment.fit || b.imageFit || "contain") as "cover" | "contain" | "natural" | "fill";
-                  const isCover = fitMode === "cover";
+                  const isCover = adjustment.isCustomCropped ? true : (adjustment.fit === "cover");
+                  const fitMode = isCover ? "cover" : ((adjustment.fit || b.imageFit || "contain") as "cover" | "contain" | "natural" | "fill");
                   const isNatural = fitMode === "natural";
 
                   return (
@@ -1263,8 +1263,8 @@ export default function GreetingView({
                   const scaleVal = (adjustment.scale ?? 100) / 100;
                   const opacityVal = (adjustment.opacity ?? b.imageOpacity ?? 100) / 100;
                   const radiusPx = adjustment.cornerRadius ?? 8;
-                  const fitMode = (adjustment.fit || b.imageFit || "contain") as "cover" | "contain" | "natural" | "fill";
-                  const isCover = fitMode === "cover";
+                  const isCover = adjustment.isCustomCropped ? true : (adjustment.fit === "cover");
+                  const fitMode = isCover ? "cover" : ((adjustment.fit || b.imageFit || "contain") as "cover" | "contain" | "natural" | "fill");
                   const isNatural = fitMode === "natural";
 
                   return (
