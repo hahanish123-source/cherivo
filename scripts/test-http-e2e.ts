@@ -1,6 +1,6 @@
 async function runHttpTest() {
   console.log("==================================================");
-  console.log("HANORA FULL HTTP END-TO-END FLOW TEST");
+  console.log("HAMORA FULL HTTP END-TO-END FLOW TEST");
   console.log("==================================================");
 
   const baseUrl = "http://localhost:3030";

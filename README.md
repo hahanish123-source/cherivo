@@ -1,6 +1,6 @@
-# Hanora
+# Hamora
 
-Hanora is a place to create beautiful personal moments and share them through private links.
+Hamora is a place to create beautiful personal moments and share them through private links.
 
 ## Run locally
 

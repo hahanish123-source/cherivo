@@ -159,7 +159,17 @@ export default function Particles({ type, count = 20, active = true }: Particles
       ctx.restore();
     };
 
-    const render = () => {
+    let lastTime = 0;
+    const targetInterval = 1000 / 30; // 30 FPS is silky smooth for floating ambient particles with 50% less CPU/GPU overhead
+
+    const render = (currentTime: number) => {
+      animationFrameId = requestAnimationFrame(render);
+      if (document.hidden) return;
+
+      const delta = currentTime - lastTime;
+      if (delta < targetInterval) return;
+      lastTime = currentTime - (delta % targetInterval);
+
       ctx.clearRect(0, 0, width, height);
 
       for (let i = 0; i < particles.length; i++) {
@@ -188,15 +198,25 @@ export default function Particles({ type, count = 20, active = true }: Particles
           }
         }
       }
-
-      animationFrameId = requestAnimationFrame(render);
     };
 
-    render();
+    animationFrameId = requestAnimationFrame(render);
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(animationFrameId);
+      } else {
+        lastTime = performance.now();
+        animationFrameId = requestAnimationFrame(render);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility, { passive: true });
 
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener("resize", handleResize);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [type, count, active]);
 

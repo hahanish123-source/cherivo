@@ -18,7 +18,7 @@ export type StoredGreeting = {
 // Global in-memory storage fallback for serverless / read-only environments
 declare global {
   // eslint-disable-next-line no-var
-  var __hanoraMemoryStore:
+  var __hamoraMemoryStore:
     | {
         greetings: Map<string, StoredGreeting>;
         drafts: Map<string, GreetingDraft>;
@@ -28,14 +28,14 @@ declare global {
 }
 
 function getMemoryStore() {
-  if (!globalThis.__hanoraMemoryStore) {
-    globalThis.__hanoraMemoryStore = {
+  if (!globalThis.__hamoraMemoryStore) {
+    globalThis.__hamoraMemoryStore = {
       greetings: new Map(),
       drafts: new Map(),
       responses: new Map(),
     };
   }
-  return globalThis.__hanoraMemoryStore;
+  return globalThis.__hamoraMemoryStore;
 }
 
 const localDir = path.join(process.cwd(), ".cherivo-local");
@@ -43,11 +43,21 @@ const localGreetingsFile = path.join(localDir, "greetings.json");
 const localResponsesFile = path.join(localDir, "responses.json");
 const localDraftsFile = path.join(localDir, "drafts.json");
 
+const fileCache = new Map<string, { mtime: number; data: any[] }>();
+
 async function safeLocalRead<T>(file: string): Promise<T[]> {
   try {
+    const stat = await fs.stat(file).catch(() => null);
+    if (!stat) return [];
+    const cached = fileCache.get(file);
+    if (cached && cached.mtime === stat.mtimeMs) {
+      return cached.data as T[];
+    }
     const raw = await fs.readFile(file, "utf8");
     const value = JSON.parse(raw);
-    return Array.isArray(value) ? value : [];
+    const result = Array.isArray(value) ? value : [];
+    fileCache.set(file, { mtime: stat.mtimeMs, data: result });
+    return result as T[];
   } catch {
     return [];
   }
@@ -57,9 +67,11 @@ async function safeLocalWrite<T>(file: string, rows: T[]) {
   try {
     await fs.mkdir(path.dirname(file), { recursive: true });
     await fs.writeFile(file, JSON.stringify(rows, null, 2), "utf8");
+    const stat = await fs.stat(file).catch(() => null);
+    fileCache.set(file, { mtime: stat?.mtimeMs ?? Date.now(), data: rows });
   } catch (err: any) {
     // If the filesystem is read-only (e.g. Vercel serverless /var/task), silently fail or use memory store
-    console.warn(`[Hanora Storage] Local filesystem write bypassed (${err?.code || err?.message})`);
+    console.warn(`[Hamora Storage] Local filesystem write bypassed (${err?.code || err?.message})`);
   }
 }
 
@@ -505,4 +517,75 @@ export async function deleteGreetingByToken(
 
   return { deleted: true, deletedMediaCount };
 }
+
+export async function getAllGreetingsAdmin(): Promise<StoredGreeting[]> {
+  if (isSupabaseAvailable()) {
+    try {
+      const supabase = supabaseAdmin();
+      const { data, error } = await supabase
+        .from("greetings")
+        .select("token,title,data,user_id,target_event_date,reminder_date,created_at")
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        return data as StoredGreeting[];
+      }
+    } catch (err) {
+      console.warn("Supabase getAllGreetingsAdmin error, using fallback:", err);
+    }
+  }
+
+  const rows = await safeLocalRead<StoredGreeting>(localGreetingsFile);
+  return [...rows].reverse();
+}
+
+export async function getAllResponsesAdmin(): Promise<Record<string, GreetingResponse[]>> {
+  if (isSupabaseAvailable()) {
+    try {
+      const supabase = supabaseAdmin();
+      const { data, error } = await supabase
+        .from("greeting_responses")
+        .select("id,token,recipient_name,message,candles_blown,reaction,created_at")
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        const grouped: Record<string, GreetingResponse[]> = {};
+        for (const r of data) {
+          if (!grouped[r.token]) grouped[r.token] = [];
+          grouped[r.token].push({
+            id: r.id,
+            token: r.token,
+            recipient_name: r.recipient_name,
+            message: r.message,
+            candles_blown: r.candles_blown,
+            reaction: r.reaction,
+            created_at: r.created_at,
+            createdAt: r.created_at || new Date().toISOString()
+          });
+        }
+        return grouped;
+      }
+    } catch (err) {
+      console.warn("Supabase getAllResponsesAdmin error, using fallback:", err);
+    }
+  }
+
+  const list = await safeLocalRead<GreetingResponse>(localResponsesFile);
+  const grouped: Record<string, GreetingResponse[]> = {};
+  for (const r of list) {
+    if (!grouped[r.token]) grouped[r.token] = [];
+    grouped[r.token].push(r);
+  }
+  return grouped;
+}
+
+export async function getAllDraftsAdmin(): Promise<GreetingDraft[]> {
+  const drafts = await safeLocalRead<GreetingDraft>(localDraftsFile);
+  return [...drafts].reverse();
+}
+
+export async function deleteGreetingAdmin(token: string): Promise<{ deleted: boolean }> {
+  return deleteGreetingByToken(token);
+}
+
 

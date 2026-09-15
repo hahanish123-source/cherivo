@@ -32,6 +32,18 @@ export type ReasonItem = {
   title: string;
   text: string;
   emoji: string;
+  x?: number;
+  y?: number;
+  rotation?: number;
+  scale?: number;
+  width?: number;
+  cardColor?: string;
+  cardOpacity?: number;
+  cardRadius?: number;
+  cardPadding?: number;
+  titleColor?: string;
+  textColor?: string;
+  locked?: boolean;
 };
 
 export type IncidentItem = {
@@ -73,6 +85,7 @@ export type ImageAdjustment = {
   cornerRadius?: number;
   zIndex?: number;
   visible?: boolean;
+  locked?: boolean;
 };
 
 export type ElementTextStyle = {
@@ -86,6 +99,7 @@ export type ElementTextStyle = {
   align?: "left" | "center" | "right" | "justify";
   offsetX?: number;
   offsetY?: number;
+  locked?: boolean;
   rotation?: number;
   animation?: string;
   delay?: number;
@@ -121,11 +135,58 @@ export type Block = {
   buttonColor?: string;
   reasonTitleColor?: string;
   reasonTextColor?: string;
+  reasonTitleSize?: number;
+  reasonTextSize?: number;
+  reasonTitleFont?: FontName;
+  reasonTextFont?: FontName;
+  reasonCardColor?: string;
+  reasonCardRadius?: number;
+  reasonCardOpacity?: number;
+  reasonCardPadding?: number;
+  reasonCardScale?: number;
+  reasonCardWidth?: number;
+  reasonCardGap?: number;
+  reasonCardPositions?: Record<string, { x: number; y: number; rotation?: number; scale?: number; width?: number; locked?: boolean }>;
+  reasonTextOpacity?: number;
+  reasonEmojiOpacity?: number;
   incidentTitleColor?: string;
   incidentTextColor?: string;
   secretTextColor?: string;
+  secretTextSize?: number;
+  secretTextFont?: FontName;
+  secretTextWeight?: string;
+  secretTextLineHeight?: number;
+  secretTextLetterSpacing?: number;
+  secretTextAlign?: "left" | "center" | "right";
+  secretHideButtonText?: string;
   cakeSubtitleColor?: string;
   cakeTextColor?: string;
+  cakeScale?: number;
+  cakeOffsetX?: number;
+  cakeOffsetY?: number;
+  cakeLocked?: boolean;
+  cakeColor?: string;
+  cakeSecondaryColor?: string;
+  cakeTopColor?: string;
+  cakeCreamColor?: string;
+  cakePlateColor?: string;
+  cakeTexture?: "smooth" | "drip" | "sprinkles" | "striped" | "stars" | "velvet" | "gold" | "hearts" | "comic-pop" | "checkered";
+  cakeCandleCount?: number;
+  cakeCandleShape?: "standard" | "heart" | "double-heart" | "spiral" | "sparkler" | "comic" | "racing" | "flame-arch";
+  cakeHeartSwags?: boolean;
+  cakeCherries?: boolean;
+  cakeRacingTrack?: boolean;
+  cakeModel?: "classic" | "romantic-hearts" | "royal-gold" | "sweet-strawberry" | "comic-2d" | "racing-3d";
+  cakeCandleColor?: string;
+  cakeCandleStripeColor?: string;
+  cakeFlameColor?: string;
+  cakeSparkler?: boolean;
+  cakeSparklerScale?: number;
+  cakeCandleHeight?: number;
+  cakeCelebrationEmoji?: string;
+  cakeWishHeading?: string;
+  cakeWishText?: string;
+  cakeResetButtonText?: string;
   titleSize?: number;
   subtitleSize?: number;
   headingSize: number;
@@ -150,6 +211,7 @@ export type Block = {
   bgColor2?: string;
   bgColor3?: string;
   bgColor4?: string;
+  bgColor5?: string;
   letterColor?: string;
   letterSize?: number;
   letterLineHeight?: number;
@@ -215,6 +277,7 @@ export type GreetingProject = {
   bgColor2?: string;
   bgColor3?: string;
   bgColor4?: string;
+  bgColor5?: string;
   backgroundOverlay?: number;
   targetEventDate?: string;
   reminderDate?: string;
@@ -225,9 +288,13 @@ export type GreetingResponse = {
   id: string;
   token: string;
   senderName?: string;
+  recipient_name?: string;
   message: string;
   emojis?: string[];
+  candles_blown?: boolean;
+  reaction?: string;
   createdAt: string;
+  created_at?: string;
 };
 
 export type GreetingDraft = {

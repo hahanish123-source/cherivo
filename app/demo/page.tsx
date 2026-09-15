@@ -16,24 +16,32 @@ export default function Demo() {
   });
 
   return (
-    <main className="demoPage">
-      <div className="demoTop">
-        <Link href="/" className="logo" style={{ textDecoration: "none", color: "inherit" }}>
-          <span>
-            HANORA<span>•</span>
-          </span>
+    <main className="demoPage" style={{ minHeight: "100vh", padding: "16px 14px 40px", boxSizing: "border-box" }}>
+      <header className="publicTop">
+        <Link href="/" className="publicLogo" aria-label="Hamora Home">
+          <span className="publicLogoText">Hamora</span>
+          <span className="publicLogoDot">•</span>
         </Link>
-        <button type="button" onClick={() => setSceneIndex(0)}>
-          <RotateCcw size={15} /> Replay
-        </button>
-      </div>
+        <span className="publicMomentTitle">Interactive Hamora Demo</span>
+        <div className="publicActions">
+          <button
+            type="button"
+            className="replayNavBtn"
+            onClick={() => setSceneIndex(0)}
+            title="Replay demo"
+          >
+            <RotateCcw size={15} strokeWidth={2.2} style={{ color: "#ffffff" }} />
+            <span>Replay</span>
+          </button>
+        </div>
+      </header>
       <div className="demoCard">
         <GreetingView
           project={demoProject}
           sceneIndex={sceneIndex}
           onSceneChange={setSceneIndex}
           isEditable={false}
-          title="Interactive Hanora Demo"
+          title="Interactive Hamora Demo"
         />
       </div>
     </main>

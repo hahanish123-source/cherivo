@@ -77,6 +77,15 @@ export const defaultBlocks: Block[] = [
     radius: 21,
     cardColor: "#ffffff",
     cardOpacity: 14,
+    reasonCardColor: "#ffffff",
+    reasonCardOpacity: 14,
+    reasonCardRadius: 21,
+    reasonCardPadding: 22,
+    reasonCardGap: 18,
+    reasonTitleSize: 17,
+    reasonTextSize: 14,
+    reasonTextOpacity: 100,
+    reasonEmojiOpacity: 100,
     imageOpacity: 100,
     visible: true,
     items: reasonDefaults
@@ -142,7 +151,7 @@ export const defaultBlocks: Block[] = [
     title: "One More Thing",
     subtitle: "A secret reveal",
     heading: "There's one more thing...",
-    text: "Tap the heart to reveal what comes next.",
+    text: "You make every single day brighter just by being in it! ❤️",
     emoji: "💗",
     accent: "#ff3d78",
     headingColor: "#fff7fb",
@@ -151,6 +160,7 @@ export const defaultBlocks: Block[] = [
     emojiColor: "#ff86b0",
     headingSize: 70,
     bodySize: 17,
+    secretTextSize: 28,
     lineHeight: 1.75,
     letterSpacing: 0,
     radius: 21,
@@ -180,6 +190,12 @@ export const defaultBlocks: Block[] = [
     cardColor: "#ffffff",
     cardOpacity: 14,
     imageOpacity: 100,
+    cakeCelebrationEmoji: "🎂✨❤️",
+    cakeWishHeading: "Happy Birthday once again!",
+    cakeWishText: "May your year ahead be filled with immense joy, laughter, and every dream fulfilled! 🎉",
+    cakeResetButtonText: "Light candles again",
+    cakeSparkler: false,
+    cakeSparklerScale: 50,
     visible: true
   }
 ];
@@ -189,7 +205,8 @@ export const themes: Record<string, [string, string, string, string]> = {
   light: ["#fff7f4", "#d34f75", "#a23d60", "#2d2027"],
   system: ["#101015", "#e879a0", "#f4a6c0", "#f8f7fb"],
   romantic: ["#160914", "#ff3d78", "#ff86b0", "#fff4f8"],
-  dreamy: ["#0d1020", "#9b7cff", "#cbbdff", "#f7f5ff"]
+  dreamy: ["#0d1020", "#9b7cff", "#cbbdff", "#f7f5ff"],
+  "liquid-glass": ["#0b0614", "#ff4f9a", "#38bdf8", "#fff8fc"]
 };
 
 export const backgrounds: Record<string, string> = {
@@ -206,7 +223,9 @@ export const backgrounds: Record<string, string> = {
   petals:
     "radial-gradient(circle at 12% 18%,#ff91bb55,transparent 25%), radial-gradient(circle at 82% 22%,#ffd4e855,transparent 25%), linear-gradient(145deg,#1a0b16,#26132b 55%,#0a0710)",
   lightGradient:
-    "linear-gradient(135deg,#fff0f5 0%,#f4e9ff 45%,#e8f7ff 100%)"
+    "linear-gradient(135deg,#fff0f5 0%,#f4e9ff 45%,#e8f7ff 100%)",
+  liquidGlass:
+    "radial-gradient(circle at 14% 16%, rgba(255, 79, 154, 0.45), transparent 30%), radial-gradient(circle at 86% 22%, rgba(56, 189, 248, 0.42), transparent 32%), radial-gradient(circle at 50% 85%, rgba(192, 132, 252, 0.35), transparent 35%), linear-gradient(135deg, #090512 0%, #1c0e2a 48%, #060b18 100%)"
 };
 
 export function uid(): string {
@@ -254,7 +273,19 @@ export function normalizeBlock(raw: any, fallbackIndex = 0, fallbackFont: FontNa
                   id: x?.id ?? uid(),
                   title: x?.title ?? "A reason",
                   text: x?.text ?? "Make this reason yours.",
-                  emoji: x?.emoji ?? "✨"
+                  emoji: x?.emoji ?? "✨",
+                  x: typeof x?.x === "number" ? x.x : undefined,
+                  y: typeof x?.y === "number" ? x.y : undefined,
+                  rotation: typeof x?.rotation === "number" ? x.rotation : undefined,
+                  scale: typeof x?.scale === "number" ? x.scale : undefined,
+                  width: typeof x?.width === "number" ? x.width : undefined,
+                  cardColor: x?.cardColor !== undefined ? String(x.cardColor) : undefined,
+                  cardOpacity: typeof x?.cardOpacity === "number" ? x.cardOpacity : undefined,
+                  cardRadius: typeof x?.cardRadius === "number" ? x.cardRadius : undefined,
+                  cardPadding: typeof x?.cardPadding === "number" ? x.cardPadding : undefined,
+                  titleColor: x?.titleColor !== undefined ? String(x.titleColor) : undefined,
+                  textColor: x?.textColor !== undefined ? String(x.textColor) : undefined,
+                  locked: typeof x?.locked === "boolean" ? x.locked : undefined
                 }
           )
         : reasonDefaults)
@@ -264,10 +295,10 @@ export function normalizeBlock(raw: any, fallbackIndex = 0, fallbackFont: FontNa
     ? (Array.isArray(raw.incidents)
         ? raw.incidents.map((x: any, i: number) => ({
             id: x?.id ?? uid(),
-            title: x?.title ?? `Incident #${i + 1}`,
+            title: x?.title ?? `Memory #${i + 1}`,
             tag: x?.tag ?? "Core Memory",
             date: x?.date ?? "",
-            text: x?.text ?? "Write about what happened...",
+            text: x?.text ?? "Write about this memorable moment together...",
             emoji: x?.emoji ?? "✨",
             image: x?.image ? String(x.image) : undefined
           }))
@@ -305,11 +336,58 @@ export function normalizeBlock(raw: any, fallbackIndex = 0, fallbackFont: FontNa
     buttonColor: raw.buttonColor !== undefined ? String(raw.buttonColor) : undefined,
     reasonTitleColor: raw.reasonTitleColor !== undefined ? String(raw.reasonTitleColor) : undefined,
     reasonTextColor: raw.reasonTextColor !== undefined ? String(raw.reasonTextColor) : undefined,
+    reasonTitleSize: typeof raw.reasonTitleSize === "number" ? raw.reasonTitleSize : (raw.type === "reasons" ? 17 : undefined),
+    reasonTextSize: typeof raw.reasonTextSize === "number" ? raw.reasonTextSize : (raw.type === "reasons" ? 14 : undefined),
+    reasonTitleFont: raw.reasonTitleFont ? safeFont(raw.reasonTitleFont, "serif") : undefined,
+    reasonTextFont: raw.reasonTextFont ? safeFont(raw.reasonTextFont, "sans") : undefined,
+    reasonCardColor: raw.reasonCardColor !== undefined ? String(raw.reasonCardColor) : (raw.cardColor ?? "#ffffff"),
+    reasonCardRadius: typeof raw.reasonCardRadius === "number" ? raw.reasonCardRadius : (raw.radius ?? 21),
+    reasonCardOpacity: typeof raw.reasonCardOpacity === "number" ? raw.reasonCardOpacity : (typeof raw.cardOpacity === "number" ? raw.cardOpacity : 14),
+    reasonCardPadding: typeof raw.reasonCardPadding === "number" ? raw.reasonCardPadding : 22,
+    reasonCardScale: typeof raw.reasonCardScale === "number" ? raw.reasonCardScale : 100,
+    reasonCardWidth: typeof raw.reasonCardWidth === "number" ? raw.reasonCardWidth : undefined,
+    reasonCardGap: typeof raw.reasonCardGap === "number" ? raw.reasonCardGap : undefined,
+    reasonCardPositions: raw.reasonCardPositions && typeof raw.reasonCardPositions === "object" ? raw.reasonCardPositions : undefined,
+    reasonTextOpacity: typeof raw.reasonTextOpacity === "number" ? raw.reasonTextOpacity : 100,
+    reasonEmojiOpacity: typeof raw.reasonEmojiOpacity === "number" ? raw.reasonEmojiOpacity : 100,
     incidentTitleColor: raw.incidentTitleColor !== undefined ? String(raw.incidentTitleColor) : undefined,
     incidentTextColor: raw.incidentTextColor !== undefined ? String(raw.incidentTextColor) : undefined,
     secretTextColor: raw.secretTextColor !== undefined ? String(raw.secretTextColor) : undefined,
+    secretTextSize: typeof raw.secretTextSize === "number" ? raw.secretTextSize : (raw.secretTextSize ? Number(raw.secretTextSize) : (raw.type === "secret" ? 28 : undefined)),
+    secretTextFont: validFonts.includes(raw.secretTextFont) ? raw.secretTextFont : undefined,
+    secretTextWeight: typeof raw.secretTextWeight === "string" ? raw.secretTextWeight : undefined,
+    secretTextLineHeight: typeof raw.secretTextLineHeight === "number" ? raw.secretTextLineHeight : (raw.secretTextLineHeight ? Number(raw.secretTextLineHeight) : undefined),
+    secretTextLetterSpacing: typeof raw.secretTextLetterSpacing === "number" ? raw.secretTextLetterSpacing : (raw.secretTextLetterSpacing ? Number(raw.secretTextLetterSpacing) : undefined),
+    secretTextAlign: raw.secretTextAlign === "left" || raw.secretTextAlign === "right" ? raw.secretTextAlign : "center",
+    secretHideButtonText: raw.secretHideButtonText !== undefined ? String(raw.secretHideButtonText) : undefined,
     cakeSubtitleColor: raw.cakeSubtitleColor !== undefined ? String(raw.cakeSubtitleColor) : undefined,
     cakeTextColor: raw.cakeTextColor !== undefined ? String(raw.cakeTextColor) : undefined,
+    cakeScale: typeof raw.cakeScale === "number" ? raw.cakeScale : (raw.cakeScale ? Number(raw.cakeScale) : undefined),
+    cakeOffsetX: typeof raw.cakeOffsetX === "number" ? raw.cakeOffsetX : (raw.cakeOffsetX ? Number(raw.cakeOffsetX) : undefined),
+    cakeOffsetY: typeof raw.cakeOffsetY === "number" ? raw.cakeOffsetY : (raw.cakeOffsetY ? Number(raw.cakeOffsetY) : undefined),
+    cakeLocked: typeof raw.cakeLocked === "boolean" ? raw.cakeLocked : undefined,
+    cakeColor: raw.cakeColor !== undefined ? String(raw.cakeColor) : undefined,
+    cakeSecondaryColor: raw.cakeSecondaryColor !== undefined ? String(raw.cakeSecondaryColor) : undefined,
+    cakeTopColor: raw.cakeTopColor !== undefined ? String(raw.cakeTopColor) : undefined,
+    cakeCreamColor: raw.cakeCreamColor !== undefined ? String(raw.cakeCreamColor) : undefined,
+    cakePlateColor: raw.cakePlateColor !== undefined ? String(raw.cakePlateColor) : undefined,
+    cakeTexture: typeof raw.cakeTexture === "string" ? raw.cakeTexture : undefined,
+    cakeCandleCount: typeof raw.cakeCandleCount === "number" ? raw.cakeCandleCount : (raw.cakeCandleCount ? Number(raw.cakeCandleCount) : undefined),
+    cakeCandleShape: typeof raw.cakeCandleShape === "string" ? (raw.cakeCandleShape as any) : undefined,
+    cakeHeartSwags: typeof raw.cakeHeartSwags === "boolean" ? raw.cakeHeartSwags : undefined,
+    cakeCherries: typeof raw.cakeCherries === "boolean" ? raw.cakeCherries : undefined,
+    cakeRacingTrack: typeof raw.cakeRacingTrack === "boolean" ? raw.cakeRacingTrack : undefined,
+    cakeModel: typeof raw.cakeModel === "string" ? (raw.cakeModel as any) : undefined,
+    cakeCandleColor: raw.cakeCandleColor !== undefined ? String(raw.cakeCandleColor) : undefined,
+    cakeCandleStripeColor: raw.cakeCandleStripeColor !== undefined ? String(raw.cakeCandleStripeColor) : undefined,
+    cakeFlameColor: typeof raw.cakeFlameColor === "string" ? raw.cakeFlameColor : undefined,
+    cakeSparkler: typeof raw.cakeSparkler === "boolean" ? raw.cakeSparkler : undefined,
+    cakeSparklerScale: typeof raw.cakeSparklerScale === "number" ? raw.cakeSparklerScale : (raw.cakeSparklerScale ? Number(raw.cakeSparklerScale) : undefined),
+    cakeCandleHeight: typeof raw.cakeCandleHeight === "number" ? raw.cakeCandleHeight : (raw.cakeCandleHeight ? Number(raw.cakeCandleHeight) : undefined),
+    cakeCelebrationEmoji: raw.cakeCelebrationEmoji !== undefined ? String(raw.cakeCelebrationEmoji) : undefined,
+    cakeWishHeading: raw.cakeWishHeading !== undefined ? String(raw.cakeWishHeading) : undefined,
+    cakeWishText: raw.cakeWishText !== undefined ? String(raw.cakeWishText) : undefined,
+    cakeResetButtonText: raw.cakeResetButtonText !== undefined ? String(raw.cakeResetButtonText) : undefined,
     titleSize: typeof raw.titleSize === "number" ? raw.titleSize : Number(raw.titleSize ?? 12),
     subtitleSize: typeof raw.subtitleSize === "number" ? raw.subtitleSize : Number(raw.subtitleSize ?? 13),
     headingSize: typeof raw.headingSize === "number" ? raw.headingSize : Number(raw.headingSize ?? 70),
@@ -334,6 +412,7 @@ export function normalizeBlock(raw: any, fallbackIndex = 0, fallbackFont: FontNa
     bgColor2: typeof raw.bgColor2 === "string" ? raw.bgColor2 : undefined,
     bgColor3: typeof raw.bgColor3 === "string" ? raw.bgColor3 : undefined,
     bgColor4: typeof raw.bgColor4 === "string" ? raw.bgColor4 : undefined,
+    bgColor5: typeof raw.bgColor5 === "string" ? raw.bgColor5 : undefined,
     letterColor: raw.letterColor ?? "#2d2024",
     letterSize: typeof raw.letterSize === "number" ? raw.letterSize : Number(raw.letterSize ?? 17),
     letterLineHeight: typeof raw.letterLineHeight === "number" ? raw.letterLineHeight : Number(raw.letterLineHeight ?? 1.8),
@@ -399,6 +478,7 @@ export function normalizeProject(raw: any): GreetingProject {
       bgColor2: "#7c5cff",
       bgColor3: "#38bdf8",
       bgColor4: "#f59e0b",
+      bgColor5: "#10b981",
       backgroundOverlay: 18
     };
   }
@@ -422,7 +502,7 @@ export function normalizeProject(raw: any): GreetingProject {
     globalCardOpacity: typeof raw.globalCardOpacity === "number" ? raw.globalCardOpacity : Number(raw.globalCardOpacity ?? 14),
     globalRadius: typeof raw.globalRadius === "number" ? raw.globalRadius : Number(raw.globalRadius ?? 21),
     globalSpacing: typeof raw.globalSpacing === "number" ? raw.globalSpacing : Number(raw.globalSpacing ?? 18),
-    globalMotion: typeof raw.globalMotion === "string" ? raw.globalMotion : "cinematic",
+    globalMotion: typeof raw.globalMotion === "string" && raw.globalMotion !== "liquid-glass" && raw.globalMotion !== "soft" ? raw.globalMotion : "cinematic",
     audioName: raw.audioName ? String(raw.audioName) : "",
     audioUrl: raw.audioUrl,
     customBg: typeof raw.customBg === "string" || (raw.customBg && typeof raw.customBg === "object") ? raw.customBg : "",
@@ -438,6 +518,7 @@ export function normalizeProject(raw: any): GreetingProject {
     bgColor2: raw.bgColor2 ?? themeColors[2],
     bgColor3: raw.bgColor3 ?? (theme === "light" ? "#e8f7ff" : "#38bdf8"),
     bgColor4: raw.bgColor4 ?? (theme === "light" ? "#fff0f5" : "#f59e0b"),
+    bgColor5: raw.bgColor5 ?? (theme === "light" ? "#fce7f3" : "#10b981"),
     backgroundOverlay: typeof raw.backgroundOverlay === "number" ? raw.backgroundOverlay : Number(raw.backgroundOverlay ?? 18),
     targetEventDate: typeof raw.targetEventDate === "string" ? raw.targetEventDate : undefined,
     reminderDate: typeof raw.reminderDate === "string" ? raw.reminderDate : undefined,

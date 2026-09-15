@@ -91,35 +91,35 @@ export default function GreetingClient({
         boxSizing: "border-box"
       }}
     >
-      <div className="publicTop">
-        <Link href="/" className="logo" style={{ textDecoration: "none", color: "inherit" }}>
-          <span>
-            HANORA<span>•</span>
-          </span>
+      <header className="publicTop">
+        <Link href="/" className="publicLogo" aria-label="Hamora Home">
+          <span className="publicLogoText">Hamora</span>
+          <span className="publicLogoDot">•</span>
         </Link>
-        <small>{title}</small>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        {title && <span className="publicMomentTitle">{title}</span>}
+        <div className="publicActions">
           <button
             type="button"
             className="replyNavBtn"
             onClick={() => setResponseModalOpen(true)}
-            style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px" }}
+            title="Reply to greeting"
           >
-            <Heart size={14} style={{ color: "#ff4f8b" }} />
+            <Heart size={15} strokeWidth={2.4} style={{ color: "#ffffff" }} />
             <span>Reply</span>
           </button>
           <button
             type="button"
+            className="replayNavBtn"
             onClick={() => setSceneIndex(0)}
-            style={{ cursor: "pointer" }}
+            title="Replay from start"
           >
-            <RotateCcw size={14} />
-            Replay
+            <RotateCcw size={15} strokeWidth={2.2} style={{ color: "#ffffff" }} />
+            <span>Replay</span>
           </button>
         </div>
-      </div>
+      </header>
 
-      <div style={{ maxWidth: "860px", margin: "0 auto" }}>
+      <div style={{ maxWidth: "540px", margin: "0 auto" }}>
         <GreetingView
           project={project}
           sceneIndex={sceneIndex}

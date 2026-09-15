@@ -24,7 +24,7 @@ function validateProjectMedia(project: Record<string, unknown>) {
 
 export async function GET() {
   const diagnostics = getSupabaseRuntimeDiagnostics();
-  logSupabaseRuntimeDiagnostics("Hanora GET /api/greetings diagnostics");
+  logSupabaseRuntimeDiagnostics("Hamora GET /api/greetings diagnostics");
 
   return NextResponse.json({
     ok: true,
@@ -32,14 +32,14 @@ export async function GET() {
       process.env.NODE_ENV !== "production" && process.env.CHERIVO_LOCAL_STORE !== "false"
         ? "local-development"
         : "supabase-production",
-    message: "Hanora greeting API is ready.",
+    message: "Hamora greeting API is ready.",
     diagnostics,
   });
 }
 
 export async function POST(request: Request) {
   const diagnostics = getSupabaseRuntimeDiagnostics();
-  logSupabaseRuntimeDiagnostics("Hanora POST /api/greetings diagnostics");
+  logSupabaseRuntimeDiagnostics("Hamora POST /api/greetings diagnostics");
 
   try {
     const body = (await request.json().catch(() => null)) ?? {};
@@ -90,8 +90,8 @@ export async function POST(request: Request) {
     });
   } catch (error: unknown) {
     const diagnostics = getSupabaseRuntimeDiagnostics();
-    logSupabaseRuntimeDiagnostics("Hanora publish error diagnostics");
-    console.error("Hanora publish error:", {
+    logSupabaseRuntimeDiagnostics("Hamora publish error diagnostics");
+    console.error("Hamora publish error:", {
       diagnostics,
       error,
     });

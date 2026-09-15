@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getGreeting } from "@/lib/greetingStore";
 import { resolveGreetingMedia } from "@/lib/greetingMedia";
+import { defaultBlocks, normalizeProject } from "@/lib/greetingConfig";
 import GreetingClient from "./GreetingClient";
 
 export const dynamic = "force-dynamic";
@@ -15,12 +16,12 @@ export async function generateMetadata({
     const data = await getGreeting(token);
     if (data?.title) {
       return {
-        title: `${data.title} | Hanora`,
+        title: `${data.title} | Hamora`,
         robots: { index: false, follow: false }
       };
     }
   } catch {}
-  return { title: "A Hanora moment", robots: { index: false, follow: false } };
+  return { title: "A Hamora moment", robots: { index: false, follow: false } };
 }
 
 export default async function GreetingPage({
@@ -29,6 +30,9 @@ export default async function GreetingPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
+  const isDev = process.env.NODE_ENV === "development";
+  const isDevToken = token === "preview" || token === "demo" || token === "test" || token === "dev";
+
   try {
     const data = await getGreeting(token);
     if (data) {
@@ -39,10 +43,27 @@ export default async function GreetingPage({
         <GreetingClient
           token={token}
           project={resolvedProject as Record<string, unknown>}
-          title={data.title || "A Hanora moment"}
+          title={data.title || "A Hamora moment"}
         />
       );
     }
+
+    if (isDev || isDevToken) {
+      const demoProject = normalizeProject({
+        blocks: defaultBlocks,
+        theme: "romantic",
+        background: "aurora",
+        globalFont: "serif"
+      });
+      return (
+        <GreetingClient
+          token={token}
+          project={demoProject as Record<string, unknown>}
+          title="A Hamora moment (Dev Preview)"
+        />
+      );
+    }
+
     return (
       <main className="privateMissing">
         <div>
@@ -53,11 +74,27 @@ export default async function GreetingPage({
       </main>
     );
   } catch {
+    if (isDev || isDevToken) {
+      const demoProject = normalizeProject({
+        blocks: defaultBlocks,
+        theme: "romantic",
+        background: "aurora",
+        globalFont: "serif"
+      });
+      return (
+        <GreetingClient
+          token={token}
+          project={demoProject as Record<string, unknown>}
+          title="A Hamora moment (Dev Preview)"
+        />
+      );
+    }
+
     return (
       <main className="privateMissing">
         <div>
           <span>Setup needed</span>
-          <h1>Hanora is not connected to its secure database yet.</h1>
+          <h1>Hamora is not connected to its secure database yet.</h1>
           <p>Add the Supabase environment variables from the README before publishing.</p>
         </div>
       </main>

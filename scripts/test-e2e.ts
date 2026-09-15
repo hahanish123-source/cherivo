@@ -4,7 +4,7 @@ import type { GreetingProject } from "../lib/types";
 
 async function runTest() {
   console.log("==================================================");
-  console.log("HANORA END-TO-END PERSISTENCE & PARITY TEST");
+  console.log("HAMORA END-TO-END PERSISTENCE & PARITY TEST");
   console.log("==================================================");
 
   const customPayload: GreetingProject = {

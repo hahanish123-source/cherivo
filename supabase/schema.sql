@@ -1,10 +1,10 @@
--- Hanora production database
+-- Hamora production database
 create extension if not exists pgcrypto;
 
 create table if not exists public.greetings (
   id uuid primary key default gen_random_uuid(),
   token text not null unique,
-  title text not null default 'Hanora moment',
+  title text not null default 'Hamora moment',
   data jsonb not null,
   user_id text,
   target_event_date text,
@@ -63,32 +63,32 @@ create index if not exists greeting_drafts_user_idx on public.greeting_drafts(us
 -- Private greeting media is uploaded by the Next.js server with the service role
 -- and delivered to recipients through short-lived signed URLs.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('hanora-media', 'hanora-media', false, 52428800, array['audio/mpeg', 'video/mp4', 'video/webm', 'video/quicktime', 'image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+values ('hamora-media', 'hamora-media', false, 52428800, array['audio/mpeg', 'video/mp4', 'video/webm', 'video/quicktime', 'image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 on conflict (id) do update set
   public = excluded.public,
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
-drop policy if exists "hanora media server read" on storage.objects;
-drop policy if exists "hanora media server insert" on storage.objects;
-drop policy if exists "hanora media server update" on storage.objects;
-drop policy if exists "hanora media server delete" on storage.objects;
+drop policy if exists "hamora media server read" on storage.objects;
+drop policy if exists "hamora media server insert" on storage.objects;
+drop policy if exists "hamora media server update" on storage.objects;
+drop policy if exists "hamora media server delete" on storage.objects;
 
 -- These policies document the intended boundary. The server's service-role
 -- client bypasses RLS; browser clients never receive that key.
-create policy "hanora media server read"
+create policy "hamora media server read"
   on storage.objects for select to service_role
-  using (bucket_id = 'hanora-media');
+  using (bucket_id = 'hamora-media');
 
-create policy "hanora media server insert"
+create policy "hamora media server insert"
   on storage.objects for insert to service_role
-  with check (bucket_id = 'hanora-media');
+  with check (bucket_id = 'hamora-media');
 
-create policy "hanora media server update"
+create policy "hamora media server update"
   on storage.objects for update to service_role
-  using (bucket_id = 'hanora-media')
-  with check (bucket_id = 'hanora-media');
+  using (bucket_id = 'hamora-media')
+  with check (bucket_id = 'hamora-media');
 
-create policy "hanora media server delete"
+create policy "hamora media server delete"
   on storage.objects for delete to service_role
-  using (bucket_id = 'hanora-media');
+  using (bucket_id = 'hamora-media');

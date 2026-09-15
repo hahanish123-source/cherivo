@@ -1,4 +1,4 @@
-# Hanora assets
+# Hamora assets
 
 Put built-in, non-private assets here.
 

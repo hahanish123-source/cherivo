@@ -4,7 +4,7 @@ import { isLocalDevelopmentFallbackEnabled, supabaseAdmin } from "./supabaseAdmi
 export const GREETING_MEDIA_BUCKET =
   process.env.SUPABASE_STORAGE_BUCKET?.trim() ||
   process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET?.trim() ||
-  "hanora-media";
+  "hamora-media";
 export const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
 export const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 export const MAX_MEMORY_VIDEO_BYTES = 50 * 1024 * 1024;
