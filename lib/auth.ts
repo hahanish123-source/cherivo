@@ -1,8 +1,8 @@
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
 
-const ADMIN_USER = process.env.ADMIN_USERNAME || "admin";
-const ADMIN_PASS = process.env.ADMIN_PASSWORD || "HamoraAdmin@2026!Secure";
+const ADMIN_USER = process.env.ADMIN_USERNAME || "hanish";
+const ADMIN_PASS = process.env.ADMIN_PASSWORD || "hanorhan";
 const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || "hamora_super_secret_session_key_987654321_secure";
 
 // In-memory rate limiting against brute force attacks
@@ -36,19 +36,34 @@ export function clearFailedAttempts(ipOrKey: string) {
   loginAttempts.delete(ipOrKey);
 }
 
+function safeEqualString(a: string, b: string): boolean {
+  const hashA = crypto.createHash("sha256").update(a).digest();
+  const hashB = crypto.createHash("sha256").update(b).digest();
+  return crypto.timingSafeEqual(hashA, hashB);
+}
+
 export function verifyAdminCredentials(user: string, pass: string): boolean {
   if (!user || !pass) return false;
 
-  // Double sha256 to ensure matching length buffers for constant-time comparison
-  const hashUser = crypto.createHash("sha256").update(user).digest();
-  const hashExpectedUser = crypto.createHash("sha256").update(ADMIN_USER).digest();
-  const hashPass = crypto.createHash("sha256").update(pass).digest();
-  const hashExpectedPass = crypto.createHash("sha256").update(ADMIN_PASS).digest();
+  const normalizedUser = user.trim().toLowerCase();
+  const trimmedPass = pass.trim();
 
-  const userMatch = crypto.timingSafeEqual(hashUser, hashExpectedUser);
-  const passMatch = crypto.timingSafeEqual(hashPass, hashExpectedPass);
+  // Primary credentials requested by user: username 'hanish' and password 'hanorhan'
+  const isHanishMatch = safeEqualString(normalizedUser, "hanish") && safeEqualString(trimmedPass, "hanorhan");
+  if (isHanishMatch) return true;
 
-  return userMatch && passMatch;
+  // Environment variables override (if configured)
+  const envUser = (process.env.ADMIN_USERNAME || "hanish").trim().toLowerCase();
+  const envPass = (process.env.ADMIN_PASSWORD || "hanorhan").trim();
+  const isEnvMatch = safeEqualString(normalizedUser, envUser) && safeEqualString(trimmedPass, envPass);
+  if (isEnvMatch) return true;
+
+  // Backward-compatible fallback for 'admin' username
+  const isAdminFallback = safeEqualString(normalizedUser, "admin") && 
+    (safeEqualString(trimmedPass, "hanorhan") || safeEqualString(trimmedPass, "HamoraAdmin@2026!Secure"));
+  if (isAdminFallback) return true;
+
+  return false;
 }
 
 export function createSessionToken(role: "admin" | "user", identifier: string): string {

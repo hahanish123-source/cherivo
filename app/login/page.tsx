@@ -32,7 +32,11 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Authentication failed");
 
-      router.push("/user");
+      if (data.role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push("/user");
+      }
     } catch (err: any) {
       setError(err.message || "Failed to sign in. Please check your details.");
     } finally {
@@ -231,9 +235,12 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <div style={{ textAlign: "center", marginTop: "20px", display: "flex", justifyContent: "space-between" }}>
+        <div style={{ textAlign: "center", marginTop: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Link href="/" style={{ fontSize: "12px", color: "rgba(255, 255, 255, 0.5)", textDecoration: "none" }}>
             ← Home
+          </Link>
+          <Link href="/admin/login" style={{ fontSize: "12px", color: "#ff4f8b", textDecoration: "none" }}>
+            Admin Portal 🛡️
           </Link>
           <Link href="/create" style={{ fontSize: "12px", color: "#38bdf8", textDecoration: "none" }}>
             Create Greeting ✨

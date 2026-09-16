@@ -284,8 +284,23 @@ export default function CreatePage() {
 
   const totalMediaMB = (totalMediaBytes / (1024 * 1024)).toFixed(1);
 
-  // Supabase Auth listener
+  // Authentication listener (Hamora Session + Supabase)
   useEffect(() => {
+    // Check Hamora Session (Admin / Creator account)
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated && data.user) {
+          setCurrentUser({
+            id: data.role === "admin" ? "admin" : (data.user.id || "admin"),
+            email: data.user.email || "",
+            name: data.user.name || "Hanish",
+            avatar: ""
+          });
+        }
+      })
+      .catch(() => {});
+
     const supabase = getSupabaseClient();
     if (!supabase) return;
 
@@ -1212,7 +1227,7 @@ export default function CreatePage() {
             {previewOnly ? "Edit Studio" : "Preview"}
           </button>
 
-          {/* User Account / Google Auth */}
+          {/* User Account / Auth */}
           {currentUser ? (
             <div className="userProfileBadge">
               {currentUser.avatar ? (
@@ -1224,29 +1239,29 @@ export default function CreatePage() {
               <button
                 type="button"
                 className="logoutBtn"
-                onClick={() => signOut()}
+                onClick={async () => {
+                  try {
+                    await signOut();
+                  } catch {}
+                  await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+                  setCurrentUser(null);
+                  setToast("Signed out successfully.");
+                }}
                 title="Sign out"
               >
                 <LogOut size={13} />
               </button>
             </div>
           ) : (
-            <button
-              type="button"
+            <Link
+              href="/login"
               className="btn small ghost googleLoginBtn"
-              onClick={async () => {
-                try {
-                  await signInWithGoogle();
-                } catch (err: any) {
-                  setToast(
-                    err?.message ||
-                    "Supabase Google Sign-In requires NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY configured."
-                  );
-                }
-              }}
+              style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "6px" }}
+              title="Sign in to your Hamora account"
             >
-              Sign in with Google
-            </button>
+              <UserIcon size={14} />
+              <span>Sign In</span>
+            </Link>
           )}
 
           {/* Generate Private Link CTA */}

@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Shield, Lock, User, ArrowRight, AlertCircle } from "lucide-react";
+import { Shield, Lock, User, ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -18,10 +19,13 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
+      const cleanUser = username.trim();
+      const cleanPass = password.trim();
+
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, isAdmin: true })
+        body: JSON.stringify({ username: cleanUser, password: cleanPass, isAdmin: true })
       });
 
       const data = await res.json();
@@ -108,9 +112,12 @@ export default function AdminLoginPage() {
               <input
                 type="text"
                 required
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
+                placeholder="hanish"
                 style={{
                   width: "100%",
                   height: "44px",
@@ -134,24 +141,47 @@ export default function AdminLoginPage() {
             <div style={{ position: "relative" }}>
               <Lock size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "rgba(255, 255, 255, 0.4)" }} />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter admin password"
+                placeholder="hanorhan"
                 style={{
                   width: "100%",
                   height: "44px",
                   background: "rgba(255, 255, 255, 0.05)",
                   border: "1px solid rgba(255, 255, 255, 0.12)",
                   borderRadius: "12px",
-                  padding: "0 12px 0 38px",
+                  padding: "0 42px 0 38px",
                   color: "#fff",
                   fontSize: "14px",
                   outline: "none",
                   boxSizing: "border-box"
                 }}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  color: "rgba(255, 255, 255, 0.5)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "4px"
+                }}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
 

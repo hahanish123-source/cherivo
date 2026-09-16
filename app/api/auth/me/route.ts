@@ -9,7 +9,7 @@ export async function GET() {
       return NextResponse.json({
         authenticated: true,
         role: "admin",
-        user: { name: "System Administrator", email: "admin@hamora.local", role: "admin" }
+        user: { name: "Hanish", email: "hanish@hamora.local", role: "admin" }
       });
     }
 
