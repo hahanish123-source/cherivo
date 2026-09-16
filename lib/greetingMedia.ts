@@ -102,11 +102,9 @@ export async function uploadGreetingMedia(file: File, kind: StoredMedia["kind"])
   try {
     supabase = supabaseAdmin();
   } catch (err) {
-    if (isLocalDevelopmentFallbackEnabled() || isLocalStore()) {
-      const bytes = Buffer.from(await file.arrayBuffer());
-      return `data:${expectedType};base64,${bytes.toString("base64")}`;
-    }
-    throw err;
+    console.warn("[Hamora Media] Supabase admin init failed, falling back to data URL:", err);
+    const bytes = Buffer.from(await file.arrayBuffer());
+    return `data:${expectedType};base64,${bytes.toString("base64")}`;
   }
 
   let uploadResult = await supabase.storage.from(GREETING_MEDIA_BUCKET).upload(path, Buffer.from(await file.arrayBuffer()), {
@@ -135,19 +133,9 @@ export async function uploadGreetingMedia(file: File, kind: StoredMedia["kind"])
   }
 
   if (uploadResult.error) {
-    let extraMsg = "";
-    try {
-      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-      if (listError) {
-        extraMsg = ` (Could not list buckets: ${listError.message})`;
-      } else {
-        const names = buckets.map(b => b.name).join(", ");
-        extraMsg = ` (Existing buckets in this Supabase project: [${names}])`;
-      }
-    } catch (e: any) {
-      extraMsg = ` (Failed to list buckets: ${e?.message})`;
-    }
-    throw new Error(`Media upload failed: ${uploadResult.error.message}.${extraMsg} Ensure the Supabase Storage bucket '${GREETING_MEDIA_BUCKET}' exists.`);
+    console.warn(`[Hamora Media] Supabase storage upload failed (${uploadResult.error.message}). Falling back to inline data URL.`);
+    const bytes = Buffer.from(await file.arrayBuffer());
+    return `data:${expectedType};base64,${bytes.toString("base64")}`;
   }
 
   return { storage: "supabase", path, kind, size: file.size };
