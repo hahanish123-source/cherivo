@@ -2801,23 +2801,28 @@ export default function GreetingView({
                 )}
                 {/* Dedicated Photo Area in reveal */}
                 {renderForegroundMediaLayer(b)}
-                {b.secretImage && (
+                {(b.secretImage || (b.type === "secret" && b.image)) && (
                   <div
                     className="secretPhotoMount"
                     style={{ cursor: "pointer" }}
                     title="Tap photo to view"
                     onClick={(e) => {
                       e.stopPropagation();
-                      openGalleryPhoto([b.secretImage!], 0, false, e.currentTarget, e);
+                      const img = (b.secretImage || b.image) as string;
+                      openGalleryPhoto([img], 0, false, e.currentTarget, e);
                     }}
                   >
-                    <img src={b.secretImage} alt="Secret memory" style={{ opacity: (b.imageOpacity ?? 100) / 100 }} />
+                    <img src={(b.secretImage || b.image) as string} alt="Secret memory" style={{ opacity: (b.imageOpacity ?? 100) / 100 }} />
                   </div>
                 )}
-                {b.secretVideo && (
+                {(b.secretVideo || (b.type === "secret" && (b.memoryVideo || b.video))) && (
                   <video
                     className="secretVideo"
-                    src={typeof b.secretVideo === "string" ? b.secretVideo : ""}
+                    src={
+                      typeof (b.secretVideo || b.memoryVideo || b.video) === "string"
+                        ? ((b.secretVideo || b.memoryVideo || b.video) as string)
+                        : ""
+                    }
                     controls
                     playsInline
                     preload="metadata"

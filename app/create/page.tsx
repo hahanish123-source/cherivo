@@ -756,8 +756,9 @@ export default function CreatePage() {
       setToast("Video is too large. Video must be 80 MB or smaller.");
       return null;
     }
-    if (kind === "memory-video" && totalVideoCount >= 3) {
-      setToast("Maximum 3 videos allowed per greeting.");
+    const isReplacingCurrentVideo = Boolean(current.video || current.memoryVideo || current.secretVideo);
+    if (kind === "memory-video" && totalVideoCount >= 5 && !isReplacingCurrentVideo) {
+      setToast("Maximum 5 videos allowed per greeting.");
       return null;
     }
     if (kind === "audio" && file.size > 20 * 1024 * 1024) {
@@ -900,12 +901,15 @@ export default function CreatePage() {
   async function uploadVideoTrack(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = "";
 
     const result = await handleMediaUpload(file, "memory-video");
     if (result) {
+      const mediaUrl = result.previewUrl || result.media;
       updateCurrent({
-        video: result.previewUrl || result.media,
-        memoryVideo: result.previewUrl || result.media,
+        video: mediaUrl,
+        memoryVideo: mediaUrl,
+        ...(current.type === "secret" ? { secretVideo: mediaUrl } : {}),
         videoName: file.name,
         videoOpacity: 100,
         videoScale: 100,
@@ -917,28 +921,34 @@ export default function CreatePage() {
         videoLoop: false
       });
       setActiveElementCategory("video");
-      setToast("Video uploaded successfully! 🎥");
+      setToast(current.type === "secret" ? "Secret video attached! 🔒🎥" : "Video uploaded successfully! 🎥");
     }
   }
 
   async function uploadSecretPhoto(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = "";
     const result = await handleMediaUpload(file, "image");
     if (result) {
       updateCurrent({ secretImage: result.previewUrl || result.media });
       setActiveElementCategory("photo");
+      setToast("Secret photo attached! 🔒📸");
     }
   }
 
   async function uploadSecretVideo(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = "";
 
     const result = await handleMediaUpload(file, "memory-video");
     if (result) {
+      const mediaUrl = result.previewUrl || result.media;
       updateCurrent({
-        secretVideo: result.previewUrl || result.media,
+        secretVideo: mediaUrl,
+        video: mediaUrl,
+        memoryVideo: mediaUrl,
         videoName: file.name,
         videoOpacity: 100,
         videoScale: 100,
@@ -3643,10 +3653,16 @@ export default function CreatePage() {
                     <button
                       type="button"
                       className="btn small primary full"
-                      disabled={totalVideoCount >= 3}
-                      onClick={() => videoInputRef.current?.click()}
+                      disabled={totalVideoCount >= 5 && !(current.video || current.memoryVideo || current.secretVideo)}
+                      onClick={() => {
+                        if (current.type === "secret") {
+                          secretVideoInputRef.current?.click();
+                        } else {
+                          videoInputRef.current?.click();
+                        }
+                      }}
                     >
-                      🎥 Upload Video (up to 80 MB, Max 3)
+                      🎥 Upload Video (up to 80 MB, Max 5)
                     </button>
                   )}
                 </div>
@@ -5693,7 +5709,7 @@ export default function CreatePage() {
                             style={{ marginTop: "4px" }}
                             onClick={() => {
                               setActiveElementCategory("photo");
-                              heroPhotoInputRef.current?.click();
+                              secretPhotoInputRef.current?.click();
                             }}
                           >
                             📸 + Add Surprise Photo to Reveal
@@ -5707,13 +5723,13 @@ export default function CreatePage() {
                         {(current.video || current.memoryVideo || current.secretVideo) ? (
                           <div className="miniMediaRow" style={{ marginTop: "6px" }}>
                             <span style={{ fontSize: "12px", color: "var(--text)" }}>
-                              🎥 {current.videoName || "Hidden Video Attached"}
+                              🎥 {current.videoName || "Secret Video Attached"}
                             </span>
                             <div style={{ display: "flex", gap: "6px" }}>
                               <button
                                 type="button"
                                 className="btn small"
-                                onClick={() => videoInputRef.current?.click()}
+                                onClick={() => secretVideoInputRef.current?.click()}
                               >
                                 Replace
                               </button>
@@ -5738,10 +5754,10 @@ export default function CreatePage() {
                             type="button"
                             className="btn small primary full"
                             style={{ marginTop: "4px" }}
-                            disabled={totalVideoCount >= 3}
+                            disabled={totalVideoCount >= 5 && !(current.video || current.memoryVideo || current.secretVideo)}
                             onClick={() => {
                               setActiveElementCategory("video");
-                              videoInputRef.current?.click();
+                              secretVideoInputRef.current?.click();
                             }}
                           >
                             🎥 + Add Surprise Video to Reveal

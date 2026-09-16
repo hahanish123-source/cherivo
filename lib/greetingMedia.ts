@@ -44,27 +44,38 @@ function isLocalStore() {
 }
 
 async function hasContainerSignature(file: File, kind: StoredMedia["kind"]) {
-  const header = new Uint8Array(await file.slice(0, 32).arrayBuffer());
-  if (kind === "memory-video") {
-    const text = new TextDecoder().decode(header.slice(4, 8));
-    return text === "ftyp" || (header[0] === 0x1a && header[1] === 0x45 && header[2] === 0xdf && header[3] === 0xa3);
+  try {
+    const header = new Uint8Array(await file.slice(0, 512).arrayBuffer());
+    if (kind === "memory-video") {
+      const text = new TextDecoder().decode(header);
+      return (
+        text.includes("ftyp") ||
+        text.includes("moov") ||
+        text.includes("wide") ||
+        text.includes("mdat") ||
+        (header[0] === 0x1a && header[1] === 0x45 && header[2] === 0xdf && header[3] === 0xa3) ||
+        /\.(mp4|webm|mov|m4v|mkv|3gp|avi)$/i.test(file.name)
+      );
+    }
+    if (kind === "image") {
+      return (
+        (header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff) ||
+        (header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4e && header[3] === 0x47) ||
+        (header[0] === 0x52 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x46) ||
+        (header[0] === 0x47 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x38) ||
+        /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(file.name)
+      );
+    }
+    return (header[0] === 0x49 && header[1] === 0x44 && header[2] === 0x33) || (header[0] === 0xff && (header[1] & 0xe0) === 0xe0) || /\.mp3$/i.test(file.name);
+  } catch {
+    return true;
   }
-  if (kind === "image") {
-    return (
-      (header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff) ||
-      (header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4e && header[3] === 0x47) ||
-      (header[0] === 0x52 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x46) ||
-      (header[0] === 0x47 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x38)
-    );
-  }
-  return (header[0] === 0x49 && header[1] === 0x44 && header[2] === 0x33) || (header[0] === 0xff && (header[1] & 0xe0) === 0xe0);
 }
 
 export async function uploadGreetingMedia(file: File, kind: StoredMedia["kind"]): Promise<StoredMedia | string> {
   const isVideo = kind === "memory-video";
   const isImage = kind === "image";
   const maxBytes = isVideo ? MAX_MEMORY_VIDEO_BYTES : isImage ? MAX_IMAGE_BYTES : MAX_AUDIO_BYTES;
-  const expectedType = isVideo || isImage ? file.type : "audio/mpeg";
   const fileName = file.name.toLowerCase();
 
   if (file.size > maxBytes) {
@@ -78,25 +89,43 @@ export async function uploadGreetingMedia(file: File, kind: StoredMedia["kind"])
   }
 
   if (isVideo) {
-    const extension = MEMORY_VIDEO_TYPES.get(file.type);
-    if (!extension || !fileName.endsWith(`.${extension}`) || !(await hasContainerSignature(file, kind))) {
+    const isVideoExt = /\.(mp4|webm|mov|m4v|mkv|3gp|avi)$/i.test(fileName);
+    const isVideoMime = file.type.startsWith("video/") || file.type === "application/octet-stream" || !file.type;
+    const hasSig = await hasContainerSignature(file, kind);
+
+    if (!isVideoExt && !isVideoMime && !hasSig) {
       throw new Error("Unsupported video type. Choose an MP4, WebM, or MOV video.");
     }
   } else if (isImage) {
-    const extension = IMAGE_TYPES.get(file.type);
-    if (!extension || !(await hasContainerSignature(file, kind))) {
+    const isImgExt = /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(fileName);
+    const isImgMime = file.type.startsWith("image/") || !file.type;
+    const hasSig = await hasContainerSignature(file, kind);
+
+    if (!isImgExt && !isImgMime && !hasSig) {
       throw new Error("Unsupported image type. Choose a JPEG, PNG, WebP, or GIF image.");
     }
-  } else if (!fileName.endsWith(".mp3") || file.type !== expectedType || !(await hasContainerSignature(file, kind))) {
+  } else if (!fileName.endsWith(".mp3") && file.type !== "audio/mpeg" && !(await hasContainerSignature(file, kind))) {
     throw new Error("Only MP3 audio files are supported.");
   }
+
+  const inferredExt = (fileName.split(".").pop() || "").toLowerCase();
+  const extension = isVideo
+    ? (["mp4", "webm", "mov", "m4v", "mkv", "3gp"].includes(inferredExt) ? inferredExt : (MEMORY_VIDEO_TYPES.get(file.type) || "mp4"))
+    : isImage
+    ? (["jpg", "jpeg", "png", "webp", "gif"].includes(inferredExt) ? (inferredExt === "jpeg" ? "jpg" : inferredExt) : (IMAGE_TYPES.get(file.type) || "jpg"))
+    : "mp3";
+
+  const expectedType = isVideo
+    ? (file.type && file.type.startsWith("video/") ? file.type : `video/${extension === "mov" ? "quicktime" : extension}`)
+    : isImage
+    ? (file.type && file.type.startsWith("image/") ? file.type : `image/${extension === "jpg" ? "jpeg" : extension}`)
+    : "audio/mpeg";
 
   if (isLocalStore()) {
     const bytes = Buffer.from(await file.arrayBuffer());
     return `data:${expectedType};base64,${bytes.toString("base64")}`;
   }
 
-  const extension = isVideo ? MEMORY_VIDEO_TYPES.get(file.type)! : isImage ? IMAGE_TYPES.get(file.type)! : "mp3";
   const path = `greetings/${randomUUID()}.${extension}`;
 
   let supabase;
