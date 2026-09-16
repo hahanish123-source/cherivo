@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import os from "node:os";
 import crypto from "node:crypto";
 
 export type StoredUser = {
@@ -14,24 +15,82 @@ export type StoredUser = {
 
 export type PublicUser = Omit<StoredUser, "passwordHash" | "salt">;
 
-const localDir = path.join(process.cwd(), ".cherivo-local");
-const localUsersFile = path.join(localDir, "users.json");
+// Global in-memory storage fallback for serverless / read-only environments
+declare global {
+  // eslint-disable-next-line no-var
+  var __hamoraUsersMemoryStore: Map<string, StoredUser> | undefined;
+}
+
+function getUsersMemoryStore(): Map<string, StoredUser> {
+  if (!globalThis.__hamoraUsersMemoryStore) {
+    globalThis.__hamoraUsersMemoryStore = new Map();
+  }
+  return globalThis.__hamoraUsersMemoryStore;
+}
+
+function getCandidateFiles(): string[] {
+  const files: string[] = [];
+  try {
+    // In Vercel / AWS Lambda serverless environments, /tmp is always writable
+    const tmpDir = path.join(os.tmpdir(), ".cherivo-local");
+    files.push(path.join(tmpDir, "users.json"));
+  } catch {
+    // ignore
+  }
+  // Local project directory fallback for development
+  files.push(path.join(process.cwd(), ".cherivo-local", "users.json"));
+  return files;
+}
 
 async function safeUsersRead(): Promise<StoredUser[]> {
-  try {
-    const stat = await fs.stat(localUsersFile).catch(() => null);
-    if (!stat) return [];
-    const raw = await fs.readFile(localUsersFile, "utf8");
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+  const memStore = getUsersMemoryStore();
+  const allUsersMap = new Map<string, StoredUser>();
+
+  // 1. Seed from active memory store
+  for (const [id, user] of memStore.entries()) {
+    allUsersMap.set(id, user);
   }
+
+  // 2. Read from disk storage locations
+  for (const file of getCandidateFiles()) {
+    try {
+      const stat = await fs.stat(file).catch(() => null);
+      if (stat) {
+        const raw = await fs.readFile(file, "utf8");
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          for (const u of parsed) {
+            if (u && u.id && !allUsersMap.has(u.id)) {
+              allUsersMap.set(u.id, u);
+              memStore.set(u.id, u);
+            }
+          }
+        }
+      }
+    } catch {
+      // Continue to next candidate
+    }
+  }
+
+  return Array.from(allUsersMap.values());
 }
 
 async function safeUsersWrite(users: StoredUser[]): Promise<void> {
-  await fs.mkdir(localDir, { recursive: true });
-  await fs.writeFile(localUsersFile, JSON.stringify(users, null, 2), "utf8");
+  const memStore = getUsersMemoryStore();
+  for (const user of users) {
+    memStore.set(user.id, user);
+  }
+
+  // Write to first writable storage location without throwing EROFS
+  for (const file of getCandidateFiles()) {
+    try {
+      await fs.mkdir(path.dirname(file), { recursive: true });
+      await fs.writeFile(file, JSON.stringify(users, null, 2), "utf8");
+      break; // Successfully persisted
+    } catch (err: any) {
+      console.warn(`[Hamora UserStore] Local filesystem write bypassed for ${file} (${err?.code || err?.message})`);
+    }
+  }
 }
 
 function hashPassword(password: string, salt: string): string {

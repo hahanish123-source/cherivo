@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import os from "node:os";
 import { randomBytes, randomUUID } from "node:crypto";
 import { supabaseAdmin, getSupabaseCredentials } from "./supabaseAdmin";
 import type { GreetingDraft, GreetingResponse } from "./types";
@@ -38,7 +39,10 @@ function getMemoryStore() {
   return globalThis.__hamoraMemoryStore;
 }
 
-const localDir = path.join(process.cwd(), ".cherivo-local");
+const localDir =
+  process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
+    ? path.join(os.tmpdir(), ".cherivo-local")
+    : path.join(process.cwd(), ".cherivo-local");
 const localGreetingsFile = path.join(localDir, "greetings.json");
 const localResponsesFile = path.join(localDir, "responses.json");
 const localDraftsFile = path.join(localDir, "drafts.json");
