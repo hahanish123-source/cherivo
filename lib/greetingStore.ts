@@ -170,10 +170,26 @@ export async function createGreeting(
   if (isSupabaseAvailable()) {
     try {
       const supabase = supabaseAdmin();
-      const { error } = await supabase.from("greetings").insert(row);
-      if (error) {
-        console.error("Supabase insert greeting error:", error.message);
-        throw new Error(`Database publish failed: ${error.message}`);
+      let insertResult = await supabase.from("greetings").insert(row);
+      // If table lacks user_id / target_event_date / reminder_date columns (Postgres error 42703), retry with core columns
+      if (insertResult.error && (insertResult.error.code === "42703" || insertResult.error.message?.includes("column"))) {
+        console.warn("Retrying greeting insert with core columns:", insertResult.error.message);
+        const coreRow = {
+          token: row.token,
+          title: row.title,
+          data: {
+            ...row.data,
+            user_id: row.user_id,
+            target_event_date: row.target_event_date,
+            reminder_date: row.reminder_date,
+          },
+          created_at: row.created_at
+        };
+        insertResult = await supabase.from("greetings").insert(coreRow);
+      }
+      if (insertResult.error) {
+        console.error("Supabase insert greeting error:", insertResult.error.message);
+        throw new Error(`Database publish failed: ${insertResult.error.message}`);
       }
       return { token };
     } catch (err: any) {
@@ -202,12 +218,21 @@ export async function getGreeting(token: string): Promise<StoredGreeting | null>
       const supabase = supabaseAdmin();
       const { data, error } = await supabase
         .from("greetings")
-        .select("token,title,data,user_id,target_event_date,reminder_date,created_at")
+        .select("*")
         .eq("token", token)
         .maybeSingle();
 
       if (!error && data) {
-        return data as StoredGreeting;
+        const d = (data.data as Record<string, unknown>) || {};
+        return {
+          token: data.token,
+          title: data.title,
+          data: d,
+          user_id: data.user_id || (d.user_id as string | undefined),
+          target_event_date: data.target_event_date || (d.target_event_date as string | undefined),
+          reminder_date: data.reminder_date || (d.reminder_date as string | undefined),
+          created_at: data.created_at
+        };
       }
     } catch (err) {
       console.warn("Supabase getGreeting error, checking fallback:", err);
@@ -528,11 +553,22 @@ export async function getAllGreetingsAdmin(): Promise<StoredGreeting[]> {
       const supabase = supabaseAdmin();
       const { data, error } = await supabase
         .from("greetings")
-        .select("token,title,data,user_id,target_event_date,reminder_date,created_at")
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (!error && data) {
-        return data as StoredGreeting[];
+        return data.map((row: any) => {
+          const d = (row.data as Record<string, unknown>) || {};
+          return {
+            token: row.token,
+            title: row.title,
+            data: d,
+            user_id: row.user_id || (d.user_id as string | undefined),
+            target_event_date: row.target_event_date || (d.target_event_date as string | undefined),
+            reminder_date: row.reminder_date || (d.reminder_date as string | undefined),
+            created_at: row.created_at
+          };
+        });
       }
     } catch (err) {
       console.warn("Supabase getAllGreetingsAdmin error, using fallback:", err);

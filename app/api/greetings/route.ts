@@ -26,22 +26,6 @@ export async function GET() {
   const diagnostics = getSupabaseRuntimeDiagnostics();
   logSupabaseRuntimeDiagnostics("Hamora GET /api/greetings diagnostics");
 
-  let dbCheck: any = null;
-  try {
-    const { supabaseAdmin } = await import("@/lib/supabaseAdmin");
-    const supabase = supabaseAdmin();
-    const selectTokens = await supabase.from("greetings").select("token").limit(1);
-    const selectAll = await supabase.from("greetings").select("token,title,data,user_id,target_event_date,reminder_date,created_at").limit(1);
-    const selectAsterisk = await supabase.from("greetings").select("*").limit(1);
-    dbCheck = {
-      selectTokens,
-      selectAll,
-      selectAsterisk
-    };
-  } catch (err: any) {
-    dbCheck = { exception: err?.message || String(err) };
-  }
-
   return NextResponse.json({
     ok: true,
     mode:
@@ -50,7 +34,6 @@ export async function GET() {
         : "supabase-production",
     message: "Hamora greeting API is ready.",
     diagnostics,
-    dbCheck,
   });
 }
 
