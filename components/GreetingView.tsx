@@ -1424,6 +1424,8 @@ export default function GreetingView({
         ? targetBlock.images
         : targetBlock.image
         ? [targetBlock.image]
+        : targetBlock.secretImage
+        ? [targetBlock.secretImage]
         : [];
 
       if (imagesList.length === 0) return null;
@@ -1487,7 +1489,7 @@ export default function GreetingView({
                     }
                   }
                 }}
-                title={isEditable ? (isPhotoLocked ? "Photo position locked (click to view with sparkles)" : "Drag photo to move • Click to view with sparkles") : "Tap photo to explore with sparkles ❤️"}
+                title={isEditable ? (isPhotoLocked ? "Photo position locked" : "Drag photo to move") : undefined}
                 style={{
                   position: "relative",
                   width: `min(${widthPct}%, 500px)`,
@@ -2801,20 +2803,6 @@ export default function GreetingView({
                 )}
                 {/* Dedicated Photo Area in reveal */}
                 {renderForegroundMediaLayer(b)}
-                {(b.secretImage || (b.type === "secret" && b.image)) && (
-                  <div
-                    className="secretPhotoMount"
-                    style={{ cursor: "pointer" }}
-                    title="Tap photo to view"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const img = (b.secretImage || b.image) as string;
-                      openGalleryPhoto([img], 0, false, e.currentTarget, e);
-                    }}
-                  >
-                    <img src={(b.secretImage || b.image) as string} alt="Secret memory" style={{ opacity: (b.imageOpacity ?? 100) / 100 }} />
-                  </div>
-                )}
                 {(b.secretVideo || (b.type === "secret" && (b.memoryVideo || b.video))) && (
                   <video
                     className="secretVideo"
