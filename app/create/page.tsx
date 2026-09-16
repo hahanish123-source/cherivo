@@ -603,6 +603,20 @@ export default function CreatePage() {
       setActiveElementCategory("wallpaper");
     } else if (elementKey === "video") {
       setActiveElementCategory("video");
+      const targetBlock = blocks.find((b) => b.id === sectionId);
+      const isSecret = targetBlock?.type === "secret";
+      const hasVideo = isSecret
+        ? Boolean(targetBlock?.secretVideo || targetBlock?.video || targetBlock?.memoryVideo)
+        : Boolean(targetBlock?.video || targetBlock?.memoryVideo);
+      if (!hasVideo) {
+        setTimeout(() => {
+          if (isSecret) {
+            secretVideoInputRef.current?.click();
+          } else {
+            videoInputRef.current?.click();
+          }
+        }, 60);
+      }
     } else if (elementKey === "emoji") {
       setActiveElementCategory("emoji");
     }
@@ -2898,18 +2912,43 @@ export default function CreatePage() {
             {activeElementCategory === "photo" && (
               <div className="inspectorSectionGroup">
                 <div className="controlCard">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", gap: "8px", flexWrap: "wrap" }}>
                     <span className="controlGroupTitle" style={{ margin: 0 }}>📸 Section Photos ({galleryImages.length})</span>
-                    <button
-                      type="button"
-                      className="btn small primary"
-                      onClick={() => {
-                        setReplacePhotoIndex(null);
-                        heroPhotoInputRef.current?.click();
-                      }}
-                    >
-                      + Add Photo
-                    </button>
+                    <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                      <button
+                        type="button"
+                        className="btn small primary"
+                        onClick={() => {
+                          setReplacePhotoIndex(null);
+                          heroPhotoInputRef.current?.click();
+                        }}
+                      >
+                        + Add Photo
+                      </button>
+                      <button
+                        type="button"
+                        className="btn small ghost"
+                        onClick={() => {
+                          setActiveElementCategory("video");
+                          const hasVid = current.type === "secret"
+                            ? Boolean(current.secretVideo || current.video || current.memoryVideo)
+                            : Boolean(current.video || current.memoryVideo);
+                          if (!hasVid) {
+                            setTimeout(() => {
+                              if (current.type === "secret") {
+                                secretVideoInputRef.current?.click();
+                              } else {
+                                videoInputRef.current?.click();
+                              }
+                            }, 50);
+                          }
+                        }}
+                        style={{ border: "1px dashed var(--accent, #ff4f8b)", color: "var(--accent, #ff4f8b)" }}
+                        title="Upload a video to this section"
+                      >
+                        + 🎥 Add Video
+                      </button>
+                    </div>
                   </div>
 
                   {current.type === "secret" && (
@@ -3535,24 +3574,30 @@ export default function CreatePage() {
                 )}
                 <div className="controlCard">
                   <span className="controlGroupTitle">🎥 Embedded Section Video</span>
-                  {(current.video || current.memoryVideo) ? (
+                  {(current.video || current.memoryVideo || current.secretVideo) ? (
                     <>
                       <div className="miniMediaRow">
                         <span style={{ fontSize: "12px", color: "var(--text)" }}>
-                          🎥 {current.videoName || "Section Video"}
+                          🎥 {current.videoName || (current.type === "secret" ? "Secret Video Attached" : "Section Video")}
                         </span>
                         <div style={{ display: "flex", gap: "6px" }}>
                           <button
                             type="button"
                             className="btn small"
-                            onClick={() => videoInputRef.current?.click()}
+                            onClick={() => {
+                              if (current.type === "secret") {
+                                secretVideoInputRef.current?.click();
+                              } else {
+                                videoInputRef.current?.click();
+                              }
+                            }}
                           >
                             Replace
                           </button>
                           <button
                             type="button"
                             className="btn small danger"
-                            onClick={() => updateCurrent({ video: "", memoryVideo: "", videoName: "" })}
+                            onClick={() => updateCurrent({ video: "", memoryVideo: "", secretVideo: "", videoName: "" })}
                           >
                             Remove
                           </button>

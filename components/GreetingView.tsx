@@ -2851,9 +2851,9 @@ export default function GreetingView({
                   />
                 )}
 
-                {/* In Editor: Quick Discovery Buttons if no media attached yet */}
-                {isEditable && !b.image && !(b.images && b.images.length > 0) && !b.secretImage && !b.video && !b.memoryVideo && !b.secretVideo && (
-                  <div style={{ display: "flex", gap: "8px", justifyContent: "center", margin: "14px 0 6px" }}>
+                {/* In Editor: Quick Discovery Buttons for Media - always accessible */}
+                {isEditable && (
+                  <div style={{ display: "flex", gap: "8px", justifyContent: "center", margin: "14px 0 6px", flexWrap: "wrap", position: "relative", zIndex: 30 }}>
                     <button
                       type="button"
                       className="btn small ghost"
@@ -2863,6 +2863,7 @@ export default function GreetingView({
                       }}
                       style={{
                         fontSize: "12px",
+                        fontWeight: 600,
                         background: "rgba(255, 255, 255, 0.12)",
                         border: "1px dashed rgba(255, 255, 255, 0.45)",
                         color: "#ffffff",
@@ -2871,27 +2872,51 @@ export default function GreetingView({
                         cursor: "pointer"
                       }}
                     >
-                      + 📸 Add Secret Photo
+                      + 📸 {b.secretImage || b.image || (b.images && b.images.length > 0) ? "Add More Secret Photos" : "Add Secret Photo"}
                     </button>
-                    <button
-                      type="button"
-                      className="btn small ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        triggerSelect("video");
-                      }}
-                      style={{
-                        fontSize: "12px",
-                        background: "rgba(255, 255, 255, 0.12)",
-                        border: "1px dashed rgba(255, 255, 255, 0.45)",
-                        color: "#ffffff",
-                        borderRadius: "999px",
-                        padding: "5px 14px",
-                        cursor: "pointer"
-                      }}
-                    >
-                      + 🎥 Add Secret Video
-                    </button>
+                    {!b.secretVideo && !b.video && !b.memoryVideo ? (
+                      <button
+                        type="button"
+                        className="btn small ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          triggerSelect("video");
+                        }}
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          background: "rgba(255, 255, 255, 0.12)",
+                          border: "1px dashed rgba(255, 255, 255, 0.45)",
+                          color: "#ffffff",
+                          borderRadius: "999px",
+                          padding: "5px 14px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        + 🎥 Add Secret Video
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn small ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          triggerSelect("video");
+                        }}
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          background: "rgba(255, 79, 139, 0.25)",
+                          border: "1px solid rgba(255, 79, 139, 0.8)",
+                          color: "#ffffff",
+                          borderRadius: "999px",
+                          padding: "5px 14px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        🎥 Edit Secret Video
+                      </button>
+                    )}
                   </div>
                 )}
                 <button
@@ -4010,9 +4035,9 @@ export default function GreetingView({
                     />
                   )}
 
-                  {/* Quick Media Upload Discovery in Editor */}
-                  {isEditable && !b.image && !(b.images && b.images.length > 0) && !b.video && !b.memoryVideo && (
-                    <div style={{ display: "flex", gap: "8px", justifyContent: "center", margin: "4px 0", flexWrap: "wrap" }}>
+                  {/* Quick Media Upload Discovery in Editor - always accessible even after adding photos */}
+                  {isEditable && (
+                    <div style={{ display: "flex", gap: "8px", justifyContent: "center", margin: "10px 0 6px", flexWrap: "wrap", position: "relative", zIndex: 30 }}>
                       <button
                         type="button"
                         className="btn small ghost celebrationMediaBtn"
@@ -4021,46 +4046,69 @@ export default function GreetingView({
                           triggerSelect("photo");
                         }}
                         style={{
-                          fontSize: "11.5px",
+                          fontSize: "12px",
                           fontWeight: 700,
                           fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-                          background: "rgba(255, 255, 255, 0.28)",
+                          background: "rgba(255, 255, 255, 0.22)",
                           border: "1.5px dashed rgba(255, 255, 255, 0.85)",
                           color: "#ffffff",
                           textShadow: "0 1px 3px rgba(0, 0, 0, 0.75)",
                           borderRadius: "999px",
-                          padding: "5px 14px",
+                          padding: "6px 14px",
                           cursor: "pointer",
                           backdropFilter: "blur(12px)",
                           boxShadow: "0 4px 14px rgba(0, 0, 0, 0.3)"
                         }}
                       >
-                        + 📸 Add Photo
+                        + 📸 {b.image || (b.images && b.images.length > 0) ? "Add More Photos" : "Add Photo"}
                       </button>
-                      <button
-                        type="button"
-                        className="btn small ghost celebrationMediaBtn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          triggerSelect("video");
-                        }}
-                        style={{
-                          fontSize: "11.5px",
-                          fontWeight: 700,
-                          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-                          background: "rgba(255, 255, 255, 0.28)",
-                          border: "1.5px dashed rgba(255, 255, 255, 0.85)",
-                          color: "#ffffff",
-                          textShadow: "0 1px 3px rgba(0, 0, 0, 0.75)",
-                          borderRadius: "999px",
-                          padding: "5px 14px",
-                          cursor: "pointer",
-                          backdropFilter: "blur(12px)",
-                          boxShadow: "0 4px 14px rgba(0, 0, 0, 0.3)"
-                        }}
-                      >
-                        + 🎥 Add Video
-                      </button>
+                      {!b.video && !b.memoryVideo ? (
+                        <button
+                          type="button"
+                          className="btn small ghost celebrationMediaBtn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerSelect("video");
+                          }}
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                            background: "rgba(255, 255, 255, 0.22)",
+                            border: "1.5px dashed rgba(255, 255, 255, 0.85)",
+                            color: "#ffffff",
+                            textShadow: "0 1px 3px rgba(0, 0, 0, 0.75)",
+                            borderRadius: "999px",
+                            padding: "6px 14px",
+                            cursor: "pointer",
+                            backdropFilter: "blur(12px)",
+                            boxShadow: "0 4px 14px rgba(0, 0, 0, 0.3)"
+                          }}
+                        >
+                          + 🎥 Add Video
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn small ghost celebrationMediaBtn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerSelect("video");
+                          }}
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            background: "rgba(255, 79, 139, 0.25)",
+                            border: "1.5px solid rgba(255, 79, 139, 0.8)",
+                            color: "#ffffff",
+                            borderRadius: "999px",
+                            padding: "6px 14px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          🎥 Edit Video
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -4366,6 +4414,75 @@ export default function GreetingView({
 
           {/* Dedicated Photo Area BELOW Text */}
           {renderForegroundMediaLayer(b)}
+
+          {/* Quick Media Upload Discovery in Editor */}
+          {isEditable && (
+            <div style={{ display: "flex", gap: "8px", justifyContent: "center", margin: "10px 0 6px", flexWrap: "wrap", position: "relative", zIndex: 30 }}>
+              <button
+                type="button"
+                className="btn small ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  triggerSelect("photo");
+                }}
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  background: "rgba(255, 255, 255, 0.12)",
+                  border: "1px dashed rgba(255, 255, 255, 0.45)",
+                  color: "#ffffff",
+                  borderRadius: "999px",
+                  padding: "5px 14px",
+                  cursor: "pointer"
+                }}
+              >
+                + 📸 {b.image || (b.images && b.images.length > 0) ? "Add More Photos" : "Add Photo"}
+              </button>
+              {!b.video && !b.memoryVideo ? (
+                <button
+                  type="button"
+                  className="btn small ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    triggerSelect("video");
+                  }}
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    background: "rgba(255, 255, 255, 0.12)",
+                    border: "1px dashed rgba(255, 255, 255, 0.45)",
+                    color: "#ffffff",
+                    borderRadius: "999px",
+                    padding: "5px 14px",
+                    cursor: "pointer"
+                  }}
+                >
+                  + 🎥 Add Video
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn small ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    triggerSelect("video");
+                  }}
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    background: "rgba(255, 79, 139, 0.25)",
+                    border: "1px solid rgba(255, 79, 139, 0.8)",
+                    color: "#ffffff",
+                    borderRadius: "999px",
+                    padding: "5px 14px",
+                    cursor: "pointer"
+                  }}
+                >
+                  🎥 Edit Video
+                </button>
+              )}
+            </div>
+          )}
 
           {(b.memoryVideo || b.video || resolvedVideo) && (
             <video
