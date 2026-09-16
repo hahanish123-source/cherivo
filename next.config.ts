@@ -22,7 +22,9 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_SUPABASE_URL: resolvedSupabaseUrl,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: resolvedSupabaseAnonKey,
     NEW_SUPABASE_PROJECT_URL: resolvedSupabaseUrl,
-    NEXT_SUPABASE_ANON_KEY: resolvedSupabaseAnonKey
+    NEXT_SUPABASE_ANON_KEY: resolvedSupabaseAnonKey,
+    NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET: "hanora-media",
+    SUPABASE_STORAGE_BUCKET: "hanora-media"
   }
 };
 

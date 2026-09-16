@@ -752,8 +752,8 @@ export default function CreatePage() {
       setToast("Image is too large. Image must be 15 MB or smaller.");
       return null;
     }
-    if (kind === "memory-video" && file.size > 50 * 1024 * 1024) {
-      setToast("Video is too large. Video must be 50 MB or smaller.");
+    if (kind === "memory-video" && file.size > 80 * 1024 * 1024) {
+      setToast("Video is too large. Video must be 80 MB or smaller.");
       return null;
     }
     if (kind === "memory-video" && totalVideoCount >= 3) {
@@ -3646,7 +3646,7 @@ export default function CreatePage() {
                       disabled={totalVideoCount >= 3}
                       onClick={() => videoInputRef.current?.click()}
                     >
-                      🎥 Upload Video (up to 50 MB, Max 3)
+                      🎥 Upload Video (up to 80 MB, Max 3)
                     </button>
                   )}
                 </div>

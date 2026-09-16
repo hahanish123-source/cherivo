@@ -4,10 +4,10 @@ import { isLocalDevelopmentFallbackEnabled, supabaseAdmin } from "./supabaseAdmi
 export const GREETING_MEDIA_BUCKET =
   process.env.SUPABASE_STORAGE_BUCKET?.trim() ||
   process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET?.trim() ||
-  "hamora-media";
+  "hanora-media";
 export const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
 export const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
-export const MAX_MEMORY_VIDEO_BYTES = 50 * 1024 * 1024;
+export const MAX_MEMORY_VIDEO_BYTES = 80 * 1024 * 1024;
 export const MAX_TOTAL_GREETING_BYTES = 300 * 1024 * 1024;
 export const MAX_VIDEOS_PER_GREETING = 3;
 
@@ -31,6 +31,7 @@ export type StoredMedia = {
   path: string;
   kind: "audio" | "memory-video" | "image";
   size?: number;
+  bucket?: string;
 };
 
 export type UploadedMedia = {
@@ -69,7 +70,7 @@ export async function uploadGreetingMedia(file: File, kind: StoredMedia["kind"])
   if (file.size > maxBytes) {
     throw new Error(
       isVideo
-        ? "Video is too large. Video must be 50 MB or smaller."
+        ? "Video is too large. Video must be 80 MB or smaller."
         : isImage
         ? "Image is too large. Image must be 15 MB or smaller."
         : "Audio is too large. Audio must be 20 MB or smaller."
@@ -107,38 +108,43 @@ export async function uploadGreetingMedia(file: File, kind: StoredMedia["kind"])
     return `data:${expectedType};base64,${bytes.toString("base64")}`;
   }
 
-  let uploadResult = await supabase.storage.from(GREETING_MEDIA_BUCKET).upload(path, Buffer.from(await file.arrayBuffer()), {
-    contentType: expectedType,
-    cacheControl: "3600",
-    upsert: false,
-  });
+  const fileBuffer = Buffer.from(await file.arrayBuffer());
+  const candidateBuckets = [
+    GREETING_MEDIA_BUCKET,
+    "hanora-media",
+    "hamora-media"
+  ].filter((v, i, a) => v && a.indexOf(v) === i);
 
-  if (uploadResult.error && (uploadResult.error.message.toLowerCase().includes("bucket not found") || (uploadResult.error as any).statusCode === 404)) {
+  let uploadSuccess = false;
+  let usedBucket = GREETING_MEDIA_BUCKET;
+
+  for (const bucket of candidateBuckets) {
     try {
-      const { error: createErr } = await supabase.storage.createBucket(GREETING_MEDIA_BUCKET, {
-        public: false,
-        fileSizeLimit: 52428800,
-        allowedMimeTypes: ["audio/mpeg", "video/mp4", "video/webm", "video/quicktime", "image/jpeg", "image/png", "image/webp", "image/gif"]
+      const uploadResult = await supabase.storage.from(bucket).upload(path, fileBuffer, {
+        contentType: expectedType,
+        cacheControl: "3600",
+        upsert: false,
       });
-      if (!createErr || createErr.message.toLowerCase().includes("already exists")) {
-        uploadResult = await supabase.storage.from(GREETING_MEDIA_BUCKET).upload(path, Buffer.from(await file.arrayBuffer()), {
-          contentType: expectedType,
-          cacheControl: "3600",
-          upsert: false,
-        });
+
+      if (!uploadResult.error) {
+        uploadSuccess = true;
+        usedBucket = bucket;
+        break;
+      } else {
+        console.warn(`[Hamora Media] Upload to bucket '${bucket}' failed: ${uploadResult.error.message}`);
       }
-    } catch (createEx) {
-      console.warn(`Could not auto-create bucket '${GREETING_MEDIA_BUCKET}':`, createEx);
+    } catch (ex) {
+      console.warn(`[Hamora Media] Upload exception for bucket '${bucket}':`, ex);
     }
   }
 
-  if (uploadResult.error) {
-    console.warn(`[Hamora Media] Supabase storage upload failed (${uploadResult.error.message}). Falling back to inline data URL.`);
+  if (!uploadSuccess) {
+    console.warn("[Hamora Media] All Supabase storage bucket uploads failed. Falling back to inline data URL.");
     const bytes = Buffer.from(await file.arrayBuffer());
     return `data:${expectedType};base64,${bytes.toString("base64")}`;
   }
 
-  return { storage: "supabase", path, kind, size: file.size };
+  return { storage: "supabase", path, kind, size: file.size, bucket: usedBucket };
 }
 
 export async function getGreetingMediaUrl(value: unknown): Promise<string> {
@@ -157,8 +163,10 @@ export async function getGreetingMediaUrl(value: unknown): Promise<string> {
     return "";
   }
 
+  const bucket = media.bucket || GREETING_MEDIA_BUCKET;
+
   try {
-    const { data } = supabaseAdmin().storage.from(GREETING_MEDIA_BUCKET).getPublicUrl(media.path);
+    const { data } = supabaseAdmin().storage.from(bucket).getPublicUrl(media.path);
     if (!data?.publicUrl) return "";
     return data.publicUrl;
   } catch (err) {
@@ -188,7 +196,10 @@ export async function deleteGreetingMediaPaths(paths: string[]): Promise<void> {
   if (!paths || paths.length === 0 || isLocalStore()) return;
   try {
     const supabase = supabaseAdmin();
-    await supabase.storage.from(GREETING_MEDIA_BUCKET).remove(paths);
+    await Promise.allSettled([
+      supabase.storage.from("hanora-media").remove(paths),
+      supabase.storage.from("hamora-media").remove(paths)
+    ]);
   } catch (err) {
     console.warn("Media deletion warning:", err);
   }

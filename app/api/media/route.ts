@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     }
 
     if (kind === "memory-video" && file.size > MAX_MEMORY_VIDEO_BYTES) {
-      return NextResponse.json({ error: "Video is too large. Video must be 50 MB or smaller." }, { status: 413 });
+      return NextResponse.json({ error: "Video is too large. Video must be 80 MB or smaller." }, { status: 413 });
     }
 
     if (kind === "audio" && file.size > MAX_AUDIO_BYTES) {
