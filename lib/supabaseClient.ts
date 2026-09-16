@@ -3,11 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 function getSupabaseClientConfig() {
   const url =
     process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
+    process.env.NEW_SUPABASE_PROJECT_URL?.trim() ||
     process.env.next_public_supabase_url?.trim() ||
     process.env.SUPABASE_URL?.trim() ||
     "";
   const anonKey =
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
+    process.env.NEXT_SUPABASE_ANON_KEY?.trim() ||
     process.env.next_public_supabase_anon_key?.trim() ||
     process.env.SUPABASE_ANON_KEY?.trim() ||
     process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
