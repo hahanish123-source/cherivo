@@ -9056,3 +9056,42 @@ body.bright-theme,
   }
 }
 
+/* Universal High-Contrast Auth Input Styling (fixes invisible password/username dots in Edge/Chrome) */
+.authInput {
+  width: 100%;
+  height: 46px;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ff4f8b !important;
+  color-scheme: dark !important;
+  font-size: 15px !important;
+  outline: none !important;
+  transition: all 0.2s ease !important;
+  box-sizing: border-box !important;
+}
+
+.authInput:focus {
+  background: rgba(255, 255, 255, 0.13) !important;
+  border-color: #ff4f8b !important;
+  box-shadow: 0 0 0 3px rgba(255, 79, 139, 0.28) !important;
+}
+
+.authInput::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.authInput:-webkit-autofill,
+.authInput:-webkit-autofill:hover,
+.authInput:-webkit-autofill:focus,
+.authInput:-webkit-autofill:active {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0px 1000px #241432 inset !important;
+  box-shadow: 0 0 0px 1000px #241432 inset !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  caret-color: #ff4f8b !important;
+}
+

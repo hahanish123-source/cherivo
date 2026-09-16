@@ -52,7 +52,8 @@ export default function LoginPage() {
       justifyContent: "center",
       background: "radial-gradient(ellipse at 50% 20%, #2a1138 0%, #0c0612 100%)",
       color: "#fff",
-      padding: "20px"
+      padding: "20px",
+      colorScheme: "dark"
     }}>
       <div style={{
         width: "100%",
@@ -120,17 +121,10 @@ export default function LoginPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Your Name"
+                  className="authInput"
                   style={{
-                    width: "100%",
-                    height: "44px",
-                    background: "rgba(255, 255, 255, 0.05)",
-                    border: "1px solid rgba(255, 255, 255, 0.12)",
-                    borderRadius: "12px",
-                    padding: "0 12px 0 38px",
-                    color: "#fff",
-                    fontSize: "14px",
-                    outline: "none",
-                    boxSizing: "border-box"
+                    padding: "0 14px 0 38px",
+                    color: "#ffffff"
                   }}
                 />
               </div>
@@ -142,24 +136,17 @@ export default function LoginPage() {
               Email Address
             </label>
             <div style={{ position: "relative" }}>
-              <Mail size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "rgba(255, 255, 255, 0.4)" }} />
+              <Mail size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "rgba(255, 255, 255, 0.4)", zIndex: 2 }} />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
+                className="authInput"
                 style={{
-                  width: "100%",
-                  height: "44px",
-                  background: "rgba(255, 255, 255, 0.05)",
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
-                  borderRadius: "12px",
-                  padding: "0 12px 0 38px",
-                  color: "#fff",
-                  fontSize: "14px",
-                  outline: "none",
-                  boxSizing: "border-box"
+                  padding: "0 14px 0 38px",
+                  color: "#ffffff"
                 }}
               />
             </div>
@@ -170,24 +157,17 @@ export default function LoginPage() {
               Password
             </label>
             <div style={{ position: "relative" }}>
-              <Lock size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "rgba(255, 255, 255, 0.4)" }} />
+              <Lock size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "rgba(255, 255, 255, 0.4)", zIndex: 2 }} />
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                className="authInput"
                 style={{
-                  width: "100%",
-                  height: "44px",
-                  background: "rgba(255, 255, 255, 0.05)",
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
-                  borderRadius: "12px",
-                  padding: "0 12px 0 38px",
-                  color: "#fff",
-                  fontSize: "14px",
-                  outline: "none",
-                  boxSizing: "border-box"
+                  padding: "0 14px 0 38px",
+                  color: "#ffffff"
                 }}
               />
             </div>

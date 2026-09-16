@@ -50,7 +50,8 @@ export default function AdminLoginPage() {
       justifyContent: "center",
       background: "radial-gradient(ellipse at 50% 20%, #20102b 0%, #0c0612 100%)",
       color: "#fff",
-      padding: "20px"
+      padding: "20px",
+      colorScheme: "dark"
     }}>
       <div style={{
         width: "100%",
@@ -104,11 +105,11 @@ export default function AdminLoginPage() {
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div>
-            <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "rgba(255, 255, 255, 0.8)", marginBottom: "6px" }}>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "rgba(255, 255, 255, 0.85)", marginBottom: "6px" }}>
               Administrator Username
             </label>
             <div style={{ position: "relative" }}>
-              <User size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "rgba(255, 255, 255, 0.4)" }} />
+              <User size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "rgba(255, 255, 255, 0.6)", zIndex: 2 }} />
               <input
                 type="text"
                 required
@@ -119,28 +120,44 @@ export default function AdminLoginPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter username"
+                className="authInput"
                 style={{
-                  width: "100%",
-                  height: "44px",
-                  background: "rgba(255, 255, 255, 0.05)",
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
-                  borderRadius: "12px",
-                  padding: "0 12px 0 38px",
-                  color: "#fff",
-                  fontSize: "14px",
-                  outline: "none",
-                  boxSizing: "border-box"
+                  padding: "0 14px 0 38px",
+                  color: "#ffffff",
+                  caretColor: "#ff4f8b"
                 }}
               />
             </div>
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "rgba(255, 255, 255, 0.8)", marginBottom: "6px" }}>
-              Master Security Key / Password
-            </label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+              <label style={{ fontSize: "12px", fontWeight: 600, color: "rgba(255, 255, 255, 0.85)" }}>
+                Master Security Key / Password
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: showPassword ? "#ff4f8b" : "rgba(255, 255, 255, 0.7)",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  padding: "2px 6px"
+                }}
+              >
+                {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                <span>{showPassword ? "Hide" : "Show password"}</span>
+              </button>
+            </div>
             <div style={{ position: "relative" }}>
-              <Lock size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "rgba(255, 255, 255, 0.4)" }} />
+              <Lock size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "rgba(255, 255, 255, 0.6)", zIndex: 2 }} />
               <input
                 type={showPassword ? "text" : "password"}
                 required
@@ -151,38 +168,38 @@ export default function AdminLoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
+                className="authInput"
                 style={{
-                  width: "100%",
-                  height: "44px",
-                  background: "rgba(255, 255, 255, 0.05)",
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
-                  borderRadius: "12px",
-                  padding: "0 42px 0 38px",
-                  color: "#fff",
-                  fontSize: "14px",
-                  outline: "none",
-                  boxSizing: "border-box"
+                  padding: "0 46px 0 38px",
+                  color: "#ffffff",
+                  caretColor: "#ff4f8b",
+                  letterSpacing: showPassword ? "normal" : "0.15em"
                 }}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
+                title={showPassword ? "Hide password" : "Show password"}
                 style={{
                   position: "absolute",
-                  right: "10px",
+                  right: "8px",
                   top: "50%",
                   transform: "translateY(-50%)",
-                  background: "none",
-                  border: "none",
-                  color: "rgba(255, 255, 255, 0.5)",
+                  background: "rgba(255, 255, 255, 0.08)",
+                  border: "1px solid rgba(255, 255, 255, 0.15)",
+                  borderRadius: "8px",
+                  color: showPassword ? "#ff4f8b" : "#ffffff",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
-                  padding: "4px"
+                  justifyContent: "center",
+                  width: "32px",
+                  height: "32px",
+                  zIndex: 2
                 }}
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
           </div>
