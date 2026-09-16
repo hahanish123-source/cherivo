@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import {
+  GREETING_MEDIA_BUCKET,
   MAX_AUDIO_BYTES,
   MAX_IMAGE_BYTES,
   MAX_MEMORY_VIDEO_BYTES,
@@ -7,11 +9,92 @@ import {
   getGreetingMediaUrl,
   uploadGreetingMedia
 } from "@/lib/greetingMedia";
+import { isLocalDevelopmentFallbackEnabled, supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
+    const contentType = request.headers.get("content-type") || "";
+
+    // 1. Signed Direct Upload Handler (bypasses Vercel 4.5 MB serverless limit)
+    if (contentType.includes("application/json")) {
+      const body = await request.json().catch(() => null);
+      if (body?.action === "get-signed-upload-url") {
+        if (isLocalDevelopmentFallbackEnabled()) {
+          return NextResponse.json({ local: true });
+        }
+
+        const { filename, fileSize, kind } = body;
+        if (kind !== "audio" && kind !== "memory-video" && kind !== "image") {
+          return NextResponse.json({ error: "A valid media kind is required." }, { status: 400 });
+        }
+
+        const isVideo = kind === "memory-video";
+        const isImage = kind === "image";
+        const maxBytes = isVideo ? MAX_MEMORY_VIDEO_BYTES : isImage ? MAX_IMAGE_BYTES : MAX_AUDIO_BYTES;
+        if (fileSize > maxBytes) {
+          return NextResponse.json({
+            error: isVideo
+              ? "Video is too large. Video must be 80 MB or smaller."
+              : isImage
+              ? "Image is too large. Image must be 15 MB or smaller."
+              : "Audio is too large. Audio must be 20 MB or smaller."
+          }, { status: 413 });
+        }
+
+        const ext = ((typeof filename === "string" ? filename.split(".").pop() : "") || (isVideo ? "mp4" : isImage ? "jpg" : "mp3")).toLowerCase();
+        const path = `greetings/${randomUUID()}.${ext}`;
+
+        const supabase = supabaseAdmin();
+        const candidateBuckets = [
+          GREETING_MEDIA_BUCKET,
+          "hanora-media",
+          "hamora-media"
+        ].filter((v, i, a) => v && a.indexOf(v) === i);
+
+        let signedData: { signedUrl: string; token: string; path: string } | null = null;
+        let usedBucket = candidateBuckets[0];
+
+        for (const bucket of candidateBuckets) {
+          try {
+            const { data, error } = await supabase.storage
+              .from(bucket)
+              .createSignedUploadUrl(path);
+            if (!error && data?.signedUrl) {
+              signedData = data;
+              usedBucket = bucket;
+              break;
+            }
+          } catch {
+            // try next bucket
+          }
+        }
+
+        if (!signedData) {
+          return NextResponse.json({ local: true, reason: "signed_url_unavailable" });
+        }
+
+        const { data: publicData } = supabase.storage.from(usedBucket).getPublicUrl(path);
+
+        return NextResponse.json({
+          ok: true,
+          signedUrl: signedData.signedUrl,
+          token: signedData.token,
+          path,
+          bucket: usedBucket,
+          previewUrl: publicData?.publicUrl || "",
+          media: {
+            storage: "supabase",
+            path,
+            kind,
+            bucket: usedBucket
+          }
+        });
+      }
+    }
+
+    // 2. Standard multipart/form-data upload fallback
     const formData = await request.formData();
     const file = formData.get("file");
     const kind = formData.get("kind");

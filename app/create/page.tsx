@@ -788,6 +788,67 @@ export default function CreatePage() {
     setUploadProgressMsg(`Uploading ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)...`);
 
     try {
+      // Step 1: Try signed direct upload URL (bypasses Vercel 4.5 MB serverless limit for large files like 80 MB videos)
+      try {
+        const signRes = await fetch("/api/media", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "get-signed-upload-url",
+            filename: file.name,
+            fileSize: file.size,
+            kind
+          })
+        });
+
+        if (signRes.ok) {
+          const signData = await signRes.json().catch(() => null);
+          if (signData?.signedUrl) {
+            // Direct client-to-Supabase upload via signed URL!
+            const uploadFormData = new FormData();
+            uploadFormData.append("cacheControl", "3600");
+            uploadFormData.append("", file);
+
+            let directRes = await fetch(signData.signedUrl, {
+              method: "PUT",
+              body: uploadFormData
+            });
+
+            if (!directRes.ok) {
+              // Fallback to raw binary body PUT if FormData is not accepted
+              directRes = await fetch(signData.signedUrl, {
+                method: "PUT",
+                headers: {
+                  "Content-Type": file.type || "application/octet-stream",
+                  "cache-control": "max-age=3600"
+                },
+                body: file
+              });
+            }
+
+            if (!directRes.ok) {
+              const errText = await directRes.text().catch(() => "");
+              throw new Error(`Storage upload failed (${directRes.status}): ${errText || directRes.statusText}`);
+            }
+
+            const mediaId = signData.media?.path || file.name;
+            setMediaFileSizes((prev) => ({ ...prev, [mediaId]: file.size }));
+            setToast(`Uploaded ${file.name} successfully! ✨`);
+            return {
+              ok: true,
+              media: signData.media,
+              previewUrl: signData.previewUrl,
+              size: file.size
+            };
+          }
+        }
+      } catch (directErr: any) {
+        if (file.size > 4 * 1024 * 1024) {
+          throw directErr;
+        }
+      }
+
+      // Step 2: Fallback for local files / dev mode
       const formData = new FormData();
       formData.append("file", file);
       formData.append("kind", kind);
@@ -797,11 +858,15 @@ export default function CreatePage() {
         body: formData
       });
 
-      const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Upload failed.");
+        if (res.status === 413) {
+          throw new Error("File exceeds serverless upload limit (4.5 MB).");
+        }
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || `Upload failed with status ${res.status}`);
       }
 
+      const data = await res.json();
       const mediaId = typeof data.media === "object" && data.media.path ? data.media.path : file.name;
       setMediaFileSizes((prev) => ({ ...prev, [mediaId]: file.size }));
 
