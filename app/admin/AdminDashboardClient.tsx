@@ -40,10 +40,13 @@ type UserItem = {
 type ResponseItem = {
   id: string;
   token: string;
-  recipient_name: string;
+  recipient_name?: string;
+  sender_name?: string;
+  senderName?: string;
   message?: string;
   candles_blown?: boolean;
   reaction?: string;
+  emojis?: string[];
   created_at: string;
 };
 
@@ -605,9 +608,9 @@ export default function AdminDashboardClient() {
                       padding: "16px"
                     }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                        <div style={{ fontWeight: 700, color: "#ff4f8b" }}>{r.recipient_name || "Anonymous Recipient"}</div>
+                        <div style={{ fontWeight: 700, color: "#ff4f8b" }}>{r.sender_name || r.senderName || r.recipient_name || "Anonymous Recipient"}</div>
                         <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)" }}>
-                          {r.created_at ? new Date(r.created_at).toLocaleString() : ""}
+                          {r.created_at ? new Date(r.created_at).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true }) : ""}
                         </div>
                       </div>
                       <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginBottom: "8px" }}>
@@ -625,17 +628,23 @@ export default function AdminDashboardClient() {
                           "{r.message}"
                         </div>
                       )}
-                      <div style={{ display: "flex", gap: "8px", fontSize: "12px" }}>
+                      <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap", fontSize: "12px" }}>
                         {r.candles_blown && (
                           <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "rgba(245, 158, 11, 0.15)", color: "#f59e0b", padding: "2px 8px", borderRadius: "999px" }}>
                             <Flame size={12} /> Blew Candles
                           </span>
                         )}
-                        {r.reaction && (
+                        {Array.isArray(r.emojis) && r.emojis.length > 0 ? (
+                          r.emojis.map((emo, idx) => (
+                            <span key={idx} style={{ background: "rgba(255, 255, 255, 0.08)", padding: "2px 7px", borderRadius: "999px", fontSize: "14px" }}>
+                              {emo}
+                            </span>
+                          ))
+                        ) : r.reaction ? (
                           <span style={{ background: "rgba(255, 255, 255, 0.08)", padding: "2px 8px", borderRadius: "999px" }}>
                             {r.reaction}
                           </span>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   ))}

@@ -7,7 +7,7 @@ import {
 } from "@/lib/greetingStore";
 import { getUserById } from "@/lib/userStore";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getUserSession();
   if (!session) {
     return NextResponse.json(
@@ -17,17 +17,40 @@ export async function GET() {
   }
 
   try {
-    const user = await getUserById(session.id);
+    const { searchParams } = new URL(request.url);
+    const clientTokensParam = searchParams.get("tokens");
+    const clientTokens = clientTokensParam
+      ? clientTokensParam.split(",").map((t) => t.trim()).filter(Boolean)
+      : [];
+
+    const isPlatformAdmin =
+      session.role === "admin" || session.id === "admin" || session.id === "hanish";
+
+    const user =
+      (await getUserById(session.id)) ||
+      (isPlatformAdmin
+        ? {
+            id: session.id,
+            name: "Hanish (Administrator)",
+            email: "hanish@hamora.local",
+            created_at: new Date().toISOString()
+          }
+        : null);
+
     const [allGreetings, allResponses, drafts] = await Promise.all([
       getAllGreetingsAdmin(),
       getAllResponsesAdmin(),
       getDraftRecords(session.id)
     ]);
 
-    // Match cards created by this user or anonymous fallback
-    const userGreetings = allGreetings.filter(
-      (g) => g.user_id === session.id || g.user_id === user?.email
-    );
+    // Match cards created by this user, client-stored tokens, or all cards for admin
+    const userGreetings = allGreetings.filter((g) => {
+      if (isPlatformAdmin) return true;
+      if (clientTokens.includes(g.token)) return true;
+      if (g.user_id === session.id) return true;
+      if (user?.email && g.user_id === user.email) return true;
+      return false;
+    });
 
     const greetingsWithResponses = userGreetings.map((g) => {
       const resp = allResponses[g.token] || [];

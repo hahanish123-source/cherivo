@@ -1170,7 +1170,8 @@ export default function CreatePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: momentTitle,
-          project: proj
+          project: proj,
+          userId: currentUser?.id || currentUser?.email || "admin"
         })
       });
 
@@ -1178,6 +1179,15 @@ export default function CreatePage() {
       if (!res.ok || !data.token) {
         throw new Error(data.error || "Failed to generate link.");
       }
+
+      // Save token locally to creator's browser history
+      try {
+        const saved = JSON.parse(localStorage.getItem("hamora_my_greetings") || "[]");
+        if (!saved.includes(data.token)) {
+          saved.unshift(data.token);
+          localStorage.setItem("hamora_my_greetings", JSON.stringify(saved));
+        }
+      } catch {}
 
       const fullUrl = `${window.location.origin}/g/${data.token}`;
       setPublishedLink(fullUrl);
@@ -1352,6 +1362,16 @@ export default function CreatePage() {
               <span>Sign In</span>
             </Link>
           )}
+
+          {/* Creator Dashboard Shortcut */}
+          <Link
+            href="/user"
+            className="btn small ghost"
+            style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "6px" }}
+            title="Go to Creator Dashboard"
+          >
+            <span>Dashboard</span>
+          </Link>
 
           {/* Generate Private Link CTA */}
           <button
@@ -6527,21 +6547,31 @@ export default function CreatePage() {
                 <div className="controlCard">
                   <span className="controlGroupTitle">🎵 Background Song MP3</span>
                   {audioUrl ? (
-                    <div className="miniMediaRow">
-                      <span style={{ fontSize: "12px", color: "var(--text)" }}>
-                        🎵 {audioName || "Song Track"}
-                      </span>
-                      <button
-                        type="button"
-                        className="btn small danger"
-                        onClick={() => {
-                          setAudioUrl("");
-                          setAudioName("");
-                          setDraftStatus("unsaved");
-                        }}
-                      >
-                        Remove
-                      </button>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      <div className="miniMediaRow" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: "12px", color: "var(--text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "160px" }}>
+                          🎵 {audioName || "Song Track"}
+                        </span>
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <button
+                            type="button"
+                            className="btn small danger"
+                            onClick={() => {
+                              setAudioUrl("");
+                              setAudioName("");
+                              setAudioPreviewUrl("");
+                              setDraftStatus("unsaved");
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                      <audio
+                        controls
+                        src={typeof audioUrl === "string" ? audioUrl : (audioUrl as any)?.url || audioPreviewUrl}
+                        style={{ width: "100%", height: "36px", borderRadius: "8px", outline: "none" }}
+                      />
                     </div>
                   ) : (
                     <button

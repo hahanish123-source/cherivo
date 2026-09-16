@@ -306,14 +306,30 @@ export async function getGreetingResponses(token: string): Promise<GreetingRespo
         .order("created_at", { ascending: false });
 
       if (!error && Array.isArray(data)) {
-        return data.map((row: any) => ({
-          id: row.id,
-          token: row.token,
-          senderName: row.sender_name,
-          message: row.message,
-          emojis: row.emojis,
-          createdAt: row.created_at,
-        }));
+        return data.map((row: any) => {
+          const sender = row.sender_name || row.recipient_name || row.senderName || "Special Someone";
+          const rawEmojis = row.emojis;
+          const emojisArr: string[] = Array.isArray(rawEmojis)
+            ? rawEmojis
+            : typeof rawEmojis === "string"
+            ? [rawEmojis]
+            : ["💖"];
+          const reactionStr = emojisArr.join(" ") || row.reaction || "💖";
+
+          return {
+            id: row.id,
+            token: row.token,
+            senderName: sender,
+            sender_name: sender,
+            recipient_name: sender,
+            message: row.message || "",
+            emojis: emojisArr,
+            reaction: reactionStr,
+            candles_blown: Boolean(row.candles_blown),
+            created_at: row.created_at || new Date().toISOString(),
+            createdAt: row.created_at || new Date().toISOString()
+          };
+        });
       }
     } catch (err) {
       console.warn("Supabase getGreetingResponses error, fallback checking:", err);
@@ -525,9 +541,13 @@ export async function deleteGreetingByToken(
         greetingToDelete = { token, title: "", data: data.data, user_id: data.user_id };
       }
 
+      // 1. Delete all associated responses in Supabase
+      await supabase.from("greeting_responses").delete().eq("token", token);
+
+      // 2. Delete the greeting record in Supabase
       let deleteQuery = supabase.from("greetings").delete().eq("token", token);
-      if (userId && userId !== "anonymous") {
-        deleteQuery = deleteQuery.eq("user_id", userId);
+      if (userId && userId !== "anonymous" && userId !== "admin") {
+        deleteQuery = deleteQuery.or(`user_id.eq.${userId},user_id.is.null,user_id.eq.anonymous`);
       }
       await deleteQuery;
     } catch (err) {
@@ -585,21 +605,33 @@ export async function getAllResponsesAdmin(): Promise<Record<string, GreetingRes
       const supabase = supabaseAdmin();
       const { data, error } = await supabase
         .from("greeting_responses")
-        .select("id,token,recipient_name,message,candles_blown,reaction,created_at")
+        .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data) {
+      if (!error && Array.isArray(data)) {
         const grouped: Record<string, GreetingResponse[]> = {};
         for (const r of data) {
           if (!grouped[r.token]) grouped[r.token] = [];
+          const sender = r.sender_name || r.recipient_name || r.senderName || "Special Someone";
+          const rawEmojis = r.emojis;
+          const emojisArr: string[] = Array.isArray(rawEmojis)
+            ? rawEmojis
+            : typeof rawEmojis === "string"
+            ? [rawEmojis]
+            : ["💖"];
+          const reactionStr = emojisArr.join(" ") || r.reaction || "💖";
+
           grouped[r.token].push({
             id: r.id,
             token: r.token,
-            recipient_name: r.recipient_name,
-            message: r.message,
-            candles_blown: r.candles_blown,
-            reaction: r.reaction,
-            created_at: r.created_at,
+            senderName: sender,
+            sender_name: sender,
+            recipient_name: sender,
+            message: r.message || "",
+            emojis: emojisArr,
+            reaction: reactionStr,
+            candles_blown: Boolean(r.candles_blown),
+            created_at: r.created_at || new Date().toISOString(),
             createdAt: r.created_at || new Date().toISOString()
           });
         }

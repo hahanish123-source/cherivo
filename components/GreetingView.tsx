@@ -607,18 +607,28 @@ export default function GreetingView({
     }
   }, [galleryViewer]);
 
+  const resolveMediaUrl = (val: any): string => {
+    if (!val) return "";
+    if (typeof val === "string") return val;
+    if (typeof val === "object" && typeof val.url === "string") return val.url;
+    return "";
+  };
+
   const activeAudioUrl =
-    typeof currentBlock?.audioUrl === "string"
-      ? currentBlock.audioUrl
-      : typeof project.audioUrl === "string"
-      ? project.audioUrl
-      : "";
+    resolveMediaUrl(currentBlock?.audioUrl) ||
+    resolveMediaUrl(project.audioUrl) ||
+    "";
 
   const activeAudioName = currentBlock?.audioName || project.audioName || "Your song";
 
   const attemptAudioPlayback = () => {
     const audioElement = audioRef.current;
     if (!audioElement || !activeAudioUrl) return;
+    if (audioElement.src !== activeAudioUrl) {
+      audioElement.src = activeAudioUrl;
+      audioElement.loop = true;
+      audioElement.load();
+    }
     void audioElement
       .play()
       .then(() => setPlaying(true))
@@ -1062,11 +1072,9 @@ export default function GreetingView({
   const activeBg5 = currentBlock?.bgColor5 || project.bgColor5 || (project.theme === "light" ? "#fce7f3" : "#10b981");
 
   const activeVideo =
-    typeof currentBlock?.video === "string"
-      ? currentBlock.video
-      : typeof currentBlock?.memoryVideo === "string"
-      ? currentBlock.memoryVideo
-      : currentBlock?.id ? memoryVideoPreviews[currentBlock.id] || "" : "";
+    resolveMediaUrl(currentBlock?.video) ||
+    resolveMediaUrl(currentBlock?.memoryVideo) ||
+    (currentBlock?.id ? memoryVideoPreviews[currentBlock.id] || "" : "");
 
   const activeVideoFit = currentBlock?.videoFit || "cover";
   const activeVideoOpacity = typeof currentBlock?.videoOpacity === "number" ? currentBlock.videoOpacity : 100;
@@ -1355,11 +1363,10 @@ export default function GreetingView({
   const renderSectionContent = (b: Block) => {
     const style = getSectionStyle(b);
     const resolvedVideo =
-      typeof b.video === "string"
-        ? b.video
-        : typeof b.memoryVideo === "string"
-        ? b.memoryVideo
-        : memoryVideoPreviews[b.id] || "";
+      resolveMediaUrl(b.video) ||
+      resolveMediaUrl(b.memoryVideo) ||
+      memoryVideoPreviews[b.id] ||
+      "";
 
     const heroAdj = b.imageAdjustments?.["hero"] ?? b.imageAdjustments?.["0"] ?? { scale: 100, x: 50, y: 28 };
     const emojiAnim = b.emojiAnimation || project.emojiAnimation || "floating";
@@ -4633,6 +4640,11 @@ export default function GreetingView({
                 onClick={() => {
                   const el = audioRef.current;
                   if (!el) return;
+                  if (!el.src || el.src !== activeAudioUrl) {
+                    el.src = activeAudioUrl;
+                    el.loop = true;
+                    el.load();
+                  }
                   if (playing) {
                     el.pause();
                     setPlaying(false);

@@ -288,6 +288,7 @@ export type GreetingResponse = {
   id: string;
   token: string;
   senderName?: string;
+  sender_name?: string;
   recipient_name?: string;
   message: string;
   emojis?: string[];
