@@ -30,10 +30,13 @@ export async function GET() {
   try {
     const { supabaseAdmin } = await import("@/lib/supabaseAdmin");
     const supabase = supabaseAdmin();
-    const selectRes = await supabase.from("greetings").select("token").limit(1);
+    const selectTokens = await supabase.from("greetings").select("token").limit(1);
+    const selectAll = await supabase.from("greetings").select("token,title,data,user_id,target_event_date,reminder_date,created_at").limit(1);
+    const selectAsterisk = await supabase.from("greetings").select("*").limit(1);
     dbCheck = {
-      selectError: selectRes.error,
-      selectData: selectRes.data,
+      selectTokens,
+      selectAll,
+      selectAsterisk
     };
   } catch (err: any) {
     dbCheck = { exception: err?.message || String(err) };
