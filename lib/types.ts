@@ -230,6 +230,7 @@ export type Block = {
   videoScale?: number;
   videoPositionX?: number;
   videoPositionY?: number;
+  videoAlignment?: "left" | "center" | "right";
   videoFit?: "cover" | "contain" | "fill";
   videoRadius?: number;
   videoWidth?: number;

@@ -610,7 +610,15 @@ export default function GreetingView({
   const resolveMediaUrl = (val: any): string => {
     if (!val) return "";
     if (typeof val === "string") return val;
-    if (typeof val === "object" && typeof val.url === "string") return val.url;
+    if (typeof val === "object") {
+      if (typeof val.url === "string" && val.url) return val.url;
+      if (typeof val.previewUrl === "string" && val.previewUrl) return val.previewUrl;
+      if (typeof val.path === "string" && val.path) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://nryekeyfghgczhbbxsqe.supabase.co";
+        const bucket = val.bucket || "hanora-media";
+        return `${supabaseUrl}/storage/v1/object/public/${bucket}/${val.path}`;
+      }
+    }
     return "";
   };
 
@@ -1553,6 +1561,77 @@ export default function GreetingView({
       );
     };
 
+    const renderSectionVideo = (targetBlock: Block) => {
+      const vSrc =
+        resolveMediaUrl(targetBlock.video) ||
+        resolveMediaUrl(targetBlock.memoryVideo) ||
+        (targetBlock.id ? memoryVideoPreviews[targetBlock.id] || "" : "");
+
+      if (!vSrc) return null;
+
+      const vFit = targetBlock.videoFit || "cover";
+      const vOpacity = (targetBlock.videoOpacity ?? 100) / 100;
+      const vScale = (targetBlock.videoScale ?? 100) / 100;
+      const vRadius = targetBlock.videoRadius ?? 18;
+      const vWidth = targetBlock.videoWidth ?? 100;
+      const vPosX = targetBlock.videoPositionX ?? 50;
+      const vPosY = targetBlock.videoPositionY ?? 50;
+      const align =
+        targetBlock.videoPositionX === 0
+          ? "flex-start"
+          : targetBlock.videoPositionX === 100
+          ? "flex-end"
+          : "center";
+
+      return (
+        <div
+          className="sectionVideoContainer"
+          style={{
+            position: "relative",
+            width: "100%",
+            display: "flex",
+            justifyContent: align,
+            alignItems: "center",
+            margin: "14px auto",
+            zIndex: 25,
+            pointerEvents: "auto"
+          }}
+        >
+          <video
+            className="sectionVideo"
+            src={vSrc}
+            controls
+            playsInline
+            preload="metadata"
+            autoPlay={targetBlock.videoAutoplay ?? false}
+            muted={targetBlock.videoMuted ?? true}
+            loop={targetBlock.videoLoop ?? false}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isEditable) triggerSelect("video");
+            }}
+            style={{
+              display: "block",
+              width: "100%",
+              maxWidth: `${vWidth}%`,
+              maxHeight: "360px",
+              height: "auto",
+              objectFit: vFit === "contain" ? "contain" : vFit === "fill" ? "fill" : "cover",
+              objectPosition: `${vPosX}% ${vPosY}%`,
+              transform: `scale(${vScale})`,
+              transformOrigin: "center center",
+              opacity: vOpacity,
+              borderRadius: `${vRadius}px`,
+              border: "1px solid rgba(255, 255, 255, 0.25)",
+              boxShadow: "0 10px 32px rgba(0, 0, 0, 0.45)",
+              outline: isEditable ? "1px dashed rgba(255, 79, 139, 0.4)" : "none",
+              cursor: isEditable ? "pointer" : "default"
+            }}
+          />
+        </div>
+      );
+    };
+
     const nav = (
       <div className="actions" style={{ position: "relative", zIndex: 100, pointerEvents: "auto", overflow: "visible", paddingBottom: "16px", marginTop: "16px" }}>
         <button
@@ -1661,6 +1740,7 @@ export default function GreetingView({
 
             {/* Dedicated Photo Area BELOW Text */}
             {renderForegroundMediaLayer(b)}
+            {renderSectionVideo(b)}
 
             {(() => {
               const cardGap = typeof b.reasonCardGap === "number" ? b.reasonCardGap : 18;
@@ -1992,6 +2072,7 @@ export default function GreetingView({
 
             {/* Dedicated Photo Area BELOW Text */}
             {renderForegroundMediaLayer(b)}
+            {renderSectionVideo(b)}
 
             <div className="incidentCards" style={{ position: "relative", zIndex: 20, width: "100%" }}>
               {(b.incidents && b.incidents.length > 0 ? b.incidents : incidentDefaults).map((inc, i) => (
@@ -2360,6 +2441,9 @@ export default function GreetingView({
             )}
           </div>
 
+          {/* Section Embedded Video */}
+          {renderSectionVideo(b)}
+
           {/* 2. DEDICATED PHOTO COMPOSITION AREA (BELOW TEXT, ABOVE NAVIGATION) */}
           <div
             className="memoryGallery"
@@ -2694,6 +2778,7 @@ export default function GreetingView({
 
             {/* Dedicated Photo Area BELOW Letter */}
             {renderForegroundMediaLayer(b)}
+            {renderSectionVideo(b)}
           </div>
           {nav}
         </div>
@@ -4370,6 +4455,8 @@ export default function GreetingView({
             })()}
           </div>
 
+          {renderSectionVideo(b)}
+
           {nav}
         </div>
       );
@@ -4479,40 +4566,7 @@ export default function GreetingView({
             </div>
           )}
 
-          {(b.memoryVideo || b.video || resolvedVideo) && (
-            <video
-              className="sectionVideo"
-              src={resolvedVideo || (typeof (b.video || b.memoryVideo) === "string" ? ((b.video || b.memoryVideo) as string) : "")}
-              controls
-              playsInline
-              preload="metadata"
-              autoPlay={b.videoAutoplay ?? false}
-              muted={b.videoMuted ?? true}
-              loop={b.videoLoop ?? false}
-              onClick={() => isEditable && triggerSelect("video")}
-              style={{
-                display: "block",
-                margin: "16px auto",
-                maxWidth: `${b.videoWidth ?? 100}%`,
-                maxHeight: "360px",
-                width: "auto",
-                height: "auto",
-                objectFit: b.videoFit === "contain" ? "contain" : b.videoFit === "fill" ? "fill" : "cover",
-                objectPosition: `${b.videoPositionX ?? 50}% ${b.videoPositionY ?? 50}%`,
-                transform: `scale(${(b.videoScale ?? 100) / 100}) translate(${((b.videoPositionX ?? 50) - 50)}%, ${((b.videoPositionY ?? 50) - 50)}%)`,
-                transformOrigin: "center center",
-                opacity: (b.videoOpacity ?? 100) / 100,
-                borderRadius: `${b.videoRadius ?? 16}px`,
-                background: "transparent",
-                border: "none",
-                boxShadow: "none",
-                outline: "none",
-                position: "relative",
-                zIndex: 20,
-                cursor: isEditable ? "pointer" : "default"
-              }}
-            />
-          )}
+          {renderSectionVideo(b)}
         </div>
         {nav}
       </div>
