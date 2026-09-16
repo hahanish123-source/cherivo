@@ -4,11 +4,13 @@ export function getSupabaseCredentials() {
   const url =
     process.env.SUPABASE_URL?.trim() ||
     process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
+    process.env.next_public_supabase_url?.trim() ||
     "";
   const key =
     process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
     process.env.SUPABASE_ANON_KEY?.trim() ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
+    process.env.next_public_supabase_anon_key?.trim() ||
     "";
 
   const hasValidSupabase =
