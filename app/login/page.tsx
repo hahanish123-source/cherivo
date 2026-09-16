@@ -239,9 +239,6 @@ export default function LoginPage() {
           <Link href="/" style={{ fontSize: "12px", color: "rgba(255, 255, 255, 0.5)", textDecoration: "none" }}>
             ← Home
           </Link>
-          <Link href="/admin/login" style={{ fontSize: "12px", color: "#ff4f8b", textDecoration: "none" }}>
-            Admin Portal 🛡️
-          </Link>
           <Link href="/create" style={{ fontSize: "12px", color: "#38bdf8", textDecoration: "none" }}>
             Create Greeting ✨
           </Link>

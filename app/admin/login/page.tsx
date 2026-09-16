@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
         throw new Error(data.error || "Login failed");
       }
 
-      router.push("/admin");
+      window.location.href = "/admin";
     } catch (err: any) {
       setError(err.message || "Failed to sign in. Please verify your credentials.");
     } finally {
@@ -115,9 +115,10 @@ export default function AdminLoginPage() {
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
+                autoComplete="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="hanish"
+                placeholder="Enter username"
                 style={{
                   width: "100%",
                   height: "44px",
@@ -146,9 +147,10 @@ export default function AdminLoginPage() {
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="hanorhan"
+                placeholder="Enter password"
                 style={{
                   width: "100%",
                   height: "44px",
