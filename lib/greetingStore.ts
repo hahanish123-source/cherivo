@@ -178,7 +178,7 @@ export async function createGreeting(
       return { token };
     } catch (err: any) {
       console.warn("Supabase greeting insert failed, falling back safely:", err?.message);
-      if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
+      if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
         throw err;
       }
     }

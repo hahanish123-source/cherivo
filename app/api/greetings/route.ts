@@ -26,6 +26,19 @@ export async function GET() {
   const diagnostics = getSupabaseRuntimeDiagnostics();
   logSupabaseRuntimeDiagnostics("Hamora GET /api/greetings diagnostics");
 
+  let dbCheck: any = null;
+  try {
+    const { supabaseAdmin } = await import("@/lib/supabaseAdmin");
+    const supabase = supabaseAdmin();
+    const selectRes = await supabase.from("greetings").select("token").limit(1);
+    dbCheck = {
+      selectError: selectRes.error,
+      selectData: selectRes.data,
+    };
+  } catch (err: any) {
+    dbCheck = { exception: err?.message || String(err) };
+  }
+
   return NextResponse.json({
     ok: true,
     mode:
@@ -34,6 +47,7 @@ export async function GET() {
         : "supabase-production",
     message: "Hamora greeting API is ready.",
     diagnostics,
+    dbCheck,
   });
 }
 
